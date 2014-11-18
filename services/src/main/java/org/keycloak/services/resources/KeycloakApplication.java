@@ -18,6 +18,7 @@ import org.keycloak.services.managers.BruteForceProtector;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.managers.UsersSyncManager;
 import org.keycloak.services.resources.admin.AdminRoot;
+import org.keycloak.services.resources.authentication.broker.AuthenticationBrokerService;
 import org.keycloak.services.scheduled.ClearExpiredEvents;
 import org.keycloak.services.scheduled.ClearExpiredUserSessions;
 import org.keycloak.services.scheduled.ScheduledTaskRunner;
@@ -74,6 +75,7 @@ public class KeycloakApplication extends Application {
         singletons.add(new RealmsResource());
         singletons.add(new SocialResource());
         singletons.add(new AdminRoot());
+        singletons.add(new AuthenticationBrokerService());
         classes.add(SkeletonKeyContextResolver.class);
         classes.add(QRCodeResource.class);
         classes.add(ThemeResource.class);

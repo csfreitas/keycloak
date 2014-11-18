@@ -22,6 +22,7 @@
 package org.keycloak.login.freemarker.model;
 
 import org.keycloak.models.RealmModel;
+import org.keycloak.services.resources.authentication.broker.AuthenticationBrokerService;
 import org.keycloak.services.resources.flows.Urls;
 import org.keycloak.social.SocialLoader;
 
@@ -55,6 +56,14 @@ public class SocialBean {
                     providers.add(new SocialProvider(p.getId(), p.getName(), loginUrl));
                 }
             }
+
+            String brokeredIdp = "brokered_idp";
+            String loginUrl = UriBuilder.fromUri(baseURI)
+                    .path(AuthenticationBrokerService.class)
+                    .path(AuthenticationBrokerService.class, "authenticate")
+                    .replaceQueryParam("provider_id", brokeredIdp)
+                    .build(realm.getName()).toString();
+            providers.add(new SocialProvider(brokeredIdp, "Brokered Identity Provier", loginUrl));
         }
     }
 

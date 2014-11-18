@@ -1,0 +1,7 @@
+[#ftl]
+[#-- @implicitly included --]
+[#-- @ftlvariable name="url" type="org.keycloak.account.freemarker.model.UrlBean" --]
+[#-- @ftlvariable name="social" type="org.keycloak.login.freemarker.model.SocialBean" --]
+[#-- @ftlvariable name="properties" type="java.util.Properties" --]
+[#-- @ftlvariable name="client" type="org.keycloak.login.freemarker.model.ClientBean" --]
+[#-- @ftlvariable name="realm" type="org.keycloak.login.freemarker.model.RealmBean" --]

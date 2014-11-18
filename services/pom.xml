@@ -168,6 +168,14 @@
             <artifactId>javase</artifactId>
             <scope>provided</scope>
         </dependency>
+
+        <!-- TODO: authentication broker refactoring-->
+        <dependency>
+            <groupId>org.picketlink</groupId>
+            <artifactId>picketlink-federation</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
