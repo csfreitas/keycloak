@@ -57,14 +57,19 @@ public class SocialBean {
                 }
             }
 
-            String brokeredIdp = "brokered_idp";
-            String loginUrl = UriBuilder.fromUri(baseURI)
-                    .path(AuthenticationBrokerService.class)
-                    .path(AuthenticationBrokerService.class, "authenticate")
-                    .replaceQueryParam("provider_id", brokeredIdp)
-                    .build(realm.getName()).toString();
-            providers.add(new SocialProvider(brokeredIdp, "Brokered Identity Provier", loginUrl));
+            addProvider(realm, baseURI, "saml_brokered_idp", "SAML Brokered Identity Provier");
+            addProvider(realm, baseURI, "oidc_brokered_idp", "OIDC Authz Grant Brokered Identity Provier");
+            addProvider(realm, baseURI, "oidc_implicit_brokered_idp", "OIDC Implicit Brokered Identity Provier");
         }
+    }
+
+    private void addProvider(RealmModel realm, URI baseURI, String brokeredIdp, String name) {
+        String loginUrl = UriBuilder.fromUri(baseURI)
+                .path(AuthenticationBrokerService.class)
+                .path(AuthenticationBrokerService.class, "performLogin")
+                .replaceQueryParam("provider_id", brokeredIdp)
+                .build(realm.getName()).toString();
+        providers.add(new SocialProvider(brokeredIdp, name, loginUrl));
     }
 
     public List<SocialProvider> getProviders() {

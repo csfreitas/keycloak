@@ -38,22 +38,7 @@ import org.keycloak.services.managers.ClientSessionCode;
 import org.keycloak.services.managers.EventsManager;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.resources.flows.Flows;
-import org.keycloak.social.AuthCallback;
-import org.keycloak.social.AuthRequest;
-import org.keycloak.social.SocialAccessDeniedException;
-import org.keycloak.social.SocialProvider;
-import org.keycloak.social.SocialProviderConfig;
-import org.keycloak.social.SocialProviderException;
 import org.keycloak.social.SocialUser;
-import org.picketlink.common.constants.JBossSAMLURIConstants;
-import org.picketlink.identity.federation.api.saml.v2.request.SAML2Request;
-import org.picketlink.identity.federation.core.saml.v2.common.IDGenerator;
-import org.picketlink.identity.federation.core.saml.v2.util.DocumentUtil;
-import org.picketlink.identity.federation.saml.v2.protocol.AuthnRequestType;
-import org.picketlink.identity.federation.saml.v2.protocol.ResponseType;
-import org.picketlink.identity.federation.web.util.PostBindingUtil;
-import org.picketlink.identity.federation.web.util.RedirectBindingUtil;
-import org.w3c.dom.Document;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
@@ -64,13 +49,11 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import java.net.URI;
-import java.net.URLDecoder;
 import java.util.HashMap;
-import java.util.List;
+import java.util.Map;
 
 import static org.keycloak.events.Details.AUTH_METHOD;
-import static org.keycloak.events.Errors.*;
+import static org.keycloak.events.Errors.INVALID_CODE;
 import static org.keycloak.events.EventType.LOGIN;
 import static org.keycloak.models.ClientSessionModel.Action.AUTHENTICATE;
 
@@ -92,227 +75,216 @@ public class AuthenticationBrokerService {
     @Context
     private HttpRequest request;
 
+    private final Map<String, IdentityProvider> providers = new HashMap<String, IdentityProvider>();
+
+    public AuthenticationBrokerService() {
+        SamlIdentityProvider samlIdentityProvider = new SamlIdentityProvider();
+
+        providers.put(samlIdentityProvider.getId(), samlIdentityProvider);
+
+        OIDCIdentityProvider oidcIdentityProvider = new OIDCIdentityProvider();
+
+        providers.put(oidcIdentityProvider.getId(), oidcIdentityProvider);
+
+        OIDCImplicitIdentityProvider oidcImplicitIdentityProvider = new OIDCImplicitIdentityProvider();
+
+        providers.put(oidcImplicitIdentityProvider.getId(), oidcImplicitIdentityProvider);
+
+    }
+
     @GET
-    @Path("{realm}/authenticate")
-    public Response authenticate(@PathParam("realm") final String realmName,
+    @Path("{realm}/login")
+    public Response performLogin(@PathParam("realm") final String realmName,
             @QueryParam("provider_id") final String providerId,
-            @QueryParam("code") String code) {
+            @QueryParam("code") final String code) {
         RealmManager realmManager = new RealmManager(session);
         RealmModel realm = realmManager.getRealmByName(realmName);
         EventBuilder event = new EventsManager(realm, session, clientConnection).createEventBuilder()
                 .event(LOGIN)
                 .detail(AUTH_METHOD, "social@" + providerId);
 
-        SocialProvider provider = getBrokeredIdentityProvider();
+        IdentityProvider identityProvider = getBrokeredIdentityProvider(providerId);
 
-        if (provider == null) {
-            event.error(SOCIAL_PROVIDER_NOT_FOUND);
-            return Flows.forms(session, realm, null, uriInfo).setError("Social provider not found").createErrorPage();
+        if (identityProvider == null) {
+            return Flows.forms(session, realm, null, uriInfo).setError("Identity Provider not found").createErrorPage();
         }
 
-        if (isValidAuthorizationCode(code, realm)) {
+        ClientSessionCode clientCode = isValidAuthorizationCode(code, realm);
+
+        if (clientCode == null) {
             return handleInvalidAuthorizationCode(realm, event, "Invalid code, please login again through your application.");
         }
 
         try {
-            SAML2Request samlRequest = new SAML2Request();
-            String id = IDGenerator.create("ID_");
-
-            String assertionConsumerURL = UriBuilder.fromUri(uriInfo.getBaseUri())
-                    .path(getClass())
-                    .path(getClass(), "generateAccessTokenGet")
-                    .build(realmName).toString();
-
-            samlRequest.setNameIDFormat(JBossSAMLURIConstants.NAMEID_FORMAT_EMAIL.get());
-
-            AuthnRequestType authn = samlRequest
-                    .createAuthnRequestType(id, assertionConsumerURL, assertionConsumerURL, assertionConsumerURL);
-            String binding = JBossSAMLURIConstants.SAML_HTTP_REDIRECT_BINDING.get();
-
-            authn.setProtocolBinding(URI.create(binding));
-
-            StringBuilder authenticationUrl = new StringBuilder("http://localhost:8080/idp/");
-
-            //TODO: this must be obtained from the provider config
-            if (isSignatureEnabled()) {
-                //TODO: support signed authn requests
-            } else {
-                Document authnDoc = samlRequest.convert(authn);
-                byte[] responseBytes = DocumentUtil.getDocumentAsString(authnDoc).getBytes("UTF-8");
-                String urlEncodedResponse = RedirectBindingUtil.deflateBase64URLEncode(responseBytes);
-                ClientSessionCode clientCode = ClientSessionCode.parse(code, session, realm);
-
-                authenticationUrl
-                        .append("?SAMLRequest=").append(urlEncodedResponse)
-                        .append("&RelayState=").append(
-                        RedirectBindingUtil.base64URLEncode(("" + code + "&" + providerId).getBytes()));
-            }
-
-            return Response.temporaryRedirect(URI.create(authenticationUrl.toString())).build();
+            return identityProvider.handleRequest(
+                    new KeyCloakAuthenticationRequest(realm, this.session, clientCode.getClientSession(), this.request,
+                            this.uriInfo, code));
         } catch (Exception e) {
-            e.printStackTrace();
+            event.error("authentication_broker_failed");
+            return Flows.forms(session, realm, null, uriInfo)
+                    .setError("Could not send authentication request to identity provider")
+                    .createErrorPage();
         }
-
-        event.error("authentication_broker_failed");
-
-        return Flows.forms(session, realm, null, uriInfo).setError("Could not send authentication request to identity provider").createErrorPage();
     }
 
     @GET
-    @Path("{realm}/token")
-    public Response generateAccessTokenGet(@PathParam("realm") final String realmName) {
-        return Response.ok().build();
+    @Path("{realm}/{provider_id}")
+    public Response generateAccessTokenGet(@PathParam("realm") final String realmName,
+            @PathParam("provider_id") final String providerId) {
+        return generateTokenRequest(realmName, providerId);
     }
 
     @POST
-    @Path("{realm}/token")
-    public Response generateAccessTokenPost(@PathParam("realm") final String realmName) {
+    @Path("{realm}/{provider_id}")
+    public Response generateAccessTokenPost(@PathParam("realm") final String realmName,
+            @PathParam("provider_id") final String providerId) {
+        return generateTokenRequest(realmName, providerId);
+    }
+
+    private Response generateTokenRequest(String realmName, String providerId) {
         RealmManager realmManager = new RealmManager(session);
         RealmModel realm = realmManager.getRealmByName(realmName);
         EventBuilder event = new EventsManager(realm, session, clientConnection).createEventBuilder()
                 .event(LOGIN)
                 .detail(AUTH_METHOD, "social@");
-        List<String> samlResponse = request.getFormParameters().get("SAMLResponse");
-        List<String> relayState = request.getFormParameters().get("RelayState");
-
-        if (samlResponse.isEmpty()) {
-            return Flows.forms(session, realm, null, uriInfo).setError("No response from identity provider.").createErrorPage();
-        }
-
-        if (relayState.isEmpty()) {
-            return Flows.forms(session, realm, null, uriInfo).setError("Could not restore authentication state.").createErrorPage();
-        }
 
         try {
-            ResponseType samlObject = (ResponseType) new SAML2Request()
-                    .getSAML2ObjectFromStream(PostBindingUtil.base64DecodeAsStream(URLDecoder.decode(samlResponse.get(0), "UTF-8")));
-            String[] relayStateInfo = new String(RedirectBindingUtil.urlBase64Decode(relayState.get(0))).split("&");
-            String code = relayStateInfo[0];
-            String providerId = relayStateInfo[1];
-
-            SocialProvider provider = getBrokeredIdentityProvider();
+            IdentityProvider provider = getBrokeredIdentityProvider(providerId);
 
             if (provider == null) {
                 return Flows.forms(session, realm, null, uriInfo).setError("Social provider not found").createErrorPage();
             }
 
-            if (isValidAuthorizationCode(code, realm)) {
-                return handleInvalidAuthorizationCode(realm, event, "Invalid code, please login again through your application.");
+            KeyCloakAuthenticationResponse authenticationResponse = (KeyCloakAuthenticationResponse) provider
+                    .handleResponse(new KeyCloakAuthenticationRequest(realm, this.session, this.request, this.uriInfo));
+
+            Response response = authenticationResponse.getResponse();
+
+            if (response != null) {
+                return response;
             }
 
-            ClientSessionCode clientCode = ClientSessionCode.parse(code, session, realm);
-            ClientSessionModel clientSession = clientCode.getClientSession();
-            SocialUser socialUser;
-            try {
-                HashMap<String, String[]> queryParams = new HashMap<String, String[]>();
+            SocialUser socialUser = authenticationResponse.getUser();
+            String code = authenticationResponse.getState();
 
-                queryParams.put("SAMLResponse", new String[] {samlResponse.get(0)});
-                queryParams.put("RelayState", new String[] {relayState.get(0)});
-
-                socialUser = provider.processCallback(clientSession, null, new AuthCallback(queryParams));
-            } catch (SocialAccessDeniedException e) {
-                event.error(Errors.REJECTED_BY_USER);
-                clientSession.setAction(ClientSessionModel.Action.AUTHENTICATE);
-                return  Flows.forms(session, realm, clientSession.getClient(), uriInfo).setClientSessionCode(clientCode.getCode()).setWarning(
-                        "Access denied").createLogin();
-            } catch (SocialProviderException e) {
-                return Flows.forwardToSecurityFailurePage(session, realm, uriInfo, "Failed to process social callback");
+            if (code == null) {
+                return handleInvalidAuthorizationCode(realm, event, "No authorization code provided.");
             }
 
-            event.detail(Details.USERNAME, socialUser.getId() + "@" + provider.getId());
+            ClientSessionCode clientCode = isValidAuthorizationCode(code, realm);
 
-            SocialLinkModel socialLink = new SocialLinkModel(provider.getId(), socialUser.getId(),
-                    socialUser.getUsername());
-            UserModel user = session.users().getUserBySocialLink(socialLink, realm);
-
-            // Check if user is already authenticated (this means linking social into existing user account)
-            if (clientSession.getUserSession() != null) {
-
-                UserModel authenticatedUser = clientSession.getUserSession().getUser();
-
-                event.event(EventType.SOCIAL_LINK).user(authenticatedUser.getId());
-
-                if (user != null) {
-                    event.error(Errors.SOCIAL_ID_IN_USE);
-                    return Flows.forwardToSecurityFailurePage(session, realm, uriInfo,
-                            "This social account is already linked to other user");
-                }
-
-                if (!authenticatedUser.isEnabled()) {
-                    event.error(Errors.USER_DISABLED);
-                    return Flows.forwardToSecurityFailurePage(session, realm, uriInfo, "User is disabled");
-                }
-
-                if (!authenticatedUser.hasRole(realm.getApplicationByName(Constants.ACCOUNT_MANAGEMENT_APP).getRole(
-                        AccountRoles.MANAGE_ACCOUNT))) {
-                    event.error(Errors.NOT_ALLOWED);
-                    return Flows.forwardToSecurityFailurePage(session, realm, uriInfo,
-                            "Insufficient permissions to link social account");
-                }
-
-                session.users().addSocialLink(realm, authenticatedUser, socialLink);
-
-                event.success();
-                return Response.status(302).location(UriBuilder.fromUri(clientSession.getRedirectUri()).build()).build();
+            if (clientCode == null) {
+                return handleInvalidAuthorizationCode(realm, event,
+                        "Invalid authorization code, please login again through your application.");
             }
 
-            if (user == null) {
-                user = session.users().addUser(realm, KeycloakModelUtils.generateId());
-                user.setEnabled(true);
-                user.setFirstName(socialUser.getFirstName());
-                user.setLastName(socialUser.getLastName());
-                user.setEmail(socialUser.getEmail());
-
-                if (realm.isUpdateProfileOnInitialSocialLogin()) {
-                    user.addRequiredAction(UserModel.RequiredAction.UPDATE_PROFILE);
-                }
-
-                session.users().addSocialLink(realm, user, socialLink);
-
-                event.clone().user(user).event(EventType.REGISTER)
-                        .detail(Details.REGISTER_METHOD, "social@" + provider.getId())
-                        .detail(Details.EMAIL, socialUser.getEmail())
-                        .removeDetail("auth_method")
-                        .success();
+            return performLocalAuthentication(realm, event, provider, socialUser, clientCode);
+        } catch (Exception e) {
+            if (session.getTransaction().isActive()) {
+                session.getTransaction().rollback();
             }
-
-            event.user(user);
-
-            if (!user.isEnabled()) {
-                event.error(Errors.USER_DISABLED);
-                return Flows.forwardToSecurityFailurePage(session, realm, uriInfo, "Your account is not enabled.");
-            }
-
-            String username = socialLink.getSocialUserId() + "@" + socialLink.getSocialProvider();
-
-            UserSessionModel userSession = session.sessions()
-                    .createUserSession(realm, user, username, clientConnection.getRemoteAddr(), "broker", false);
-            event.session(userSession);
-            TokenManager.attachClientSession(userSession, clientSession);
-
-            AuthenticationManager authManager = new AuthenticationManager();
-            Response response = authManager
-                    .nextActionAfterAuthentication(session, userSession, clientSession, clientConnection, request, uriInfo,
-                            event);
+        } finally {
             if (session.getTransaction().isActive()) {
                 session.getTransaction().commit();
             }
-            return response;
-        } catch (Exception e) {
-            e.printStackTrace();
         }
 
         return Response.ok().build();
+    }
+
+    private Response performLocalAuthentication(RealmModel realm, EventBuilder event, IdentityProvider provider,
+            SocialUser socialUser, ClientSessionCode clientCode) {
+        event.detail(Details.USERNAME, socialUser.getId() + "@" + provider.getId());
+
+        SocialLinkModel socialLink = new SocialLinkModel(provider.getId(), socialUser.getId(),
+                socialUser.getUsername());
+        UserModel user = session.users().getUserBySocialLink(socialLink, realm);
+        ClientSessionModel clientSession = clientCode.getClientSession();
+
+        // Check if user is already authenticated (this means linking social into existing user account)
+        if (clientSession.getUserSession() != null) {
+
+            UserModel authenticatedUser = clientSession.getUserSession().getUser();
+
+            event.event(EventType.SOCIAL_LINK).user(authenticatedUser.getId());
+
+            if (user != null) {
+                event.error(Errors.SOCIAL_ID_IN_USE);
+                return Flows.forwardToSecurityFailurePage(session, realm, uriInfo,
+                        "This social account is already linked to other user");
+            }
+
+            if (!authenticatedUser.isEnabled()) {
+                event.error(Errors.USER_DISABLED);
+                return Flows.forwardToSecurityFailurePage(session, realm, uriInfo, "User is disabled");
+            }
+
+            if (!authenticatedUser.hasRole(realm.getApplicationByName(Constants.ACCOUNT_MANAGEMENT_APP).getRole(
+                    AccountRoles.MANAGE_ACCOUNT))) {
+                event.error(Errors.NOT_ALLOWED);
+                return Flows.forwardToSecurityFailurePage(session, realm, uriInfo,
+                        "Insufficient permissions to link social account");
+            }
+
+            session.users().addSocialLink(realm, authenticatedUser, socialLink);
+
+            event.success();
+            return Response.status(302).location(UriBuilder.fromUri(clientSession.getRedirectUri()).build()).build();
+        }
+
+        if (user == null) {
+            user = session.users().addUser(realm, KeycloakModelUtils.generateId());
+            user.setEnabled(true);
+            user.setFirstName(socialUser.getFirstName());
+            user.setLastName(socialUser.getLastName());
+            user.setEmail(socialUser.getEmail());
+
+            if (realm.isUpdateProfileOnInitialSocialLogin()) {
+                user.addRequiredAction(UserModel.RequiredAction.UPDATE_PROFILE);
+            }
+
+            session.users().addSocialLink(realm, user, socialLink);
+
+            event.clone().user(user).event(EventType.REGISTER)
+                    .detail(Details.REGISTER_METHOD, "social@" + provider.getId())
+                    .detail(Details.EMAIL, socialUser.getEmail())
+                    .removeDetail("auth_method")
+                    .success();
+        }
+
+        event.user(user);
+
+        if (!user.isEnabled()) {
+            event.error(Errors.USER_DISABLED);
+            return Flows.forwardToSecurityFailurePage(session, realm, uriInfo, "Your account is not enabled.");
+        }
+
+        String username = socialLink.getSocialUserId() + "@" + socialLink.getSocialProvider();
+
+        UserSessionModel userSession = session.sessions()
+                .createUserSession(realm, user, username, clientConnection.getRemoteAddr(), "broker", false);
+        event.session(userSession);
+        TokenManager.attachClientSession(userSession, clientSession);
+
+        AuthenticationManager authManager = new AuthenticationManager();
+
+        return authManager
+                .nextActionAfterAuthentication(session, userSession, clientSession, clientConnection, request, uriInfo,
+                        event);
     }
 
     private boolean isSignatureEnabled() {
         return false;
     }
 
-    private boolean isValidAuthorizationCode(String code, RealmModel realm) {
+    private ClientSessionCode isValidAuthorizationCode(String code, RealmModel realm) {
         ClientSessionCode clientCode = ClientSessionCode.parse(code, session, realm);
 
-        return clientCode == null || !clientCode.isValid(AUTHENTICATE);
+        if (clientCode != null && clientCode.isValid(AUTHENTICATE)) {
+            return clientCode;
+        }
+
+        return null;
     }
 
     private Response handleInvalidAuthorizationCode(RealmModel realm, EventBuilder event, String message) {
@@ -320,38 +292,82 @@ public class AuthenticationBrokerService {
         return Flows.forwardToSecurityFailurePage(session, realm, uriInfo, message);
     }
 
-    private SocialProvider getBrokeredIdentityProvider() {
-        return new SocialProvider() {
-            @Override public String getId() {
-                return "brokered_idp";
-            }
+    private IdentityProvider getBrokeredIdentityProvider(String providerId) {
+        return this.providers.get(providerId);
+    }
 
-            @Override public AuthRequest getAuthUrl(ClientSessionModel clientSession, SocialProviderConfig config, String state)
-                    throws SocialProviderException {
-                return AuthRequest.create("http://localhost:8080/idp/").build();
-            }
+    static class KeyCloakAuthenticationRequest implements IdentityProvider.AuthenticationRequest {
 
-            @Override public String getName() {
-                return "brokered_idp";
-            }
+        private final KeycloakSession keycloakSession;
+        private final ClientSessionModel clientSession;
+        private final UriInfo uriInfo;
+        private final String state;
+        private final HttpRequest httpRequest;
+        private final RealmModel realm;
 
-            @Override public SocialUser processCallback(ClientSessionModel clientSession, SocialProviderConfig config,
-                    AuthCallback callback) throws SocialProviderException {
-                try {
-                    ResponseType samlObject = (ResponseType) new SAML2Request()
-                            .getSAML2ObjectFromStream(PostBindingUtil
-                                    .base64DecodeAsStream(URLDecoder.decode(callback.getQueryParam("SAMLResponse"), "UTF-8")));
-                    String[] relayStateInfo = new String(RedirectBindingUtil.urlBase64Decode(callback.getQueryParam("RelayState"))).split("&");
-                    String code = relayStateInfo[0];
-                    String providerId = relayStateInfo[1];
+        public KeyCloakAuthenticationRequest(RealmModel realm, KeycloakSession keycloakSession, HttpRequest httpRequest,
+                UriInfo uriInfo) {
+            this(realm, keycloakSession, null, httpRequest, uriInfo, null);
+        }
 
-                    return new SocialUser("id", "tomcat");
-                } catch (Exception e) {
-                    e.printStackTrace();;
-                }
+        public KeyCloakAuthenticationRequest(RealmModel realm, KeycloakSession keycloakSession,
+                ClientSessionModel clientSession,
+                HttpRequest httpRequest, UriInfo uriInfo, String state) {
+            this.realm = realm;
+            this.keycloakSession = keycloakSession;
+            this.clientSession = clientSession;
+            this.httpRequest = httpRequest;
+            this.uriInfo = uriInfo;
+            this.state = state;
+        }
 
-                return null;
-            }
-        };
+        public RealmModel getRealm() {
+            return this.realm;
+        }
+
+        public KeycloakSession getKeycloakSession() {
+            return this.keycloakSession;
+        }
+
+        public ClientSessionModel getClientSession() {
+            return this.clientSession;
+        }
+
+        public UriInfo getUriInfo() {
+            return this.uriInfo;
+        }
+
+        public String getState() {
+            return this.state;
+        }
+
+        public HttpRequest getHttpRequest() {
+            return this.httpRequest;
+        }
+    }
+
+    static class KeyCloakAuthenticationResponse implements IdentityProvider.AuthenticationResponse {
+
+        private final Response response;
+        private final SocialUser user;
+        private final String state;
+
+        public KeyCloakAuthenticationResponse(SocialUser user, String state, Response response) {
+            this.user = user;
+            this.state = state;
+            this.response = response;
+        }
+
+        public Response getResponse() {
+            return this.response;
+        }
+
+        public SocialUser getUser() {
+            return this.user;
+        }
+
+        public String getState() {
+            return this.state;
+        }
     }
 }
