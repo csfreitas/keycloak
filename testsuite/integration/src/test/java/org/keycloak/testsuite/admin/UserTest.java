@@ -2,8 +2,7 @@ package org.keycloak.testsuite.admin;
 
 import org.junit.Test;
 import org.keycloak.admin.client.resource.UserResource;
-import org.keycloak.models.UserModel;
-import org.keycloak.representations.idm.SocialLinkRepresentation;
+import org.keycloak.representations.idm.FederatedIdentityRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 
 import javax.ws.rs.ClientErrorException;
@@ -116,9 +115,9 @@ public class UserTest extends AbstractClientTest {
 
         UserResource user = realm.users().get("user1");
 
-        SocialLinkRepresentation link = new SocialLinkRepresentation();
-        link.setSocialUserId("social-user-id");
-        link.setSocialUsername("social-username");
+        FederatedIdentityRepresentation link = new FederatedIdentityRepresentation();
+        link.setUserId("social-user-id");
+        link.setUserName("social-username");
 
         Response response = user.addSocialLink("social-provider-id", link);
         assertEquals(204, response.getStatus());
@@ -131,10 +130,10 @@ public class UserTest extends AbstractClientTest {
         UserResource user = realm.users().get("user1");
         assertEquals(1, user.getSocialLinks().size());
 
-        SocialLinkRepresentation link = user.getSocialLinks().get(0);
-        assertEquals("social-provider-id", link.getSocialProvider());
-        assertEquals("social-user-id", link.getSocialUserId());
-        assertEquals("social-username", link.getSocialUsername());
+        FederatedIdentityRepresentation link = user.getSocialLinks().get(0);
+        assertEquals("social-provider-id", link.getIdentityProvider());
+        assertEquals("social-user-id", link.getUserId());
+        assertEquals("social-username", link.getUserName());
     }
 
     @Test

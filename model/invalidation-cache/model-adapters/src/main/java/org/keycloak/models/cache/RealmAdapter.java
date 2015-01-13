@@ -4,6 +4,7 @@ import org.keycloak.Config;
 import org.keycloak.enums.SslRequired;
 import org.keycloak.models.ApplicationModel;
 import org.keycloak.models.ClientModel;
+import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.OAuthClientModel;
 import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.RealmModel;
@@ -533,18 +534,6 @@ public class RealmAdapter implements RealmModel {
     }
 
     @Override
-    public boolean isSocial() {
-        if (updated != null) return updated.isSocial();
-        return cached.isSocial();
-    }
-
-    @Override
-    public void setSocial(boolean social) {
-        getDelegateForUpdate();
-        updated.setSocial(social);
-    }
-
-    @Override
     public boolean isUpdateProfileOnInitialSocialLogin() {
         if (updated != null) return updated.isUpdateProfileOnInitialSocialLogin();
         return cached.isUpdateProfileOnInitialSocialLogin();
@@ -642,6 +631,30 @@ public class RealmAdapter implements RealmModel {
     public void setSocialConfig(Map<String, String> socialConfig) {
         getDelegateForUpdate();
         updated.setSocialConfig(socialConfig);
+    }
+
+    @Override
+    public List<IdentityProviderModel> getIdentityProviders() {
+        if (updated != null) return updated.getIdentityProviders();
+        return cached.getIdentityProviders();
+    }
+
+    @Override
+    public void addIdentityProvider(IdentityProviderModel identityProvider) {
+        getDelegateForUpdate();
+        updated.addIdentityProvider(identityProvider);
+    }
+
+    @Override
+    public void updateIdentityProvider(IdentityProviderModel identityProvider) {
+        getDelegateForUpdate();
+        updated.updateIdentityProvider(identityProvider);
+    }
+
+    @Override
+    public void removeIdentityProviderById(String providerId) {
+        getDelegateForUpdate();
+        updated.removeIdentityProviderById(providerId);
     }
 
     @Override
@@ -840,6 +853,13 @@ public class RealmAdapter implements RealmModel {
         if (model != null) return model;
         return getOAuthClientById(id);
     }
+
+    @Override
+    public boolean isIdentityFederationEnabled() {
+        if (updated != null) return updated.isIdentityFederationEnabled();
+        return cached.isIdentityFederationEnabled();
+    }
+
 
     @Override
     public boolean equals(Object o) {

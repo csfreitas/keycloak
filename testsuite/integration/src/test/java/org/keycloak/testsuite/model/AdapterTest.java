@@ -11,7 +11,7 @@ import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RequiredCredentialModel;
 import org.keycloak.models.RoleModel;
-import org.keycloak.models.SocialLinkModel;
+import org.keycloak.models.FederatedIdentityModel;
 import org.keycloak.models.UserCredentialModel;
 import org.keycloak.models.UserCredentialValueModel;
 import org.keycloak.models.UserModel;
@@ -170,8 +170,8 @@ public class AdapterTest extends AbstractModelTest {
         RoleModel appRole = app.addRole("test");
         user.grantRole(appRole);
 
-        SocialLinkModel socialLink = new SocialLinkModel("google", "google1", user.getUsername());
-        realmManager.getSession().users().addSocialLink(realmModel, user, socialLink);
+        FederatedIdentityModel socialLink = new FederatedIdentityModel("google", "google1", user.getUsername());
+        realmManager.getSession().users().addFederatedIdentity(realmModel, user, socialLink);
 
         UserCredentialModel cred = new UserCredentialModel();
         cred.setType(CredentialRepresentation.PASSWORD);

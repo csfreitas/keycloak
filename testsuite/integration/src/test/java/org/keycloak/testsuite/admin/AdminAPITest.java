@@ -25,12 +25,7 @@ import org.junit.Assert;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.keycloak.Config;
-import org.keycloak.models.ApplicationModel;
-import org.keycloak.models.Constants;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.UserModel;
-import org.keycloak.models.UserSessionModel;
+import org.keycloak.models.*;
 import org.keycloak.protocol.oidc.TokenManager;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.ApplicationRepresentation;
@@ -41,12 +36,7 @@ import org.keycloak.services.resources.admin.AdminRoot;
 import org.keycloak.testsuite.rule.AbstractKeycloakRule;
 import org.keycloak.testutils.KeycloakServer;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.ClientRequestContext;
-import javax.ws.rs.client.ClientRequestFilter;
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.client.*;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
@@ -228,7 +218,6 @@ public class AdminAPITest {
             Assert.assertEquals(rep.getRealm(), storedRealm.getRealm());
         }
         if (rep.isEnabled() != null) Assert.assertEquals(rep.isEnabled(), storedRealm.isEnabled());
-        if (rep.isSocial() != null) Assert.assertEquals(rep.isSocial(), storedRealm.isSocial());
         if (rep.isBruteForceProtected() != null) Assert.assertEquals(rep.isBruteForceProtected(), storedRealm.isBruteForceProtected());
         if (rep.getMaxFailureWaitSeconds() != null) Assert.assertEquals(rep.getMaxFailureWaitSeconds(), storedRealm.getMaxFailureWaitSeconds());
         if (rep.getMinimumQuickLoginWaitSeconds() != null) Assert.assertEquals(rep.getMinimumQuickLoginWaitSeconds(), storedRealm.getMinimumQuickLoginWaitSeconds());

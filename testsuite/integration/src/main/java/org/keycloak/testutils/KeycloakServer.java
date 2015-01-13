@@ -44,6 +44,7 @@ import org.keycloak.util.JsonSerialization;
 import javax.servlet.DispatcherType;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -270,6 +271,12 @@ public class KeycloakServer {
             RealmModel adminRealm = manager.getKeycloakAdminstrationRealm();
             UserModel admin = session.users().getUserByUsername("admin", adminRealm);
             admin.removeRequiredAction(UserModel.RequiredAction.UPDATE_PASSWORD);
+
+            try {
+                importRealm(new FileInputStream("/pedroigor/java/workspace/jboss/keycloak/keycloak/examples/js-console/example-realm.json"));
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
 
             session.getTransaction().commit();
         } finally {

@@ -2,11 +2,11 @@ package org.keycloak.models.mongo.keycloak.adapters;
 
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
-import org.jboss.logging.Logger;
 import org.keycloak.connections.mongo.api.context.MongoStoreInvocationContext;
 import org.keycloak.enums.SslRequired;
 import org.keycloak.models.ApplicationModel;
 import org.keycloak.models.ClientModel;
+import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.OAuthClientModel;
 import org.keycloak.models.PasswordPolicy;
@@ -231,17 +231,6 @@ public class RealmAdapter extends AbstractMongoAdapter<MongoRealmEntity> impleme
     @Override
     public void setResetPasswordAllowed(boolean resetPassword) {
         realm.setResetPasswordAllowed(resetPassword);
-        updateRealm();
-    }
-
-    @Override
-    public boolean isSocial() {
-        return realm.isSocial();
-    }
-
-    @Override
-    public void setSocial(boolean social) {
-        realm.setSocial(social);
         updateRealm();
     }
 
@@ -815,6 +804,26 @@ public class RealmAdapter extends AbstractMongoAdapter<MongoRealmEntity> impleme
     }
 
     @Override
+    public List<IdentityProviderModel> getIdentityProviders() {
+        return null;
+    }
+
+    @Override
+    public void addIdentityProvider(IdentityProviderModel identityProvider) {
+
+    }
+
+    @Override
+    public void removeIdentityProviderById(String providerId) {
+
+    }
+
+    @Override
+    public void updateIdentityProvider(IdentityProviderModel identityProvider) {
+
+    }
+
+    @Override
     public UserFederationProviderModel addUserFederationProvider(String providerName, Map<String, String> config, int priority, String displayName, int fullSyncPeriod, int changedSyncPeriod, int lastSync) {
         UserFederationProviderEntity entity = new UserFederationProviderEntity();
         entity.setId(KeycloakModelUtils.generateId());
@@ -972,6 +981,12 @@ public class RealmAdapter extends AbstractMongoAdapter<MongoRealmEntity> impleme
     @Override
     public MongoRealmEntity getMongoEntity() {
         return realm;
+    }
+
+    @Override
+    public boolean isIdentityFederationEnabled() {
+        //TODO: support identity federation storage for mongo
+        return false;
     }
 
     @Override

@@ -11,7 +11,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RequiredCredentialModel;
 import org.keycloak.models.RoleModel;
-import org.keycloak.models.SocialLinkModel;
+import org.keycloak.models.FederatedIdentityModel;
 import org.keycloak.models.UserFederationProvider;
 import org.keycloak.models.UserFederationProviderFactory;
 import org.keycloak.models.UserFederationProviderModel;
@@ -74,7 +74,7 @@ public class ImportTest extends AbstractModelTest {
 
         UserModel user = session.users().getUserByUsername("loginclient", realm);
         Assert.assertNotNull(user);
-        Assert.assertEquals(0,  session.users().getSocialLinks(user, realm).size());
+        Assert.assertEquals(0,  session.users().getFederatedIdentities(user, realm).size());
 
         List<ApplicationModel> resources = realm.getApplications();
         for (ApplicationModel app : resources) {
@@ -154,42 +154,42 @@ public class ImportTest extends AbstractModelTest {
 
         // Test social linking
         UserModel socialUser = session.users().getUserByUsername("mySocialUser", realm);
-        Set<SocialLinkModel> socialLinks = session.users().getSocialLinks(socialUser, realm);
+        Set<FederatedIdentityModel> socialLinks = session.users().getFederatedIdentities(socialUser, realm);
         Assert.assertEquals(3, socialLinks.size());
         boolean facebookFound = false;
         boolean googleFound = false;
         boolean twitterFound = false;
-        for (SocialLinkModel socialLinkModel : socialLinks) {
-            if ("facebook".equals(socialLinkModel.getSocialProvider())) {
+        for (FederatedIdentityModel federatedIdentityModel : socialLinks) {
+            if ("facebook".equals(federatedIdentityModel.getIdentityProvider())) {
                 facebookFound = true;
-                Assert.assertEquals(socialLinkModel.getSocialUserId(), "facebook1");
-                Assert.assertEquals(socialLinkModel.getSocialUsername(), "fbuser1");
-            } else if ("google".equals(socialLinkModel.getSocialProvider())) {
+                Assert.assertEquals(federatedIdentityModel.getUserId(), "facebook1");
+                Assert.assertEquals(federatedIdentityModel.getUserName(), "fbuser1");
+            } else if ("google".equals(federatedIdentityModel.getIdentityProvider())) {
                 googleFound = true;
-                Assert.assertEquals(socialLinkModel.getSocialUserId(), "google1");
-                Assert.assertEquals(socialLinkModel.getSocialUsername(), "mySocialUser@gmail.com");
-            } else if ("twitter".equals(socialLinkModel.getSocialProvider())) {
+                Assert.assertEquals(federatedIdentityModel.getUserId(), "google1");
+                Assert.assertEquals(federatedIdentityModel.getUserName(), "mySocialUser@gmail.com");
+            } else if ("twitter".equals(federatedIdentityModel.getIdentityProvider())) {
                 twitterFound = true;
-                Assert.assertEquals(socialLinkModel.getSocialUserId(), "twitter1");
-                Assert.assertEquals(socialLinkModel.getSocialUsername(), "twuser1");
+                Assert.assertEquals(federatedIdentityModel.getUserId(), "twitter1");
+                Assert.assertEquals(federatedIdentityModel.getUserName(), "twuser1");
             }
         }
         Assert.assertTrue(facebookFound && twitterFound && googleFound);
 
-        UserModel foundSocialUser = session.users().getUserBySocialLink(new SocialLinkModel("facebook", "facebook1", "fbuser1"), realm);
+        UserModel foundSocialUser = session.users().getUserByFederatedIdentity(new FederatedIdentityModel("facebook", "facebook1", "fbuser1"), realm);
         Assert.assertEquals(foundSocialUser.getUsername(), socialUser.getUsername());
-        Assert.assertNull(session.users().getUserBySocialLink(new SocialLinkModel("facebook", "not-existing", "not-existing"), realm));
+        Assert.assertNull(session.users().getUserByFederatedIdentity(new FederatedIdentityModel("facebook", "not-existing", "not-existing"), realm));
 
-        SocialLinkModel foundSocialLink = session.users().getSocialLink(socialUser, "facebook", realm);
-        Assert.assertEquals("facebook1", foundSocialLink.getSocialUserId());
-        Assert.assertEquals("fbuser1", foundSocialLink.getSocialUsername());
-        Assert.assertEquals("facebook", foundSocialLink.getSocialProvider());
+        FederatedIdentityModel foundSocialLink = session.users().getFederatedIdentity(socialUser, "facebook", realm);
+        Assert.assertEquals("facebook1", foundSocialLink.getUserId());
+        Assert.assertEquals("fbuser1", foundSocialLink.getUserName());
+        Assert.assertEquals("facebook", foundSocialLink.getIdentityProvider());
 
         // Test removing social link
-        Assert.assertTrue(session.users().removeSocialLink(realm, socialUser, "facebook"));
-        Assert.assertNull(session.users().getSocialLink(socialUser, "facebook", realm));
-        Assert.assertFalse(session.users().removeSocialLink(realm, socialUser, "facebook"));
-        session.users().addSocialLink(realm, socialUser, new SocialLinkModel("facebook", "facebook1", "fbuser1"));
+        Assert.assertTrue(session.users().removeFederatedIdentity(realm, socialUser, "facebook"));
+        Assert.assertNull(session.users().getFederatedIdentity(socialUser, "facebook", realm));
+        Assert.assertFalse(session.users().removeFederatedIdentity(realm, socialUser, "facebook"));
+        session.users().addFederatedIdentity(realm, socialUser, new FederatedIdentityModel("facebook", "facebook1", "fbuser1"));
 
         // Test smtp config
         Map<String, String> smtpConfig = realm.getSmtpConfig();

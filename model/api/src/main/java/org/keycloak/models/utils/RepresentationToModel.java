@@ -3,39 +3,12 @@ package org.keycloak.models.utils;
 import net.iharder.Base64;
 import org.jboss.logging.Logger;
 import org.keycloak.enums.SslRequired;
-import org.keycloak.models.ApplicationModel;
-import org.keycloak.models.BrowserSecurityHeaders;
-import org.keycloak.models.ClaimMask;
-import org.keycloak.models.ClientModel;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.OAuthClientModel;
-import org.keycloak.models.PasswordPolicy;
-import org.keycloak.models.RealmModel;
-import org.keycloak.models.RoleModel;
-import org.keycloak.models.SocialLinkModel;
-import org.keycloak.models.UserCredentialModel;
-import org.keycloak.models.UserCredentialValueModel;
-import org.keycloak.models.UserFederationProviderModel;
-import org.keycloak.models.UserModel;
-import org.keycloak.representations.idm.ApplicationRepresentation;
-import org.keycloak.representations.idm.ClaimRepresentation;
-import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.OAuthClientRepresentation;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.ScopeMappingRepresentation;
-import org.keycloak.representations.idm.SocialLinkRepresentation;
-import org.keycloak.representations.idm.UserFederationProviderRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.models.*;
+import org.keycloak.representations.idm.*;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class RepresentationToModel {
 
@@ -44,7 +17,6 @@ public class RepresentationToModel {
     public static void importRealm(KeycloakSession session, RealmRepresentation rep, RealmModel newRealm) {
         newRealm.setName(rep.getRealm());
         if (rep.isEnabled() != null) newRealm.setEnabled(rep.isEnabled());
-        if (rep.isSocial() != null) newRealm.setSocial(rep.isSocial());
         if (rep.isBruteForceProtected() != null) newRealm.setBruteForceProtected(rep.isBruteForceProtected());
         if (rep.getMaxFailureWaitSeconds() != null) newRealm.setMaxFailureWaitSeconds(rep.getMaxFailureWaitSeconds());
         if (rep.getMinimumQuickLoginWaitSeconds() != null) newRealm.setMinimumQuickLoginWaitSeconds(rep.getMinimumQuickLoginWaitSeconds());
@@ -242,7 +214,6 @@ public class RepresentationToModel {
             realm.setName(rep.getRealm());
         }
         if (rep.isEnabled() != null) realm.setEnabled(rep.isEnabled());
-        if (rep.isSocial() != null) realm.setSocial(rep.isSocial());
         if (rep.isBruteForceProtected() != null) realm.setBruteForceProtected(rep.isBruteForceProtected());
         if (rep.getMaxFailureWaitSeconds() != null) realm.setMaxFailureWaitSeconds(rep.getMaxFailureWaitSeconds());
         if (rep.getMinimumQuickLoginWaitSeconds() != null) realm.setMinimumQuickLoginWaitSeconds(rep.getMinimumQuickLoginWaitSeconds());
@@ -670,10 +641,10 @@ public class RepresentationToModel {
                 updateCredential(user, cred);
             }
         }
-        if (userRep.getSocialLinks() != null) {
-            for (SocialLinkRepresentation socialLink : userRep.getSocialLinks()) {
-                SocialLinkModel mappingModel = new SocialLinkModel(socialLink.getSocialProvider(), socialLink.getSocialUserId(), socialLink.getSocialUsername());
-                session.users().addSocialLink(newRealm, user, mappingModel);
+        if (userRep.getFederatedIdentities() != null) {
+            for (FederatedIdentityRepresentation identity : userRep.getFederatedIdentities()) {
+                FederatedIdentityModel mappingModel = new FederatedIdentityModel(identity.getIdentityProvider(), identity.getUserId(), identity.getUserName());
+                session.users().addFederatedIdentity(newRealm, user, mappingModel);
             }
         }
         if (userRep.getRealmRoles() != null) {

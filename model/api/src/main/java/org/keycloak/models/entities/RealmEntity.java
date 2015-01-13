@@ -128,14 +128,6 @@ public class RealmEntity extends AbstractIdentifiableEntity {
         this.resetPasswordAllowed = resetPasswordAllowed;
     }
 
-    public boolean isSocial() {
-        return social;
-    }
-
-    public void setSocial(boolean social) {
-        this.social = social;
-    }
-
     public boolean isUpdateProfileOnInitialSocialLogin() {
         return updateProfileOnInitialSocialLogin;
     }

@@ -1,6 +1,5 @@
 package org.keycloak.models.jpa.entities;
 
-
 import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -54,8 +53,6 @@ public class RealmEntity {
     protected boolean verifyEmail;
     @Column(name="RESET_PASSWORD_ALLOWED")
     protected boolean resetPasswordAllowed;
-    @Column(name="SOCIAL")
-    protected boolean social;
     @Column(name="REMEMBER_ME")
     protected boolean rememberMe;
     @Column(name="UPDATE_PROFILE_ON_SOC_LOGIN")
@@ -100,7 +97,6 @@ public class RealmEntity {
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "realm")
     Collection<RequiredCredentialEntity> requiredCredentials = new ArrayList<RequiredCredentialEntity>();
 
-
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true)
     @JoinTable(name="FED_PROVIDERS")
     List<UserFederationProviderEntity> userFederationProviders = new ArrayList<UserFederationProviderEntity>();
@@ -141,6 +137,9 @@ public class RealmEntity {
     @OneToOne
     @JoinColumn(name="MASTER_ADMIN_APP")
     protected ApplicationEntity masterAdminApp;
+
+    @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "realm")
+    protected List<IdentityProviderEntity> identityProviders = new ArrayList<IdentityProviderEntity>();
 
     public String getId() {
         return id;
@@ -212,14 +211,6 @@ public class RealmEntity {
 
     public void setResetPasswordAllowed(boolean resetPasswordAllowed) {
         this.resetPasswordAllowed = resetPasswordAllowed;
-    }
-
-    public boolean isSocial() {
-        return social;
-    }
-
-    public void setSocial(boolean social) {
-        this.social = social;
     }
 
     public boolean isUpdateProfileOnInitialSocialLogin() {
@@ -451,6 +442,19 @@ public class RealmEntity {
 
     public void setCertificatePem(String certificatePem) {
         this.certificatePem = certificatePem;
+    }
+
+    public List<IdentityProviderEntity> getIdentityProviders() {
+        return this.identityProviders;
+    }
+
+    public void setIdentityProviders(List<IdentityProviderEntity> identityProviders) {
+        this.identityProviders = identityProviders;
+    }
+
+    public void addIdentityProvider(IdentityProviderEntity entity) {
+        entity.setRealm(this);
+        getIdentityProviders().add(entity);
     }
 }
 

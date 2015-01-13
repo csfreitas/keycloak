@@ -2,6 +2,7 @@ package org.keycloak.models.cache.entities;
 
 import org.keycloak.enums.SslRequired;
 import org.keycloak.models.ApplicationModel;
+import org.keycloak.models.IdentityProviderModel;
 import org.keycloak.models.OAuthClientModel;
 import org.keycloak.models.PasswordPolicy;
 import org.keycloak.models.RealmModel;
@@ -34,7 +35,7 @@ public class CachedRealm {
     private boolean verifyEmail;
     private boolean passwordCredentialGrantAllowed;
     private boolean resetPasswordAllowed;
-    private boolean social;
+    private boolean identityFederationEnabled;
     private boolean updateProfileOnInitialSocialLogin;
     //--- brute force settings
     private boolean bruteForceProtected;
@@ -67,6 +68,7 @@ public class CachedRealm {
 
     private List<RequiredCredentialModel> requiredCredentials = new ArrayList<RequiredCredentialModel>();
     private List<UserFederationProviderModel> userFederationProviders = new ArrayList<UserFederationProviderModel>();
+    private List<IdentityProviderModel> identityProviders = new ArrayList<IdentityProviderModel>();
 
     private Map<String, String> browserSecurityHeaders = new HashMap<String, String>();
     private Map<String, String> smtpConfig = new HashMap<String, String>();
@@ -93,7 +95,7 @@ public class CachedRealm {
         verifyEmail = model.isVerifyEmail();
         passwordCredentialGrantAllowed = model.isPasswordCredentialGrantAllowed();
         resetPasswordAllowed = model.isResetPasswordAllowed();
-        social = model.isSocial();
+        identityFederationEnabled = model.isIdentityFederationEnabled();
         updateProfileOnInitialSocialLogin = model.isUpdateProfileOnInitialSocialLogin();
         //--- brute force settings
         bruteForceProtected = model.isBruteForceProtected();
@@ -125,6 +127,7 @@ public class CachedRealm {
 
         requiredCredentials = model.getRequiredCredentials();
         userFederationProviders = model.getUserFederationProviders();
+        identityProviders = model.getIdentityProviders();
 
         smtpConfig.putAll(model.getSmtpConfig());
         socialConfig.putAll(model.getSocialConfig());
@@ -281,8 +284,8 @@ public class CachedRealm {
         return passwordPolicy;
     }
 
-    public boolean isSocial() {
-        return social;
+    public boolean isIdentityFederationEnabled() {
+        return identityFederationEnabled;
     }
 
     public boolean isUpdateProfileOnInitialSocialLogin() {
@@ -339,5 +342,9 @@ public class CachedRealm {
 
     public String getCertificatePem() {
         return certificatePem;
+    }
+
+    public List<IdentityProviderModel> getIdentityProviders() {
+        return identityProviders;
     }
 }

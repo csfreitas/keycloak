@@ -25,7 +25,6 @@ public class RealmRepresentation {
     protected Boolean rememberMe;
     protected Boolean verifyEmail;
     protected Boolean resetPasswordAllowed;
-    protected Boolean social;
     protected Boolean updateProfileOnInitialSocialLogin;
 
     protected Boolean userCacheEnabled;
@@ -65,6 +64,8 @@ public class RealmRepresentation {
     protected Boolean eventsEnabled;
     protected Long eventsExpiration;
     protected List<String> eventsListeners;
+    private List<IdentityProviderRepresentation> identityProviders;
+    private boolean identityFederationEnabled;
 
     public String getId() {
         return id;
@@ -294,14 +295,6 @@ public class RealmRepresentation {
         this.resetPasswordAllowed = resetPassword;
     }
 
-    public Boolean isSocial() {
-        return social;
-    }
-
-    public void setSocial(Boolean social) {
-        this.social = social;
-    }
-
     public Boolean isUpdateProfileOnInitialSocialLogin() {
         return updateProfileOnInitialSocialLogin;
     }
@@ -484,5 +477,21 @@ public class RealmRepresentation {
 
     public void setUserFederationProviders(List<UserFederationProviderRepresentation> userFederationProviders) {
         this.userFederationProviders = userFederationProviders;
+    }
+
+    public List<IdentityProviderRepresentation> getIdentityProviders() {
+        if (this.identityProviders == null) {
+            this.identityProviders = new ArrayList<IdentityProviderRepresentation>();
+        }
+
+        return identityProviders;
+    }
+
+    public void addIdentityProvider(IdentityProviderRepresentation identityProviderRepresentation) {
+        getIdentityProviders().add(identityProviderRepresentation);
+    }
+
+    public boolean isIdentityFederationEnabled() {
+        return !getIdentityProviders().isEmpty();
     }
 }
