@@ -686,7 +686,7 @@ public class RealmAdapter implements RealmModel {
 
     @Override
     public boolean removeClient(String id) {
-        ClientModel appToBeRemoved = this.getClientById(id);
+        final ClientModel appToBeRemoved = this.getClientById(id);
         if (appToBeRemoved == null) return false;
 
         // remove any composite role assignments for this app
@@ -698,6 +698,13 @@ public class RealmAdapter implements RealmModel {
         for (RoleModel role : appToBeRemoved.getRoles()) {
             appToBeRemoved.removeRole(role);
         }
+
+        session.getKeycloakSessionFactory().publish(new ClientRemovedEvent() {
+            @Override
+            public ClientModel getClient() {
+                return appToBeRemoved;
+            }
+        });
 
         return (allApps.remove(id) != null);
     }

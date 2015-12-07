@@ -682,12 +682,23 @@ public class RealmAdapter extends AbstractMongoAdapter<MongoRealmEntity> impleme
     @Override
     public boolean removeClient(String id) {
         if (id == null) return false;
-        ClientModel client = getClientById(id);
+        final ClientModel client = getClientById(id);
         if (client == null) return false;
 
         session.users().preRemove(this, client);
 
-        return getMongoStore().removeEntity(MongoClientEntity.class, id, invocationContext);
+        boolean removed = getMongoStore().removeEntity(MongoClientEntity.class, id, invocationContext);
+
+        if (removed) {
+            session.getKeycloakSessionFactory().publish(new ClientRemovedEvent() {
+                @Override
+                public ClientModel getClient() {
+                    return client;
+                }
+            });
+        }
+
+        return removed;
     }
 
     @Override

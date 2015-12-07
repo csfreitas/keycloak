@@ -91,6 +91,8 @@ public class JpaRealmProvider implements RealmProvider {
     @Override
     public boolean removeRealm(String id) {
         RealmEntity realm = em.find(RealmEntity.class, id);
+        final RealmModel realmToRemove = getRealm(id);
+
         if (realm == null) {
             return false;
         }
@@ -102,6 +104,14 @@ public class JpaRealmProvider implements RealmProvider {
         }
 
         em.remove(realm);
+
+        session.getKeycloakSessionFactory().publish(new RealmModel.RealmRemovedEvent() {
+            @Override
+            public RealmModel getRealm() {
+                return realmToRemove;
+            }
+        });
+
         return true;
     }
 

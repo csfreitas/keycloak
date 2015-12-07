@@ -672,7 +672,7 @@ public class RealmAdapter implements RealmModel {
     @Override
     public boolean removeClient(String id) {
         if (id == null) return false;
-        ClientModel client = getClientById(id);
+        final ClientModel client = getClientById(id);
         if (client == null) return false;
 
         session.users().preRemove(this, client);
@@ -702,6 +702,13 @@ public class RealmAdapter implements RealmModel {
         em.remove(clientEntity);
         em.createNamedQuery("deleteScopeMappingByClient").setParameter("client", clientEntity).executeUpdate();
         em.flush();
+
+        session.getKeycloakSessionFactory().publish(new ClientRemovedEvent() {
+            @Override
+            public ClientModel getClient() {
+                return client;
+            }
+        });
 
         return true;
     }

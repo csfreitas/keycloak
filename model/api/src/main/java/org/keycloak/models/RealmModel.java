@@ -20,8 +20,16 @@ public interface RealmModel extends RoleContainerModel {
         RealmModel getCreatedRealm();
     }
 
+    interface RealmRemovedEvent extends ProviderEvent {
+        RealmModel getRealm();
+    }
+
     interface ClientCreationEvent extends ProviderEvent {
         ClientModel getCreatedClient();
+    }
+
+    interface ClientRemovedEvent extends ProviderEvent {
+        ClientModel getClient();
     }
 
     interface UserFederationProviderCreationEvent extends ProviderEvent {
