@@ -13,9 +13,12 @@ import org.keycloak.protocol.LoginProtocol;
 import org.keycloak.protocol.LoginProtocolFactory;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 import org.keycloak.protocol.oidc.OIDCLoginProtocolService;
+import org.keycloak.provider.ProviderFactory;
 import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.managers.BruteForceProtector;
 import org.keycloak.services.managers.RealmManager;
+import org.keycloak.services.resources.spi.RealmResourceProvider;
+import org.keycloak.services.resources.spi.RealmResourceProviderFactory;
 import org.keycloak.wellknown.WellKnownProvider;
 
 import javax.ws.rs.GET;
@@ -28,6 +31,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
+import java.util.List;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -179,4 +183,24 @@ public class RealmsResource {
         return Response.ok(wellKnown.getConfig()).build();
     }
 
+    @Path("{realm}/{unknow_path}")
+    public Object resolveUnknowPath(@PathParam("realm") String realmName, @PathParam("unknow_path") String spi) {
+        List<ProviderFactory> factory = this.session.getKeycloakSessionFactory().getProviderFactories(RealmResourceProvider.class);
+
+        if (factory != null) {
+            RealmModel realm = init(realmName);
+
+            for (ProviderFactory providerFactory : factory) {
+                RealmResourceProviderFactory realmFactory = (RealmResourceProviderFactory) providerFactory;
+                RealmResourceProvider resourceProvider = realmFactory.create(realm, this.session);
+                Object resource = resourceProvider.getResource(spi);
+
+                if (resource != null) {
+                    return resource;
+                }
+            }
+        }
+
+        return null;
+    }
 }
