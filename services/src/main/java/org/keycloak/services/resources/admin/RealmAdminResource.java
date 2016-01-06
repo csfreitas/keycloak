@@ -34,13 +34,14 @@ import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.RealmEventsConfigRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.services.clientregistration.ClientRegistrationException;
+import org.keycloak.services.ErrorResponse;
 import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.managers.LDAPConnectionTestManager;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.managers.ResourceAdminManager;
 import org.keycloak.services.managers.UsersSyncManager;
-import org.keycloak.services.ErrorResponse;
+import org.keycloak.services.resources.admin.spi.RealmAdminResourceProvider;
+import org.keycloak.services.resources.admin.spi.RealmAdminResourceProviderFactory;
 import org.keycloak.timer.TimerProvider;
 
 import javax.ws.rs.Consumes;
@@ -57,7 +58,6 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -710,4 +710,14 @@ public class RealmAdminResource {
     }
 
 
+    @Path("{unknow_path}")
+    public Object resolveUnknowPath(@PathParam("unknow_path") String spi) {
+        RealmAdminResourceProviderFactory factory = (RealmAdminResourceProviderFactory) this.session.getKeycloakSessionFactory().getProviderFactory(RealmAdminResourceProvider.class);
+
+        if (factory != null) {
+            return factory.create(this.realm, this.session).getResource(spi);
+        }
+
+        return null;
+    }
 }
