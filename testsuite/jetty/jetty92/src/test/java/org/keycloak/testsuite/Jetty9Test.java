@@ -30,9 +30,12 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.testsuite.adapter.AdapterTestStrategy;
 import org.keycloak.testsuite.rule.AbstractKeycloakRule;
+import org.wildfly.security.WildFlyElytronProvider;
 
 import java.io.File;
 import java.net.URL;
+import java.security.Provider;
+import java.security.Security;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +43,9 @@ import java.util.List;
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
 public class Jetty9Test {
+
+    private static final Provider ELYTRON_PROVIDER = new WildFlyElytronProvider();
+
     @ClassRule
     public static AbstractKeycloakRule keycloakRule = new AbstractKeycloakRule() {
         @Override
@@ -53,7 +59,9 @@ public class Jetty9Test {
 
     @BeforeClass
     public static void initJetty() throws Exception {
+        Security.addProvider(ELYTRON_PROVIDER);
         server = new Server(8082);
+        server.dumpStdErr();
         List<Handler> list = new ArrayList<Handler>();
         System.setProperty("app.server.base.url", "http://localhost:8082");
         System.setProperty("my.host.name", "localhost");
@@ -84,7 +92,9 @@ public class Jetty9Test {
             server.stop();
             server.destroy();
             Thread.sleep(100);
-        } catch (Exception e) {}
+        } catch (Exception e) {} finally {
+            Security.removeProvider(ELYTRON_PROVIDER.getName());
+        }
     }
 
     @Rule

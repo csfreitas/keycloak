@@ -21,10 +21,15 @@ import org.jboss.as.controller.AbstractAddStepHandler;
 import org.jboss.as.controller.AttributeDefinition;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
+import org.jboss.as.controller.PathAddress;
+import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.dmr.ModelNode;
+import org.jboss.msc.service.ServiceController.Mode;
+import org.jboss.msc.service.ServiceName;
+import org.wildfly.security.auth.server.HttpAuthenticationFactory;
+import org.wildfly.security.http.HttpServerAuthenticationMechanismFactory;
 
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADD;
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.*;
 
 /**
  * Add a deployment to a realm.
@@ -33,9 +38,16 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP;
  */
 public final class SecureDeploymentAddHandler extends AbstractAddStepHandler {
 
+    static final String HTTP_SERVER_AUTHENTICATION_CAPABILITY = "org.wildfly.security.http-server-mechanism-factory";
+    static final RuntimeCapability<Void> HTTP_SERVER_AUTHENTICATION_RUNTIME_CAPABILITY = RuntimeCapability
+            .Builder.of(HTTP_SERVER_AUTHENTICATION_CAPABILITY, true, HttpServerAuthenticationMechanismFactory.class)
+            .build();
+
     public static SecureDeploymentAddHandler INSTANCE = new SecureDeploymentAddHandler();
 
-    private SecureDeploymentAddHandler() {}
+    private SecureDeploymentAddHandler() {
+        super(HTTP_SERVER_AUTHENTICATION_RUNTIME_CAPABILITY);
+    }
 
     @Override
     protected void populateModel(ModelNode operation, ModelNode model) throws OperationFailedException {
@@ -51,7 +63,15 @@ public final class SecureDeploymentAddHandler extends AbstractAddStepHandler {
 
     @Override
     protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
+        PathAddress pathAddress = PathAddress.pathAddress(operation.get(OP_ADDR));
+        String factoryName = pathAddress.getLastElement().getValue();
+        ServiceName serviceName = context.getCapabilityServiceName(HTTP_SERVER_AUTHENTICATION_CAPABILITY, factoryName, HttpServerAuthenticationMechanismFactory.class);
         KeycloakAdapterConfigService ckService = KeycloakAdapterConfigService.getInstance();
+
         ckService.addSecureDeployment(operation, context.resolveExpressions(model));
+
+        KeycloakHttpAuthenticationFactoryService service = new KeycloakHttpAuthenticationFactoryService(factoryName);
+
+        context.getServiceTarget().addService(serviceName, service).setInitialMode(Mode.ACTIVE).install();
     }
 }

@@ -205,9 +205,19 @@ public class OAuthRequestAuthenticator {
             public boolean challenge(HttpFacade exchange) {
                 tokenStore.saveRequest();
                 log.debug("Sending redirect to login page: " + redirect);
-                exchange.getResponse().setStatus(302);
+
+                String xmlHttpRequest = exchange.getRequest().getHeader("X-Requested-With");
+
+                if (xmlHttpRequest != null && xmlHttpRequest.equalsIgnoreCase("XMLHttpRequest")) {
+                    exchange.getResponse().setStatus(403);
+                    exchange.getResponse().setHeader("Authorization", "as_uri=\"" + redirect + "\"");
+                    exchange.getResponse().setHeader("Access-Control-Expose-Headers", "Authorization");
+                } else {
+                    exchange.getResponse().setHeader("Location", redirect);
+                }
+
                 exchange.getResponse().setCookie(deployment.getStateCookieName(), state, /* need to set path? */ null, null, -1, deployment.getSslRequired().isRequired(facade.getRequest().getRemoteAddr()), true);
-                exchange.getResponse().setHeader("Location", redirect);
+
                 return true;
             }
         };

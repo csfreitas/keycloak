@@ -101,5 +101,10 @@
             <artifactId>keycloak-wildfly-adapter</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-wildfly-elytron-adapter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>
