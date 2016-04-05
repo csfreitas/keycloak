@@ -127,7 +127,7 @@ public class JpaRealmProvider implements RealmProvider {
             return false;
         }
         em.refresh(realm);
-        RealmAdapter adapter = new RealmAdapter(session, em, realm);
+        final RealmAdapter adapter = new RealmAdapter(session, em, realm);
         session.users().preRemove(adapter);
         int num = em.createNamedQuery("deleteGroupRoleMappingsByRealm")
                 .setParameter("realm", realm).executeUpdate();
@@ -155,6 +155,14 @@ public class JpaRealmProvider implements RealmProvider {
 
         em.flush();
         em.clear();
+
+        session.getKeycloakSessionFactory().publish(new RealmModel.RealmRemovedEvent() {
+            @Override
+            public RealmModel getRealm() {
+                return adapter;
+            }
+        });
+
         return true;
     }
 
@@ -447,7 +455,7 @@ public class JpaRealmProvider implements RealmProvider {
 
     @Override
     public boolean removeClient(String id, RealmModel realm) {
-        ClientModel client = getClientById(id, realm);
+        final ClientModel client = getClientById(id, realm);
         if (client == null) return false;
 
         session.users().preRemove(realm, client);
@@ -456,17 +464,26 @@ public class JpaRealmProvider implements RealmProvider {
             client.removeRole(role);
         }
 
-
         ClientEntity clientEntity = ((ClientAdapter)client).getEntity();
+
         em.createNamedQuery("deleteScopeMappingByClient").setParameter("client", clientEntity).executeUpdate();
         em.flush();
         em.remove(clientEntity);  // i have no idea why, but this needs to come before deleteScopeMapping
+
         try {
             em.flush();
         } catch (RuntimeException e) {
             logger.errorv("Unable to delete client entity: {0} from realm {1}", client.getClientId(), realm.getName());
             throw e;
         }
+
+        session.getKeycloakSessionFactory().publish(new RealmModel.ClientRemovedEvent() {
+            @Override
+            public ClientModel getClient() {
+                return client;
+            }
+        });
+
         return true;
     }
 

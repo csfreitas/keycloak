@@ -145,7 +145,10 @@ public class DefaultKeycloakSessionFactory implements KeycloakSessionFactory {
 
     @Override
     public <T extends Provider> ProviderFactory<T> getProviderFactory(Class<T> clazz, String id) {
-         return factoriesMap.get(clazz).get(id);
+        if (id == null) {
+            return factoriesMap.get(clazz).get("default");
+        }
+        return factoriesMap.get(clazz).get(id);
     }
 
     @Override
