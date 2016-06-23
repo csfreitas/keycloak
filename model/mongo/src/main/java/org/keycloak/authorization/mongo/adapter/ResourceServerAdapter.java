@@ -4,6 +4,7 @@ import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.mongo.entities.ResourceServerEntity;
 import org.keycloak.connections.mongo.api.context.MongoStoreInvocationContext;
 import org.keycloak.models.mongo.keycloak.adapters.AbstractMongoAdapter;
+import org.keycloak.representations.idm.authorization.PolicyEnforcementMode;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>

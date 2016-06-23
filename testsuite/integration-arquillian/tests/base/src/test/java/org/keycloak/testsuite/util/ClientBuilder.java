@@ -98,6 +98,11 @@ public class ClientBuilder {
         return this;
     }
 
+    public ClientBuilder authorizationServices() {
+        rep.setAuthorizationServicesEnabled(true);
+        return this;
+    }
+
     public ClientRepresentation build() {
         return rep;
     }

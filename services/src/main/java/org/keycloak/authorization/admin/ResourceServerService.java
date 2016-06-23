@@ -21,11 +21,6 @@ import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authorization.AuthorizationProvider;
-import org.keycloak.authorization.admin.representation.PolicyRepresentation;
-import org.keycloak.authorization.admin.representation.ResourceOwnerRepresentation;
-import org.keycloak.authorization.admin.representation.ResourceRepresentation;
-import org.keycloak.authorization.admin.representation.ResourceServerRepresentation;
-import org.keycloak.authorization.admin.representation.ScopeRepresentation;
 import org.keycloak.authorization.admin.util.Models;
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.Resource;
@@ -42,6 +37,13 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserFederationManager;
 import org.keycloak.models.UserModel;
+import org.keycloak.representations.idm.authorization.DecisionStrategy;
+import org.keycloak.representations.idm.authorization.Logic;
+import org.keycloak.representations.idm.authorization.PolicyRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceOwnerRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
+import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.keycloak.services.resources.admin.RealmAuth;
 import org.keycloak.util.JsonSerialization;
 
@@ -434,8 +436,8 @@ public class ResourceServerService {
         defaultPermission.setName("Default Permission");
         defaultPermission.setType("resource");
         defaultPermission.setDescription("A permission that applies to the default resource type");
-        defaultPermission.setDecisionStrategy(Policy.DecisionStrategy.UNANIMOUS);
-        defaultPermission.setLogic(Policy.Logic.POSITIVE);
+        defaultPermission.setDecisionStrategy(DecisionStrategy.UNANIMOUS);
+        defaultPermission.setLogic(Logic.POSITIVE);
 
         HashMap<String, String> defaultPermissionConfig = new HashMap<>();
 
@@ -454,8 +456,8 @@ public class ResourceServerService {
         defaultPolicy.setName("Only From Realm Policy");
         defaultPolicy.setDescription("A policy that grants access only for users within this realm");
         defaultPolicy.setType("js");
-        defaultPolicy.setDecisionStrategy(Policy.DecisionStrategy.AFFIRMATIVE);
-        defaultPolicy.setLogic(Policy.Logic.POSITIVE);
+        defaultPolicy.setDecisionStrategy(DecisionStrategy.AFFIRMATIVE);
+        defaultPolicy.setLogic(Logic.POSITIVE);
 
         HashMap<String, String> defaultPolicyConfig = new HashMap<>();
 

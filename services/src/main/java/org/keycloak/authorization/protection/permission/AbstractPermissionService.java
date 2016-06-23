@@ -1,8 +1,6 @@
 package org.keycloak.authorization.protection.permission;
 
 import org.keycloak.authorization.AuthorizationProvider;
-import org.keycloak.authorization.admin.representation.ResourceRepresentation;
-import org.keycloak.authorization.admin.representation.ScopeRepresentation;
 import org.keycloak.authorization.common.KeycloakIdentity;
 import org.keycloak.authorization.model.Resource;
 import org.keycloak.authorization.model.ResourceServer;
@@ -11,6 +9,8 @@ import org.keycloak.authorization.protection.permission.representation.Permissio
 import org.keycloak.authorization.protection.permission.representation.PermissionResponse;
 import org.keycloak.authorization.store.StoreFactory;
 import org.keycloak.jose.jws.JWSBuilder;
+import org.keycloak.representations.idm.authorization.ResourceRepresentation;
+import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.keycloak.services.ErrorResponseException;
 
 import javax.ws.rs.core.Response;

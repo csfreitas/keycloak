@@ -8,6 +8,8 @@ import org.keycloak.authorization.model.Scope;
 import org.keycloak.authorization.mongo.entities.PolicyEntity;
 import org.keycloak.connections.mongo.api.context.MongoStoreInvocationContext;
 import org.keycloak.models.mongo.keycloak.adapters.AbstractMongoAdapter;
+import org.keycloak.representations.idm.authorization.DecisionStrategy;
+import org.keycloak.representations.idm.authorization.Logic;
 
 import java.util.Map;
 import java.util.Set;

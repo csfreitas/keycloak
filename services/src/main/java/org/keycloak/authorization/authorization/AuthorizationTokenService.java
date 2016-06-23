@@ -21,7 +21,6 @@ package org.keycloak.authorization.authorization;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authorization.AuthorizationProvider;
-import org.keycloak.authorization.admin.representation.ScopeRepresentation;
 import org.keycloak.authorization.authorization.representation.AuthorizationRequest;
 import org.keycloak.authorization.authorization.representation.AuthorizationResponse;
 import org.keycloak.authorization.common.KeycloakEvaluationContext;
@@ -40,6 +39,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.protocol.oidc.TokenManager;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.authorization.Permission;
+import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.resources.Cors;
 

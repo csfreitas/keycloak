@@ -1,9 +1,9 @@
 package org.keycloak.authorization.policy.provider.drools;
 
-import org.keycloak.authorization.admin.representation.PolicyRepresentation;
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.policy.provider.PolicyProviderAdminService;
+import org.keycloak.representations.idm.authorization.PolicyRepresentation;
 import org.kie.api.runtime.KieContainer;
 
 import javax.ws.rs.Consumes;

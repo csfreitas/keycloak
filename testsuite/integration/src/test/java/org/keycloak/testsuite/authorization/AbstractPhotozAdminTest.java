@@ -23,8 +23,6 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.junit.Before;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.Decision;
-import org.keycloak.authorization.admin.representation.ResourceRepresentation;
-import org.keycloak.authorization.admin.representation.ScopeRepresentation;
 import org.keycloak.authorization.common.KeycloakEvaluationContext;
 import org.keycloak.authorization.common.KeycloakIdentity;
 import org.keycloak.authorization.model.Policy;
@@ -42,6 +40,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.representations.AccessToken;
+import org.keycloak.representations.idm.authorization.ResourceRepresentation;
+import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.keycloak.util.JsonSerialization;
 
 import javax.ws.rs.client.Invocation;

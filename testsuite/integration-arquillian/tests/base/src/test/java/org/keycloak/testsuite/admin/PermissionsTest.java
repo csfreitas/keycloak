@@ -21,7 +21,9 @@ import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataOutput;
 import org.junit.Rule;
 import org.junit.Test;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.AuthorizationResource;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.ResourcesResource;
 import org.keycloak.models.AdminRoles;
 import org.keycloak.models.Constants;
 import org.keycloak.representations.KeyStoreConfig;
@@ -45,6 +47,9 @@ import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserFederationMapperRepresentation;
 import org.keycloak.representations.idm.UserFederationProviderRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceRepresentation;
+import org.keycloak.representations.idm.authorization.ResourceServerRepresentation;
+import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.keycloak.services.resources.admin.RealmAuth.Resource;
 import org.keycloak.testsuite.AbstractKeycloakTest;
 import org.keycloak.testsuite.Assert;
@@ -84,6 +89,7 @@ public class PermissionsTest extends AbstractKeycloakTest {
     public void addTestRealms(List<RealmRepresentation> testRealms) {
         RealmBuilder builder = RealmBuilder.create().name(REALM_NAME).testMail();
         builder.client(ClientBuilder.create().clientId("test-client").publicClient().directAccessGrants());
+        builder.client(ClientBuilder.create().clientId("test-resource-server").authorizationServices());
 
         builder.user(UserBuilder.create()
                 .username(AdminRoles.REALM_ADMIN)
@@ -1449,6 +1455,44 @@ public class PermissionsTest extends AbstractKeycloakTest {
         }, Resource.USER, true);
     }
 
+    @Test
+    public void clientAuthorization() {
+        // authorization settings
+        invoke(new Invocation() {
+            @Override
+            public void invoke(RealmResource realm) {
+                ClientRepresentation clientRepresentation = realm.clients().findByClientId("test-resource-server").get(0);
+                realm.clients().get(clientRepresentation.getId()).authorization().getSettings();
+            }
+        }, Resource.AUTHORIZATION, false);
+        invoke(new Invocation() {
+            @Override
+            public void invoke(RealmResource realm) {
+                ClientRepresentation clientRepresentation = realm.clients().findByClientId("test-resource-server").get(0);
+                AuthorizationResource authorization = realm.clients().get(clientRepresentation.getId()).authorization();
+                ResourceServerRepresentation settings = authorization.getSettings();
+                authorization.update(settings);
+            }
+        }, Resource.AUTHORIZATION, true);
+        invoke(new Invocation() {
+            @Override
+            public void invoke(RealmResource realm) {
+                ClientRepresentation clientRepresentation = realm.clients().findByClientId("test-resource-server").get(0);
+                AuthorizationResource authorization = realm.clients().get(clientRepresentation.getId()).authorization();
+                authorization.exportSettings();
+            }
+        }, Resource.AUTHORIZATION, true);
+        // resource management
+        invoke(new InvocationWithResponse() {
+            public void invoke(RealmResource realm, AtomicReference<Response> response) {
+                ClientRepresentation clientRepresentation = realm.clients().findByClientId("test-resource-server").get(0);
+                AuthorizationResource authorization = realm.clients().get(clientRepresentation.getId()).authorization();
+                ResourcesResource resources = authorization.resources();
+                response.set(resources.create(new ResourceRepresentation("test-resource", Collections.<ScopeRepresentation>emptySet())));
+            }
+        }, Resource.AUTHORIZATION, true);
+    }
+
     private void invoke(final Invocation invocation, Resource resource, boolean manage) {
         invoke(new InvocationWithResponse() {
             public void invoke(RealmResource realm, AtomicReference<Response> response) {
@@ -1543,6 +1587,8 @@ public class PermissionsTest extends AbstractKeycloakTest {
                 return AdminRoles.VIEW_EVENTS;
             case IDENTITY_PROVIDER:
                 return AdminRoles.VIEW_IDENTITY_PROVIDERS;
+            case AUTHORIZATION:
+                return AdminRoles.VIEW_AUTHORIZATION;
             default:
                 throw new RuntimeException("Unexpected resouce");
         }
@@ -1560,6 +1606,8 @@ public class PermissionsTest extends AbstractKeycloakTest {
                 return AdminRoles.MANAGE_EVENTS;
             case IDENTITY_PROVIDER:
                 return AdminRoles.MANAGE_IDENTITY_PROVIDERS;
+            case AUTHORIZATION:
+                return AdminRoles.MANAGE_AUTHORIZATION;
             default:
                 throw new RuntimeException("Unexpected resouce");
         }
@@ -1577,6 +1625,8 @@ public class PermissionsTest extends AbstractKeycloakTest {
                 return AdminRoles.VIEW_IDENTITY_PROVIDERS;
             case IDENTITY_PROVIDER:
                 return AdminRoles.VIEW_REALM;
+            case AUTHORIZATION:
+                return AdminRoles.VIEW_USERS;
             default:
                 throw new RuntimeException("Unexpected resouce");
         }
@@ -1594,6 +1644,8 @@ public class PermissionsTest extends AbstractKeycloakTest {
                 return AdminRoles.MANAGE_IDENTITY_PROVIDERS;
             case IDENTITY_PROVIDER:
                 return AdminRoles.MANAGE_REALM;
+            case AUTHORIZATION:
+                return AdminRoles.MANAGE_USERS;
             default:
                 throw new RuntimeException("Unexpected resouce");
         }
