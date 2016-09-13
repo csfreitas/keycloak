@@ -17,7 +17,7 @@
   ~ limitations under the License.
   -->
 
-<server xmlns="urn:jboss:domain:4.0">
+<server xmlns="urn:jboss:domain:5.0">
 
     <extensions>
         <?EXTENSIONS?>
@@ -35,6 +35,11 @@
                 </authorization>
             </security-realm>
             <security-realm name="ApplicationRealm">
+                <server-identities>
+                    <ssl>
+                        <keystore path="application.keystore" relative-to="jboss.server.config.dir" keystore-password="password" alias="server" key-password="password" generate-self-signed-certificate-host="localhost"/>
+                    </ssl>
+                </server-identities>
                 <authentication>
                     <local default-user="$local" allowed-users="*" skip-group-loading="true" />
                     <properties path="application-users.properties" relative-to="jboss.server.config.dir"/>
@@ -58,7 +63,8 @@
             </logger>
         </audit-log>
         <management-interfaces>
-            <http-interface security-realm="ManagementRealm" http-upgrade-enabled="true">
+            <http-interface security-realm="ManagementRealm">
+                <http-upgrade enabled="true"/>
                 <socket-binding http="management-http"/>
             </http-interface>
         </management-interfaces>

@@ -23,7 +23,7 @@
   via host-slave.xml
 -->
 
-<host name="master" xmlns="urn:jboss:domain:4.0">
+<host name="master" xmlns="urn:jboss:domain:5.0">
     <extensions>
         <?EXTENSIONS?>
     </extensions>
@@ -40,6 +40,11 @@
                 </authorization>
             </security-realm>
             <security-realm name="ApplicationRealm">
+                <server-identities>
+                    <ssl>
+                        <keystore path="application.keystore" relative-to="jboss.server.config.dir" keystore-password="password" alias="server" key-password="password" generate-self-signed-certificate-host="localhost"/>
+                    </ssl>
+                </server-identities>
                 <authentication>
                     <local default-user="$local" allowed-users="*" skip-group-loading="true"/>
                     <properties path="application-users.properties" relative-to="jboss.domain.config.dir"/>
@@ -72,7 +77,8 @@
             <native-interface security-realm="ManagementRealm">
                 <socket interface="management" port="${jboss.management.native.port:9999}"/>
             </native-interface>
-            <http-interface security-realm="ManagementRealm" http-upgrade-enabled="true">
+            <http-interface security-realm="ManagementRealm">
+                <http-upgrade enabled="true"/>
                 <socket interface="management" port="${jboss.management.http.port:9990}"/>
             </http-interface>
         </management-interfaces>

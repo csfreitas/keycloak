@@ -62,6 +62,9 @@ class KeycloakSubsystemParser implements XMLStreamConstants, XMLElementReader<Li
             else if (reader.getLocalName().equals(SecureDeploymentDefinition.TAG_NAME)) {
                 readDeployment(reader, list);
             }
+            else if (reader.getLocalName().equals(KeycloakHttpServerAuthenticationMechanismFactoryDefinition.TAG_NAME)) {
+                readMechanismFactory(reader, list);
+            }
         }
     }
 
@@ -107,6 +110,40 @@ class KeycloakSubsystemParser implements XMLStreamConstants, XMLElementReader<Li
             if (def == null) throw new XMLStreamException("Unknown secure-deployment tag " + tagName);
             def.parseAndSetParameter(reader.getElementText(), addSecureDeployment, reader);
         }
+
+        // Must add credentials after the deployment is added.
+        resourcesToAdd.add(addSecureDeployment);
+        resourcesToAdd.addAll(credentialsToAdd);
+    }
+
+    private void readMechanismFactory(XMLExtendedStreamReader reader, List<ModelNode> resourcesToAdd) throws XMLStreamException {
+        String name = readNameAttribute(reader);
+        ModelNode addSecureDeployment = new ModelNode();
+        addSecureDeployment.get(ModelDescriptionConstants.OP).set(ModelDescriptionConstants.ADD);
+        PathAddress addr = PathAddress.pathAddress(PathElement.pathElement(ModelDescriptionConstants.SUBSYSTEM, KeycloakExtension.SUBSYSTEM_NAME),
+                PathElement.pathElement(KeycloakHttpServerAuthenticationMechanismFactoryDefinition.TAG_NAME, name));
+        addSecureDeployment.get(ModelDescriptionConstants.OP_ADDR).set(addr.toModelNode());
+        List<ModelNode> credentialsToAdd = new ArrayList<ModelNode>();
+        while (reader.hasNext() && nextTag(reader) != END_ELEMENT) {
+            String tagName = reader.getLocalName();
+            if (tagName.equals(CredentialDefinition.TAG_NAME)) {
+                readCredential(reader, addr, credentialsToAdd);
+                continue;
+            }
+
+            SimpleAttributeDefinition def = KeycloakHttpServerAuthenticationMechanismFactoryDefinition.lookup(tagName);
+            if (def == null) throw new XMLStreamException("Unknown secure-deployment tag " + tagName);
+            def.parseAndSetParameter(reader.getElementText(), addSecureDeployment, reader);
+        }
+
+
+        /**
+         * TODO need to check realm-ref first.
+         if (!SharedAttributeDefinitons.validateTruststoreSetIfRequired(addSecureDeployment)) {
+         //TODO: externalize the message
+         throw new XMLStreamException("truststore and truststore-password must be set if ssl-required is not none  and disable-trust-maanger is false.");
+         }
+         */
 
         // Must add credentials after the deployment is added.
         resourcesToAdd.add(addSecureDeployment);

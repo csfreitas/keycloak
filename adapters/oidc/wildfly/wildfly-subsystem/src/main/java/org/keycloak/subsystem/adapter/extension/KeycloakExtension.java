@@ -47,6 +47,7 @@ public class KeycloakExtension implements Extension {
     private static final ResourceDefinition KEYCLOAK_SUBSYSTEM_RESOURCE = new KeycloakSubsystemDefinition();
     static final RealmDefinition REALM_DEFINITION = new RealmDefinition();
     static final SecureDeploymentDefinition SECURE_DEPLOYMENT_DEFINITION = new SecureDeploymentDefinition();
+    static final KeycloakHttpServerAuthenticationMechanismFactoryDefinition HTTP_SERVER_MECHANISM_FACTORY_DEFINITION = new KeycloakHttpServerAuthenticationMechanismFactoryDefinition();
     static final CredentialDefinition CREDENTIAL_DEFINITION = new CredentialDefinition();
 
     public static StandardResourceDescriptionResolver getResourceDescriptionResolver(final String... keyPrefix) {
@@ -77,6 +78,8 @@ public class KeycloakExtension implements Extension {
         registration.registerSubModel(REALM_DEFINITION);
         ManagementResourceRegistration secureDeploymentRegistration = registration.registerSubModel(SECURE_DEPLOYMENT_DEFINITION);
         secureDeploymentRegistration.registerSubModel(CREDENTIAL_DEFINITION);
+        ManagementResourceRegistration httpServerMechFactoryRegistration = registration.registerSubModel(HTTP_SERVER_MECHANISM_FACTORY_DEFINITION);
+        httpServerMechFactoryRegistration.registerSubModel(CREDENTIAL_DEFINITION);
 
         subsystem.registerXMLElementWriter(PARSER);
     }

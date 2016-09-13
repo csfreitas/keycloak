@@ -25,7 +25,9 @@ import org.jboss.as.web.common.WarMetaData;
 import org.jboss.logging.Logger;
 import org.jboss.metadata.javaee.spec.ParamValueMetaData;
 import org.jboss.metadata.web.jboss.JBossWebMetaData;
+import org.jboss.metadata.web.spec.ListenerMetaData;
 import org.jboss.metadata.web.spec.LoginConfigMetaData;
+import org.keycloak.adapters.elytron.KeycloakConfigurationServletListener;
 import org.keycloak.subsystem.adapter.logging.KeycloakLogger;
 
 import java.util.ArrayList;
@@ -69,8 +71,10 @@ public class KeycloakAdapterConfigDeploymentProcessor implements DeploymentUnitP
         KeycloakAdapterConfigService service = KeycloakAdapterConfigService.getInstance();
         if (service.isSecureDeployment(deploymentUnit) && service.isDeploymentConfigured(deploymentUnit)) {
             addKeycloakAuthData(phaseContext, service);
+        } else {
+            WarMetaData warMetaData = deploymentUnit.getAttachment(WarMetaData.ATTACHMENT_KEY);
+            addConfigurationListener(warMetaData);
         }
-
         // FYI, Undertow Extension will find deployments that have auth-method set to KEYCLOAK
 
         // todo notsure if we need this
@@ -98,6 +102,7 @@ public class KeycloakAdapterConfigDeploymentProcessor implements DeploymentUnitP
         }
         loginConfig.setAuthMethod("KEYCLOAK");
         loginConfig.setRealmName(service.getRealmName(deploymentUnit));
+        addConfigurationListener(warMetaData);
         KeycloakLogger.ROOT_LOGGER.deploymentSecured(deploymentUnit.getName());
     }
 
@@ -119,6 +124,31 @@ public class KeycloakAdapterConfigDeploymentProcessor implements DeploymentUnitP
         contextParams.add(param);
 
         webMetaData.setContextParams(contextParams);
+    }
+
+    private void addConfigurationListener(WarMetaData warMetaData) {
+        if (warMetaData == null) {
+            return;
+        }
+
+        JBossWebMetaData webMetaData = warMetaData.getMergedJBossWebMetaData();
+        if (webMetaData == null) {
+            webMetaData = new JBossWebMetaData();
+            warMetaData.setMergedJBossWebMetaData(webMetaData);
+        }
+
+        LoginConfigMetaData loginConfig = webMetaData.getLoginConfig();
+        if (loginConfig == null) {
+            return;
+        }
+        if (!loginConfig.getAuthMethod().equals("KEYCLOAK")) {
+            return;
+        }
+        ListenerMetaData listenerMetaData = new ListenerMetaData();
+
+        listenerMetaData.setListenerClass(KeycloakConfigurationServletListener.class.getName());
+
+        webMetaData.getListeners().add(listenerMetaData);
     }
 
     @Override

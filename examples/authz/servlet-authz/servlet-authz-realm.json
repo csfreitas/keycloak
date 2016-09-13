@@ -82,12 +82,12 @@
     {
       "clientId": "servlet-authz-app",
       "enabled": true,
-      "baseUrl": "/servlet-authz-app",
-      "adminUrl": "/servlet-authz-app",
+      "baseUrl": "http://localhost:8080/servlet-authz-app",
+      "adminUrl": "http://localhost:8080/servlet-authz-app",
       "bearerOnly": false,
       "authorizationServicesEnabled": true,
       "redirectUris": [
-        "/servlet-authz-app/*"
+        "http://localhost:8080/servlet-authz-app/*"
       ],
       "secret": "secret"
     }

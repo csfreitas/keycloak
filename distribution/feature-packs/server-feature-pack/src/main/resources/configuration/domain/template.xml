@@ -17,7 +17,7 @@
   ~ limitations under the License.
   -->
 
-<domain xmlns="urn:jboss:domain:4.0">
+<domain xmlns="urn:jboss:domain:5.0">
 
     <extensions>
         <?EXTENSIONS?>
@@ -60,7 +60,7 @@
          -->
         <profile name="load-balancer">
             <?SUBSYSTEMS socket-binding-group="load-balancer-sockets"?>
-            <subsystem xmlns="urn:jboss:domain:undertow:3.0">
+            <subsystem xmlns="urn:jboss:domain:undertow:4.0">
                 <buffer-cache name="default"/>
                 <server name="default-server">
                     <http-listener name="default" socket-binding="http" redirect-socket="https"/>
