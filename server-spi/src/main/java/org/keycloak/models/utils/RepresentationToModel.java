@@ -1808,7 +1808,7 @@ public class RepresentationToModel {
                         return roleConfig;
                     }).collect(Collectors.toList())));
                 } catch (Exception e) {
-                    throw new RuntimeException("Error while exporting policy [" + policyRepresentation.getName() + "].", e);
+                    throw new RuntimeException("Error while importing policy [" + policyRepresentation.getName() + "].", e);
                 }
             }
 
@@ -1819,7 +1819,7 @@ public class RepresentationToModel {
                     List<String> usersMap = JsonSerialization.readValue(users, List.class);
                     config.put("users", JsonSerialization.writeValueAsString(usersMap.stream().map(userName -> session.users().getUserByUsername(userName, realm).getId()).collect(Collectors.toList())));
                 } catch (Exception e) {
-                    throw new RuntimeException("Error while exporting policy [" + policyRepresentation.getName() + "].", e);
+                    throw new RuntimeException("Error while importing policy [" + policyRepresentation.getName() + "].", e);
                 }
             }
 
@@ -1838,7 +1838,7 @@ public class RepresentationToModel {
                         return newScope.getId();
                     }).collect(Collectors.toList())));
                 } catch (Exception e) {
-                    throw new RuntimeException("Error while exporting policy [" + policyRepresentation.getName() + "].", e);
+                    throw new RuntimeException("Error while importing policy [" + policyRepresentation.getName() + "].", e);
                 }
             }
 
@@ -1852,7 +1852,7 @@ public class RepresentationToModel {
                         return resourceStore.findByName(resourceName, resourceServer.getId()).getId();
                     }).collect(Collectors.toList())));
                 } catch (Exception e) {
-                    throw new RuntimeException("Error while exporting policy [" + policyRepresentation.getName() + "].", e);
+                    throw new RuntimeException("Error while importing policy [" + policyRepresentation.getName() + "].", e);
                 }
             }
 
@@ -1872,7 +1872,7 @@ public class RepresentationToModel {
                         return policy.getId();
                     }).collect(Collectors.toList())));
                 } catch (Exception e) {
-                    throw new RuntimeException("Error while exporting policy [" + policyRepresentation.getName() + "].", e);
+                    throw new RuntimeException("Error while importing policy [" + policyRepresentation.getName() + "].", e);
                 }
             }
 
