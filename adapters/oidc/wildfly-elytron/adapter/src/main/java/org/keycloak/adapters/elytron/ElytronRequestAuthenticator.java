@@ -58,12 +58,12 @@ public class ElytronRequestAuthenticator extends RequestAuthenticator {
 
     @Override
     protected void completeOAuthAuthentication(final KeycloakPrincipal<RefreshableKeycloakSecurityContext> principal) {
-        getElytronHttpFacade().authenticationComplete(new ElytronAccount(principal));
+        getElytronHttpFacade().authenticationComplete(new ElytronAccount(principal), true);
     }
 
     @Override
     protected void completeBearerAuthentication(KeycloakPrincipal<RefreshableKeycloakSecurityContext> principal, String method) {
-        getElytronHttpFacade().authenticationComplete(new ElytronAccount(principal));
+        getElytronHttpFacade().authenticationComplete(new ElytronAccount(principal), false);
     }
 
     @Override

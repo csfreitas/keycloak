@@ -68,7 +68,7 @@ class ElytronHttpFacade implements OIDCHttpFacade {
         this.callbackHandler = handler;
     }
 
-    void authenticationComplete(ElytronAccount account) {
+    void authenticationComplete(ElytronAccount account, boolean storeToken) {
         RefreshableKeycloakSecurityContext keycloakSecurityContext = account.getKeycloakSecurityContext();
         this.securityIdentity = SecurityIdentityUtil.authorize(this.callbackHandler, keycloakSecurityContext.getTokenString());
 
@@ -76,7 +76,9 @@ class ElytronHttpFacade implements OIDCHttpFacade {
             this.request.authenticationComplete(response1 -> responseConsumer.accept(response1));
             this.account = account;
             account.setCurrentRequestInfo(keycloakSecurityContext.getDeployment(), this.tokenStore);
-            this.tokenStore.saveAccountInfo(account);
+            if (storeToken) {
+                this.tokenStore.saveAccountInfo(account);
+            }
         }
     }
 

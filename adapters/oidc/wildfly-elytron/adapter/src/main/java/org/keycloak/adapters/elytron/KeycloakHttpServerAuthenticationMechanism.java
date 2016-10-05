@@ -50,10 +50,12 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
 
     private final Map<String, ?> properties;
     private final CallbackHandler callbackHandler;
+    private final AdapterDeploymentContext deploymentContext;
 
     public KeycloakHttpServerAuthenticationMechanism(Map<String, ?> properties, CallbackHandler callbackHandler, AdapterDeploymentContext deploymentContext) {
         this.properties = properties;
         this.callbackHandler = callbackHandler;
+        this.deploymentContext = deploymentContext;
     }
 
     @Override
@@ -108,7 +110,11 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
     }
 
     private AdapterDeploymentContext getDeploymentContext(HttpServerRequest request) {
-        return (AdapterDeploymentContext) request.getScope(Scope.APPLICATION).getAttachment(AdapterDeploymentContext.class.getName());
+        if (this.deploymentContext == null) {
+            return (AdapterDeploymentContext) request.getScope(Scope.APPLICATION).getAttachment(AdapterDeploymentContext.class.getName());
+        }
+
+        return this.deploymentContext;
     }
 
     private boolean preActions(ElytronHttpFacade httpFacade, AdapterDeploymentContext deploymentContext) {

@@ -20,6 +20,7 @@ package org.keycloak.adapters.elytron;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.keycloak.util.JsonSerialization;
 import org.wildfly.security.authz.Attributes;
 import org.wildfly.security.authz.Attributes.Entry;
 import org.wildfly.security.authz.AuthorizationIdentity;
@@ -29,6 +30,8 @@ import org.wildfly.security.authz.Roles;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -39,26 +42,45 @@ public class KeycloakRoleDecoder implements RoleDecoder {
     public Roles decodeRoles(AuthorizationIdentity identity) {
         Attributes attributes = identity.getAttributes();
         Entry realmAccess = attributes.get("realm_access");
+        Set<String> roleSet = new HashSet<>();
 
         if (realmAccess != null) {
             String realmAccessValue = realmAccess.get(0);
 
             try {
-                JsonNode jsonNode = new ObjectMapper().readTree(realmAccessValue);
-                JsonNode roles = jsonNode.get("roles");
-                Set<String> roleSet = new HashSet<>();
-                Iterator<JsonNode> iterator = roles.iterator();
+                Map<String, List<String>> jsonNode = JsonSerialization.readValue(realmAccessValue, Map.class);
+                List<String> roles = jsonNode.get("roles");
 
-                while (iterator.hasNext()) {
-                    roleSet.add(iterator.next().asText());
+                if (roles != null) {
+                    roleSet.addAll(roles);
                 }
-
-                return Roles.fromSet(roleSet);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
-        return Roles.NONE;
+        Entry resourceAccess = attributes.get("resource_access");
+
+        if (resourceAccess != null) {
+            Iterator<String> iterator = resourceAccess.iterator();
+
+            while (iterator.hasNext()) {
+                try {
+                    Map<String, Map<String, List<String>>> resources = JsonSerialization.readValue(iterator.next(), Map.class);
+
+                    for (String resourceKey : resources.keySet()) {
+                        List<String> roles = resources.get(resourceKey).get("roles");
+
+                        if (roles != null) {
+                            roleSet.addAll(roles);
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException("Error while reading resource access role.", e);
+                }
+            }
+        }
+
+        return Roles.fromSet(roleSet);
     }
 }

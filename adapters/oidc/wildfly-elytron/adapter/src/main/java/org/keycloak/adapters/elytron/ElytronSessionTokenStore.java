@@ -89,7 +89,7 @@ public class ElytronSessionTokenStore implements AdapterTokenStore {
 
         if (active) {
             log.debug("Cached account found");
-            httpFacade.authenticationComplete(account);
+            httpFacade.authenticationComplete(account, true);
             restoreRequest();
             return true;
         } else {

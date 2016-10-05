@@ -152,7 +152,7 @@ public final class KeycloakAdapterConfigService {
 
     private String valueFromOpAddress(String addrElement, ModelNode operation) {
         String deploymentName = getValueOfAddrElement(operation.get(ADDRESS), addrElement);
-        if (deploymentName == null) throw new RuntimeException("Can't find '" + addrElement + "' in address " + operation.toString());
+//        if (deploymentName == null) throw new RuntimeException("Can't find '" + addrElement + "' in address " + operation.toString());
         return deploymentName;
     }
 

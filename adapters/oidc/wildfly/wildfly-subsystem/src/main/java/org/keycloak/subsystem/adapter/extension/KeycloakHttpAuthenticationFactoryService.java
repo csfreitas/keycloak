@@ -28,6 +28,7 @@ import org.keycloak.adapters.KeycloakDeploymentBuilder;
 import org.keycloak.adapters.elytron.KeycloakHttpServerAuthenticationMechanismFactory;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.http.HttpServerAuthenticationMechanismFactory;
+import org.wildfly.security.http.util.SetMechanismInformationMechanismFactory;
 
 import java.io.ByteArrayInputStream;
 
@@ -48,7 +49,7 @@ public class KeycloakHttpAuthenticationFactoryService implements Service<HttpSer
     public void start(StartContext context) throws StartException {
         KeycloakAdapterConfigService adapterConfigService = KeycloakAdapterConfigService.getInstance();
         String config = adapterConfigService.getJSON(this.factoryName);
-        this.httpAuthenticationFactory = new KeycloakHttpServerAuthenticationMechanismFactory(createDeploymentContext(config.getBytes()));
+        this.httpAuthenticationFactory = new SetMechanismInformationMechanismFactory(new KeycloakHttpServerAuthenticationMechanismFactory(createDeploymentContext(config.getBytes())));
     }
 
     @Override

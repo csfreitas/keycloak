@@ -70,7 +70,7 @@ public class ElytronCookieTokenStore implements AdapterTokenStore {
             SecurityIdentity securityIdentity = SecurityIdentityUtil.authorize(this.callbackHandler, principal.getKeycloakSecurityContext().getTokenString());
 
             if (securityIdentity != null) {
-                getElytronHttpFacade().authenticationComplete(new ElytronAccount(principal));
+                getElytronHttpFacade().authenticationComplete(new ElytronAccount(principal), true);
                 return true;
             }
         }
