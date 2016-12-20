@@ -46,7 +46,7 @@
         <eap.version>7.0.0.Beta</eap.version>
         <jboss.as.version>7.2.0.Final</jboss.as.version>
         <wildfly.version>11.0.0.Alpha1-SNAPSHOT</wildfly.version>
-        <version.org.wildfly.security.wildfly-elytron>1.1.0.Beta10-SNAPSHOT</version.org.wildfly.security.wildfly-elytron>
+        <version.org.wildfly.security.wildfly-elytron>1.1.0.Beta19-SNAPSHOT</version.org.wildfly.security.wildfly-elytron>
 
         <aesh.version>0.66.12</aesh.version>
         <apache.httpcomponents.version>4.5</apache.httpcomponents.version>
