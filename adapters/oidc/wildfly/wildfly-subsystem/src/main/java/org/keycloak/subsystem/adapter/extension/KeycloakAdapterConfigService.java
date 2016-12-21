@@ -141,6 +141,10 @@ public final class KeycloakAdapterConfigService {
             deploymentName = valueFromOpAddress(KeycloakHttpServerAuthenticationMechanismFactoryDefinition.TAG_NAME, operation);
         }
 
+        if (deploymentName == null) {
+            deploymentName = valueFromOpAddress(SecureServerDefinition.TAG_NAME, operation);
+        }
+
         if (deploymentName == null) throw new RuntimeException("Can't find deployment name in address " + operation);
 
         return deploymentName;

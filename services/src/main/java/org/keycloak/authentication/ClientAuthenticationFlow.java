@@ -91,6 +91,9 @@ public class ClientAuthenticationFlow implements AuthenticationFlow {
                     return null;
                 }
             }
+            if (context.challenge != null) {
+                return context.challenge;
+            }
         }
 
         // Check if any alternative challenge was identified

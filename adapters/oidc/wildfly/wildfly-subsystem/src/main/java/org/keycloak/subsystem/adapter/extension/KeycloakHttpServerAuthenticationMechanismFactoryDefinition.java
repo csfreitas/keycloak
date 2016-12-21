@@ -18,10 +18,12 @@
 
 package org.keycloak.subsystem.adapter.extension;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
+import static org.keycloak.subsystem.adapter.extension.KeycloakHttpServerAuthenticationMechanismFactoryDefinition.KeycloakHttpServerAuthenticationMechanismFactoryAddHandler.HTTP_SERVER_AUTHENTICATION_CAPABILITY;
+
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
-import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleResourceDefinition;
 import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.dmr.ModelNode;
@@ -29,21 +31,22 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.wildfly.security.http.HttpServerAuthenticationMechanismFactory;
 
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.OP_ADDR;
-import static org.keycloak.subsystem.adapter.extension.KeycloakHttpServerAuthenticationMechanismFactoryDefinition.KeycloakHttpServerAuthenticationMechanismFactoryAddHandler.HTTP_SERVER_AUTHENTICATION_CAPABILITY;
-
 /**
  * A {@link SimpleResourceDefinition} that can be used to configure a {@link org.keycloak.adapters.elytron.KeycloakHttpServerAuthenticationMechanismFactory}
  * and expose it as a capability for other subsystems.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-final class KeycloakHttpServerAuthenticationMechanismFactoryDefinition extends AbstractAdapterConfigurationDefinition {
+class KeycloakHttpServerAuthenticationMechanismFactoryDefinition extends AbstractAdapterConfigurationDefinition {
 
     static final String TAG_NAME = "http-server-mechanism-factory";
 
     KeycloakHttpServerAuthenticationMechanismFactoryDefinition() {
-        super(TAG_NAME, ALL_ATTRIBUTES, new KeycloakHttpServerAuthenticationMechanismFactoryAddHandler(), new KeycloakHttpServerAuthenticationMechanismFactoryRemoveHandler(), new KeycloakHttpServerAuthenticationMechanismFactoryWriteHandler());
+        this(TAG_NAME);
+    }
+
+    KeycloakHttpServerAuthenticationMechanismFactoryDefinition(String tagName) {
+        super(tagName, ALL_ATTRIBUTES, new KeycloakHttpServerAuthenticationMechanismFactoryAddHandler(), new KeycloakHttpServerAuthenticationMechanismFactoryRemoveHandler(), new KeycloakHttpServerAuthenticationMechanismFactoryWriteHandler());
     }
 
     /**
@@ -74,7 +77,6 @@ final class KeycloakHttpServerAuthenticationMechanismFactoryDefinition extends A
             String factoryName = pathAddress.getLastElement().getValue();
             ServiceName serviceName = context.getCapabilityServiceName(HTTP_SERVER_AUTHENTICATION_CAPABILITY, factoryName, HttpServerAuthenticationMechanismFactory.class);
             KeycloakHttpAuthenticationFactoryService service = new KeycloakHttpAuthenticationFactoryService(factoryName);
-
             context.getServiceTarget().addService(serviceName, service).setInitialMode(ServiceController.Mode.ACTIVE).install();
         }
     }
