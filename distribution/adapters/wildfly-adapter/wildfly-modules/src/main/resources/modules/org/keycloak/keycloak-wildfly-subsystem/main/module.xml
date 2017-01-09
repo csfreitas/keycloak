@@ -42,5 +42,6 @@
         <module name="org.wildfly.security.elytron"/>
         <module name="org.keycloak.keycloak-wildfly-elytron-oidc-adapter" />
         <module name="org.keycloak.keycloak-adapter-core"/>
+        <module name="io.undertow.core"/>
     </dependencies>
 </module>

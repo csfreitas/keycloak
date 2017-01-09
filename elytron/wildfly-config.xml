@@ -36,7 +36,7 @@
             <configuration name="default">
                 <credentials>
                     <oauth2-bearer-token token-endpoint-uri="http://localhost:8180/auth/realms/wildfly/protocol/openid-connect/token">
-                        <resource-owner-credentials name="admin" password="admin2"/>
+                        <resource-owner-credentials name="admin" password="admin"/>
                     </oauth2-bearer-token>
                 </credentials>
                 <allow-sasl-mechanisms names="JBOSS-LOCAL-USER EXTERNAL DIGEST-MD5 PLAIN ANONYMOUS OAUTHBEARER" />
@@ -46,9 +46,9 @@
                  <use-service-loader-providers />
              </configuration>
              <configuration name="keycloak-server">
-                <set-user-name name="wildfly-console"/>
+                <set-user-name name="wildfly-cli"/>
                 <credentials>
-                    <clear-password password="c6cbc0b5-a7b4-46c5-ba5e-0a451a192718"/>
+                    <clear-password password="c9cd57c3-fe0a-4e61-9956-9e2ff336ff29"/>
                 </credentials>
             </configuration>
         </authentication-configurations>

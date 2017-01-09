@@ -391,7 +391,7 @@
                 <service-loader-http-server-mechanism-factory name="keycloak" module="org.keycloak.keycloak-wildfly-elytron-oidc-adapter"/>
             </http>
             <sasl>
-                <sasl-authentication-factory name="management-sasl-authentication" sasl-server-factory="configured" security-domain="ManagementDomain">
+                <sasl-authentication-factory name="management-sasl-authentication" sasl-server-factory="configured" security-domain="KeycloakSecurityDomain">
                     <mechanism-configuration>
                         <mechanism mechanism-name="JBOSS-LOCAL-USER" realm-mapper="local"/>
                         <mechanism mechanism-name="DIGEST-MD5">
