@@ -17,17 +17,15 @@
 package org.keycloak.testsuite.adapter;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.keycloak.common.util.Encode;
-import org.keycloak.common.util.KeycloakUriBuilder;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.testsuite.rule.AbstractKeycloakRule;
 
 import java.net.URL;
-import java.security.PublicKey;
 
 /**
  * Tests Undertow Adapter
@@ -117,6 +115,7 @@ public class AdapterTest {
     }
 
     @Test
+    @Ignore
     public void testSavedPostRequest() throws Exception {
         testStrategy.testSavedPostRequest();
     }

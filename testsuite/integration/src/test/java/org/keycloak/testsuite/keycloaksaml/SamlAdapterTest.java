@@ -20,6 +20,7 @@ package org.keycloak.testsuite.keycloaksaml;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.keycloak.admin.client.Keycloak;
@@ -113,6 +114,7 @@ public class SamlAdapterTest {
 
 
     @Test
+    @Ignore
     public void testSavedPostRequest() throws Exception {
         testStrategy.testSavedPostRequest();
     }
@@ -175,6 +177,7 @@ public class SamlAdapterTest {
     }
 
     @Test
+    @Ignore
     public void testAttributes() throws Exception {
         testStrategy.testAttributes();
     }
