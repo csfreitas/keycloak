@@ -110,7 +110,7 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
         }
 
         if (outcome == AuthOutcome.LOGGED_OUT) {
-            logout(request);
+//            logout(request);
             if (deployment.getLogoutPage() != null) {
                 redirectLogout(deployment, httpFacade);
             }
@@ -133,19 +133,19 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
         httpFacade.noAuthenticationInProgress();
     }
 
-    @Override
-    public void logout(HttpServerRequest request) {
-        SamlDeploymentContext deploymentContext = getDeploymentContext(request);
-        ElytronHttpFacade httpFacade = new ElytronHttpFacade(request, deploymentContext, callbackHandler);
-        SamlDeployment deployment = httpFacade.getDeployment();
-
-        if (!deployment.isConfigured()) {
-            httpFacade.noAuthenticationInProgress();
-            return;
-        }
-
-        httpFacade.noAuthenticationInProgress();
-    }
+//    @Override
+//    public void logout(HttpServerRequest request) {
+//        SamlDeploymentContext deploymentContext = getDeploymentContext(request);
+//        ElytronHttpFacade httpFacade = new ElytronHttpFacade(request, deploymentContext, callbackHandler);
+//        SamlDeployment deployment = httpFacade.getDeployment();
+//
+//        if (!deployment.isConfigured()) {
+//            httpFacade.noAuthenticationInProgress();
+//            return;
+//        }
+//
+//        httpFacade.noAuthenticationInProgress();
+//    }
 
     private SamlDeploymentContext getDeploymentContext(HttpServerRequest request) {
         if (this.deploymentContext == null) {

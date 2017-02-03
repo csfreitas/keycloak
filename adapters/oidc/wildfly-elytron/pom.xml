@@ -38,6 +38,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.wildfly.common</groupId>
+            <artifactId>wildfly-common</artifactId>
+            <version>1.2.0.Beta1</version>
+        </dependency>
+        <dependency>
             <groupId>org.wildfly.security</groupId>
             <artifactId>wildfly-elytron</artifactId>
             <scope>provided</scope>

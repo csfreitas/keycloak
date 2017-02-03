@@ -115,7 +115,6 @@ public class AdapterTest {
     }
 
     @Test
-    @Ignore
     public void testSavedPostRequest() throws Exception {
         testStrategy.testSavedPostRequest();
     }

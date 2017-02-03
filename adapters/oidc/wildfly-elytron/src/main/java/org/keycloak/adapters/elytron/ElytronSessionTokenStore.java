@@ -18,6 +18,8 @@
 
 package org.keycloak.adapters.elytron;
 
+import javax.security.auth.callback.CallbackHandler;
+
 import org.jboss.logging.Logger;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.KeycloakSecurityContext;
@@ -29,8 +31,6 @@ import org.keycloak.adapters.RefreshableKeycloakSecurityContext;
 import org.keycloak.adapters.RequestAuthenticator;
 import org.wildfly.security.http.HttpScope;
 import org.wildfly.security.http.Scope;
-
-import javax.security.auth.callback.CallbackHandler;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -134,15 +134,7 @@ public class ElytronSessionTokenStore implements AdapterTokenStore {
         session.setAttachment(KeycloakSecurityContext.class.getName(), account.getKeycloakSecurityContext());
 
         session.registerForNotification(httpServerScopes -> {
-            HttpScope scope = httpServerScopes.getScope(Scope.SESSION);
-            KeycloakSecurityContext ksc = (KeycloakSecurityContext) scope.getAttachment(KeycloakSecurityContext.class.getName());
-
-            if (ksc != null) {
-                if (ksc != null && ksc instanceof RefreshableKeycloakSecurityContext) {
-                    ((RefreshableKeycloakSecurityContext) ksc).logout(this.httpFacade.getDeployment());
-                }
-                logout();
-            }
+            logout();
         });
 
         HttpScope scope = this.httpFacade.getScope(Scope.EXCHANGE);

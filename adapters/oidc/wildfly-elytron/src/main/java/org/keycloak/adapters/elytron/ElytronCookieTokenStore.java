@@ -103,15 +103,13 @@ public class ElytronCookieTokenStore implements AdapterTokenStore {
         }
     }
 
-    private ElytronHttpFacade getElytronHttpFacade() {
-        return (ElytronHttpFacade) this.httpFacade;
-    }
-
     @Override
     public void saveAccountInfo(OidcKeycloakAccount account) {
         RefreshableKeycloakSecurityContext secContext = (RefreshableKeycloakSecurityContext)account.getKeycloakSecurityContext();
         CookieTokenStore.setTokenCookie(this.httpFacade.getDeployment(), this.httpFacade, secContext);
         HttpScope exchange = this.httpFacade.getScope(Scope.EXCHANGE);
+
+        exchange.registerForNotification(httpServerScopes -> logout());
 
         exchange.setAttachment(ElytronAccount.class.getName(), account);
         exchange.setAttachment(KeycloakSecurityContext.class.getName(), account.getKeycloakSecurityContext());

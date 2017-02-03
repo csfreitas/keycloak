@@ -114,7 +114,6 @@ public class SamlAdapterTest {
 
 
     @Test
-    @Ignore
     public void testSavedPostRequest() throws Exception {
         testStrategy.testSavedPostRequest();
     }

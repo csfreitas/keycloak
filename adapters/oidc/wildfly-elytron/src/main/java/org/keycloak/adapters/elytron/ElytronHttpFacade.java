@@ -101,10 +101,14 @@ class ElytronHttpFacade implements OIDCHttpFacade {
     }
 
     void authenticationInProgress(AuthChallenge challenge) {
+        authenticationInProgress(challenge, false);
+    }
+
+    void authenticationInProgress(AuthChallenge challenge, boolean authenticationRequired) {
         if (challenge != null) {
             challenge.challenge(this);
         }
-        this.request.authenticationInProgress(response -> responseConsumer.accept(response));
+        this.request.authenticationInProgress(response -> responseConsumer.accept(response), authenticationRequired);
     }
 
     HttpScope getScope(Scope scope) {

@@ -222,11 +222,19 @@ public abstract class AbstractKeycloakRule extends ExternalResource {
     }
 
     private void configureElytronSecurity(DeploymentInfo deploymentInfo) {
-        ScopeSessionListener scopeSessionListener = ScopeSessionListener.builder()
+        Function<HttpServerExchange, SessionConfig> sessionConfigProvider = exchange -> {
+            ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+            return servletRequestContext.getCurrentServletContext().getSessionConfig();
+        };
+        Function<HttpServerExchange, SessionManager> sessionManagerProvider = exchange -> {
+            ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+            return servletRequestContext.getDeployment().getSessionManager();
+        };
+        ScopeSessionListener elytronNotificationListener = ScopeSessionListener.builder()
                 .addScopeResolver(Scope.APPLICATION, AbstractKeycloakRule::applicationScope)
                 .build();
 
-        deploymentInfo.addSessionListener(scopeSessionListener);
+        deploymentInfo.addSessionListener(elytronNotificationListener);
 
         SecurityDomain.Builder builder = SecurityDomain.builder().setDefaultRealmName("default");
 
@@ -247,92 +255,71 @@ public abstract class AbstractKeycloakRule extends ExternalResource {
 
         Map<Scope, Function<HttpServerExchange, HttpScope>> scopeResolvers = new HashMap<>();
 
-        scopeResolvers.put(Scope.APPLICATION, new Function<HttpServerExchange, HttpScope>() {
-            @Override
-            public HttpScope apply(HttpServerExchange httpServerExchange) {
-                return applicationScope(httpServerExchange);
-            }
-        });
-        scopeResolvers.put(Scope.EXCHANGE, new Function<HttpServerExchange, HttpScope>() {
-            @Override
-            public HttpScope apply(HttpServerExchange httpServerExchange) {
-                return requestScope(httpServerExchange);
-            }
-        });
+        scopeResolvers.put(Scope.APPLICATION, AbstractKeycloakRule::applicationScope);
+        scopeResolvers.put(Scope.EXCHANGE, AbstractKeycloakRule::requestScope);
 
-        deploymentInfo.setInitialSecurityWrapper(new HandlerWrapper() {
-            @Override
-            public HttpHandler wrap(HttpHandler handler) {
-                return ElytronContextAssociationHandler.builder()
-                        .setNext(handler)
-                        .setSecurityDomain(httpAuthenticationFactory.getSecurityDomain())
-                        .setLogoutHandler(new Consumer<ElytronHttpExchange>() {
-                            @Override
-                            public void accept(ElytronHttpExchange elytronHttpExchange) {
-                                HttpScope session = elytronHttpExchange.getScope(Scope.SESSION);
+        deploymentInfo.setInitialSecurityWrapper(handler -> ElytronContextAssociationHandler.builder()
+                .setNext(handler)
+                .setSecurityDomain(httpAuthenticationFactory.getSecurityDomain())
+                .setHttpExchangeSupplier(httpServerExchange -> new ElytronHttpExchange(httpServerExchange, scopeResolvers, elytronNotificationListener) {
+                    @Override
+                    protected SessionManager getSessionManager() {
+                        ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+                        return servletRequestContext.getDeployment().getSessionManager();
+                    }
+
+                    @Override
+                    protected SessionConfig getSessionConfig() {
+                        ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+                        return servletRequestContext.getCurrentServletContext().getSessionConfig();
+                    }
+
+                    @Override
+                    public boolean suspendRequest() {
+                        HttpScope scope = getScope(Scope.SESSION);
+                        SavedRequest attachment = (SavedRequest) scope.getAttachment(SavedRequest.class.getName());
+
+                        if (attachment == null) {
+                            SavedRequest.trySaveRequest(httpServerExchange);
+                        }
+
+                        return scope.getAttachment(SavedRequest.class.getName()) != null;
+                    }
+
+                    @Override
+                    public boolean resumeRequest() {
+                        HttpScope scope = getScope(Scope.SESSION);
+                        Object attachment = scope.getAttachment(SavedRequest.class.getName());
+
+                        final ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+                        HttpSession session = servletRequestContext.getCurrentServletContext().getSession(httpServerExchange, false);
+                        if (session != null) {
+                            SavedRequest.tryRestoreRequest(httpServerExchange, session);
+                        }
+
+                        return attachment != null && scope.getAttachment(SavedRequest.class.getName()) == null;
+                    }
+
+                })
+                .setMechanismSupplier(() -> {
+                    LoginConfig loginConfig = deploymentInfo.getLoginConfig();
+                    if (loginConfig == null) {
+                        return Collections.emptyList();
+                    }
+                    List<AuthMethodConfig> authMethods = loginConfig.getAuthMethods();
+
+                    return httpAuthenticationFactory.getMechanismNames().stream().filter(s -> authMethods.stream().anyMatch(authMethodConfig -> authMethodConfig.getName().equals(s))).map(new Function<String, HttpServerAuthenticationMechanism>() {
+                        @Override
+                        public HttpServerAuthenticationMechanism apply(String s) {
+                            try {
+                                return httpAuthenticationFactory.createMechanism(s);
+                            } catch (HttpAuthenticationException e) {
+                                throw new RuntimeException(e);
                             }
-                        })
-                        .setHttpExchangeSupplier(httpServerExchange -> new ElytronHttpExchange(httpServerExchange, scopeResolvers, scopeSessionListener) {
-                            @Override
-                            protected SessionManager getSessionManager() {
-                                ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-                                return servletRequestContext.getDeployment().getSessionManager();
-                            }
-
-                            @Override
-                            protected SessionConfig getSessionConfig() {
-                                ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-                                return servletRequestContext.getCurrentServletContext().getSessionConfig();
-                            }
-
-                            @Override
-                            public boolean suspendRequest() {
-                                HttpScope scope = getScope(Scope.SESSION);
-                                SavedRequest attachment = (SavedRequest) scope.getAttachment(SavedRequest.class.getName());
-
-                                if (attachment == null) {
-                                    SavedRequest.trySaveRequest(httpServerExchange);
-                                }
-
-                                return scope.getAttachment(SavedRequest.class.getName()) != null;
-                            }
-
-                            @Override
-                            public boolean resumeRequest() {
-                                HttpScope scope = getScope(Scope.SESSION);
-                                Object attachment = scope.getAttachment(SavedRequest.class.getName());
-
-                                final ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-                                HttpSession session = servletRequestContext.getCurrentServletContext().getSession(httpServerExchange, false);
-                                if (session != null) {
-                                    SavedRequest.tryRestoreRequest(httpServerExchange, session);
-                                }
-
-                                return attachment != null && scope.getAttachment(SavedRequest.class.getName()) == null;
-                            }
-
-                        })
-                        .setMechanismSupplier(() -> {
-                            LoginConfig loginConfig = deploymentInfo.getLoginConfig();
-                            if (loginConfig == null) {
-                                return Collections.emptyList();
-                            }
-                            List<AuthMethodConfig> authMethods = loginConfig.getAuthMethods();
-
-                            return httpAuthenticationFactory.getMechanismNames().stream().filter(s -> authMethods.stream().anyMatch(authMethodConfig -> authMethodConfig.getName().equals(s))).map(new Function<String, HttpServerAuthenticationMechanism>() {
-                                @Override
-                                public HttpServerAuthenticationMechanism apply(String s) {
-                                    try {
-                                        return httpAuthenticationFactory.createMechanism(s);
-                                    } catch (HttpAuthenticationException e) {
-                                        throw new RuntimeException(e);
-                                    }
-                                }
-                            }).collect(Collectors.toList());
-                        })
-                        .build();
-            }
-        });
+                        }
+                    }).collect(Collectors.toList());
+                })
+                .build());
 
         deploymentInfo.addListener(new ListenerInfo(KeycloakConfigurationServletListener.class));
     }

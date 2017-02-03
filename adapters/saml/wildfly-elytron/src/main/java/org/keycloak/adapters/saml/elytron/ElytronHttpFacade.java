@@ -99,7 +99,7 @@ class ElytronHttpFacade implements HttpFacade {
         if (challenge != null) {
             challenge.challenge(this);
         }
-        this.request.authenticationInProgress(response -> responseConsumer.accept(response));
+        this.request.authenticationInProgress(response -> responseConsumer.accept(response), false);
     }
 
     HttpScope getScope(Scope scope) {
