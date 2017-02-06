@@ -88,7 +88,7 @@ public class ElytronAccount implements OidcKeycloakAccount {
         }
 
         if (securityContext.refreshExpiredToken(false)) {
-            SecurityIdentity securityIdentity = SecurityIdentityUtil.authorize(callbackHandler, securityContext.getTokenString());
+            SecurityIdentity securityIdentity = SecurityIdentityUtil.authorize(callbackHandler, principal);
 
             if (securityIdentity != null) {
                 log.debug("refresh succeeded");

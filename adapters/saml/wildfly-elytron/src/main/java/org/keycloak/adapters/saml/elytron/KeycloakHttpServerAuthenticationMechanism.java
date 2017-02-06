@@ -105,7 +105,7 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
         }
 
         if (outcome == AuthOutcome.NOT_AUTHENTICATED) {
-            httpFacade.noAuthenticationInProgress();
+            httpFacade.noAuthenticationInProgress(null);
             return;
         }
 
@@ -114,14 +114,14 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
             if (deployment.getLogoutPage() != null) {
                 redirectLogout(deployment, httpFacade);
             }
-            httpFacade.authenticationInProgress(null);
+            httpFacade.authenticationInProgress();
             return;
         }
 
         AuthChallenge challenge = authenticator.getChallenge();
 
         if (challenge != null) {
-            httpFacade.authenticationInProgress(challenge);
+            httpFacade.noAuthenticationInProgress(challenge);
             return;
         }
 
@@ -130,7 +130,7 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
             return;
         }
 
-        httpFacade.noAuthenticationInProgress();
+        httpFacade.authenticationInProgress();
     }
 
 //    @Override

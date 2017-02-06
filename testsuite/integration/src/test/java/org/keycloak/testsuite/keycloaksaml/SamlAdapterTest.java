@@ -176,7 +176,6 @@ public class SamlAdapterTest {
     }
 
     @Test
-    @Ignore
     public void testAttributes() throws Exception {
         testStrategy.testAttributes();
     }

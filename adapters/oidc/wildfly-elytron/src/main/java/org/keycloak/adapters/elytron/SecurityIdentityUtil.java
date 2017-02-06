@@ -18,28 +18,36 @@
 
 package org.keycloak.adapters.elytron;
 
-import org.wildfly.security.auth.callback.AuthenticationCompleteCallback;
-import org.wildfly.security.auth.callback.EvidenceVerifyCallback;
-import org.wildfly.security.auth.callback.SecurityIdentityCallback;
-import org.wildfly.security.auth.server.SecurityIdentity;
-import org.wildfly.security.credential.BearerTokenCredential;
-import org.wildfly.security.evidence.BearerTokenEvidence;
-import org.wildfly.security.http.HttpAuthenticationException;
+import java.io.IOException;
+import java.security.Principal;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.sasl.AuthorizeCallback;
-import java.io.IOException;
+
+import org.keycloak.KeycloakPrincipal;
+import org.keycloak.adapters.RefreshableKeycloakSecurityContext;
+import org.wildfly.security.auth.callback.AuthenticationCompleteCallback;
+import org.wildfly.security.auth.callback.EvidenceVerifyCallback;
+import org.wildfly.security.auth.callback.SecurityIdentityCallback;
+import org.wildfly.security.auth.server.SecurityIdentity;
+import org.wildfly.security.evidence.Evidence;
+import org.wildfly.security.http.HttpAuthenticationException;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 final class SecurityIdentityUtil {
 
-    static final SecurityIdentity authorize(CallbackHandler callbackHandler, String accessToken) {
+    static final SecurityIdentity authorize(CallbackHandler callbackHandler, Principal principal) {
         try {
-            EvidenceVerifyCallback evidenceVerifyCallback = new EvidenceVerifyCallback(new BearerTokenEvidence(accessToken));
+            EvidenceVerifyCallback evidenceVerifyCallback = new EvidenceVerifyCallback(new Evidence() {
+                @Override
+                public Principal getPrincipal() {
+                    return principal;
+                }
+            });
 
             callbackHandler.handle(new Callback[]{evidenceVerifyCallback});
 
@@ -60,7 +68,7 @@ final class SecurityIdentityUtil {
 
                 SecurityIdentity securityIdentity = securityIdentityCallback.getSecurityIdentity();
 
-                return securityIdentity.withPublicCredential(new BearerTokenCredential(accessToken));
+                return securityIdentity;
             }
         } catch (UnsupportedCallbackException e) {
             throw new RuntimeException(e);

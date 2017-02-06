@@ -17,11 +17,25 @@
 
 package org.keycloak.testsuite.keycloaksaml;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import javax.servlet.Servlet;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpSession;
+
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
-import io.undertow.server.HandlerWrapper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.resource.Resource;
 import io.undertow.server.handlers.resource.ResourceChangeListener;
@@ -40,48 +54,18 @@ import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.WebResourceCollection;
 import io.undertow.servlet.handlers.ServletRequestContext;
 import io.undertow.servlet.util.SavedRequest;
-import org.keycloak.adapters.elytron.KeycloakRoleDecoder;
-import org.keycloak.adapters.saml.SamlAuthenticationError;
 import org.keycloak.adapters.saml.elytron.KeycloakConfigurationServletListener;
-import org.keycloak.adapters.spi.AuthChallenge;
-import org.keycloak.adapters.spi.AuthOutcome;
-import org.keycloak.adapters.spi.HttpFacade;
-import org.keycloak.common.VerificationException;
-import org.keycloak.common.util.MultivaluedHashMap;
-import org.keycloak.dom.saml.v2.assertion.AssertionType;
-import org.keycloak.dom.saml.v2.assertion.AttributeStatementType;
-import org.keycloak.dom.saml.v2.assertion.AttributeType;
-import org.keycloak.dom.saml.v2.assertion.NameIDType;
-import org.keycloak.dom.saml.v2.assertion.StatementAbstractType;
-import org.keycloak.dom.saml.v2.assertion.SubjectType;
-import org.keycloak.saml.common.constants.GeneralConstants;
-import org.keycloak.saml.common.exceptions.ConfigurationException;
-import org.keycloak.saml.common.exceptions.ParsingException;
-import org.keycloak.saml.common.exceptions.ProcessingException;
-import org.keycloak.saml.processing.core.parsers.saml.SAMLAssertionParser;
-import org.keycloak.saml.processing.core.saml.v2.common.SAMLDocumentHolder;
-import org.keycloak.saml.processing.core.saml.v2.util.AssertionUtil;
-import org.keycloak.saml.processing.core.saml.v2.util.DocumentUtil;
+import org.keycloak.adapters.saml.elytron.KeycloakSecurityRealm;
 import org.keycloak.testsuite.rule.AbstractKeycloakRule;
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
 import org.wildfly.elytron.web.undertow.server.ElytronContextAssociationHandler;
 import org.wildfly.elytron.web.undertow.server.ElytronHttpExchange;
 import org.wildfly.elytron.web.undertow.server.ScopeSessionListener;
 import org.wildfly.security.auth.permission.LoginPermission;
-import org.wildfly.security.auth.realm.token.TokenSecurityRealm;
-import org.wildfly.security.auth.realm.token.TokenValidator;
-import org.wildfly.security.auth.realm.token.validator.JwtValidator;
 import org.wildfly.security.auth.server.HttpAuthenticationFactory;
 import org.wildfly.security.auth.server.MechanismConfiguration;
 import org.wildfly.security.auth.server.MechanismConfigurationSelector;
 import org.wildfly.security.auth.server.MechanismRealmConfiguration;
-import org.wildfly.security.auth.server.RealmUnavailableException;
 import org.wildfly.security.auth.server.SecurityDomain;
-import org.wildfly.security.authz.Attributes;
-import org.wildfly.security.authz.MapAttributes;
-import org.wildfly.security.authz.RoleDecoder;
-import org.wildfly.security.evidence.BearerTokenEvidence;
 import org.wildfly.security.http.HttpAuthenticationException;
 import org.wildfly.security.http.HttpScope;
 import org.wildfly.security.http.HttpScopeNotification;
@@ -90,25 +74,6 @@ import org.wildfly.security.http.Scope;
 import org.wildfly.security.http.util.FilterServerMechanismFactory;
 import org.wildfly.security.http.util.ServiceLoaderServerMechanismFactory;
 import org.wildfly.security.permission.PermissionVerifier;
-
-import javax.servlet.Servlet;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRequest;
-import javax.servlet.http.HttpSession;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -244,93 +209,7 @@ public abstract class SamlKeycloakRule extends AbstractKeycloakRule {
 
         SecurityDomain domain = builder
                 .setPermissionMapper((permissionMappable, roles) -> PermissionVerifier.from(LoginPermission.getInstance()))
-                .addRealm("default", TokenSecurityRealm.builder().principalClaimName("preferred_username").validator(new TokenValidator() {
-                    @Override
-                    public Attributes validate(BearerTokenEvidence evidence) throws RealmUnavailableException {
-                        AssertionType assertion = null;
-                        try {
-                            Document document = DocumentUtil.getDocument(evidence.getToken());
-                            assertion = new SAMLAssertionParser().fromElement(document.getDocumentElement());
-                        } catch (ConfigurationException e) {
-                            e.printStackTrace();
-                        } catch (ProcessingException e) {
-                            e.printStackTrace();
-                        } catch (ParsingException e) {
-                            e.printStackTrace();
-                        }
-                        SubjectType subject = assertion.getSubject();
-                        SubjectType.STSubType subType = subject.getSubType();
-                        NameIDType subjectNameID = (NameIDType) subType.getBaseID();
-                        String principalName = subjectNameID.getValue();
-
-                        final Set<String> roles = new HashSet<>();
-                        MultivaluedHashMap<String, String> attributes = new MultivaluedHashMap<>();
-                        MultivaluedHashMap<String, String> friendlyAttributes = new MultivaluedHashMap<>();
-
-                        Set<StatementAbstractType> statements = assertion.getStatements();
-                        for (StatementAbstractType statement : statements) {
-                            if (statement instanceof AttributeStatementType) {
-                                AttributeStatementType attributeStatement = (AttributeStatementType) statement;
-                                List<AttributeStatementType.ASTChoiceType> attList = attributeStatement.getAttributes();
-                                for (AttributeStatementType.ASTChoiceType obj : attList) {
-                                    AttributeType attr = obj.getAttribute();
-                                    if (isRole(attr)) {
-                                        List<Object> attributeValues = attr.getAttributeValue();
-                                        if (attributeValues != null) {
-                                            for (Object attrValue : attributeValues) {
-                                                String role = getAttributeValue(attrValue);
-                                                roles.add(role);
-                                            }
-                                        }
-                                    } else {
-                                        List<Object> attributeValues = attr.getAttributeValue();
-                                        if (attributeValues != null) {
-                                            for (Object attrValue : attributeValues) {
-                                                String value = getAttributeValue(attrValue);
-                                                if (attr.getName() != null) {
-                                                    attributes.add(attr.getName(), value);
-                                                }
-                                                if (attr.getFriendlyName() != null) {
-                                                    friendlyAttributes.add(attr.getFriendlyName(), value);
-                                                }
-                                            }
-                                        }
-                                    }
-
-                                }
-                            }
-                        }
-
-                        Attributes attributes1 = new MapAttributes(attributes);
-
-                        attributes1.addFirst("preferred_username", principalName);
-                        attributes1.addAll("Roles", roles);
-
-                        return attributes1;
-                    }
-
-                    protected boolean isRole(AttributeType attribute) {
-                        List<String> roleNames = Arrays.asList("role", "Role");
-                        return (attribute.getName() != null && roleNames.contains(attribute.getName())) || (attribute.getFriendlyName() != null && roleNames.contains(attribute.getFriendlyName()));
-                    }
-
-                    private String getAttributeValue(Object attrValue) {
-                        String value = null;
-                        if (attrValue instanceof String) {
-                            value = (String) attrValue;
-                        } else if (attrValue instanceof Node) {
-                            Node roleNode = (Node) attrValue;
-                            value = roleNode.getFirstChild().getNodeValue();
-                        } else if (attrValue instanceof NameIDType) {
-                            NameIDType nameIdType = (NameIDType) attrValue;
-                            value = nameIdType.getValue();
-                        } else {
-                            throw new RuntimeException("Unable to extract unknown SAML assertion attribute value type: " + attrValue.getClass().getName());
-                        }
-                        return value;
-                    }
-                }).build())
-                .setRoleDecoder(RoleDecoder.DEFAULT)
+                .addRealm("default", new KeycloakSecurityRealm())
                 .build().build();
 
         HttpAuthenticationFactory httpAuthenticationFactory = HttpAuthenticationFactory.builder()

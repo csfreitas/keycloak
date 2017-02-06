@@ -82,7 +82,7 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
 
         if (preActions(httpFacade, deploymentContext)) {
             LOGGER.debugf("Pre-actions has aborted the evaluation of [%s]", request.getRequestURI());
-            httpFacade.authenticationInProgress(null, true);
+            httpFacade.authenticationInProgress();
             return;
         }
 
@@ -96,7 +96,7 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
         AuthChallenge challenge = authenticator.getChallenge();
 
         if (challenge != null) {
-            httpFacade.authenticationInProgress(challenge);
+            httpFacade.noAuthenticationInProgress(challenge);
             return;
         }
 

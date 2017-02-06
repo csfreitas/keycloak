@@ -36,6 +36,7 @@ import javax.security.cert.X509Certificate;
 import org.keycloak.adapters.AdapterTokenStore;
 import org.keycloak.adapters.saml.SamlDeployment;
 import org.keycloak.adapters.saml.SamlDeploymentContext;
+import org.keycloak.adapters.saml.SamlPrincipal;
 import org.keycloak.adapters.saml.SamlSession;
 import org.keycloak.adapters.spi.AuthChallenge;
 import org.keycloak.adapters.spi.AuthenticationError;
@@ -72,11 +73,9 @@ class ElytronHttpFacade implements HttpFacade {
     }
 
     void authenticationComplete(SamlSession samlSession) {
-        try {
-            this.securityIdentity = SecurityIdentityUtil.authorize(this.callbackHandler, AssertionUtil.asString(samlSession.getPrincipal().getAssertion()));
-        } catch (ProcessingException e) {
-            e.printStackTrace();
-        }
+        SamlPrincipal principal = samlSession.getPrincipal();
+
+        this.securityIdentity = SecurityIdentityUtil.authorize(this.callbackHandler, samlSession);
 
         if (securityIdentity != null) {
             this.request.authenticationComplete(response -> {
@@ -91,15 +90,15 @@ class ElytronHttpFacade implements HttpFacade {
         this.request.authenticationFailed("Authentication Failed", response -> responseConsumer.accept(response));
     }
 
-    void noAuthenticationInProgress() {
-        this.request.noAuthenticationInProgress(response -> responseConsumer.accept(response));
-    }
-
-    void authenticationInProgress(AuthChallenge challenge) {
+    void noAuthenticationInProgress(AuthChallenge challenge) {
         if (challenge != null) {
             challenge.challenge(this);
         }
-        this.request.authenticationInProgress(response -> responseConsumer.accept(response), false);
+        this.request.noAuthenticationInProgress(response -> responseConsumer.accept(response));
+    }
+
+    void authenticationInProgress() {
+        this.request.authenticationInProgress(response -> responseConsumer.accept(response));
     }
 
     HttpScope getScope(Scope scope) {

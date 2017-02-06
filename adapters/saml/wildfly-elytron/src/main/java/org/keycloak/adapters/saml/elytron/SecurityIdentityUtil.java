@@ -18,18 +18,19 @@
 package org.keycloak.adapters.saml.elytron;
 
 import java.io.IOException;
+import java.security.Principal;
 
 import javax.security.auth.callback.Callback;
 import javax.security.auth.callback.CallbackHandler;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.sasl.AuthorizeCallback;
 
+import org.keycloak.adapters.saml.SamlSession;
 import org.wildfly.security.auth.callback.AuthenticationCompleteCallback;
 import org.wildfly.security.auth.callback.EvidenceVerifyCallback;
 import org.wildfly.security.auth.callback.SecurityIdentityCallback;
 import org.wildfly.security.auth.server.SecurityIdentity;
-import org.wildfly.security.credential.BearerTokenCredential;
-import org.wildfly.security.evidence.BearerTokenEvidence;
+import org.wildfly.security.evidence.Evidence;
 import org.wildfly.security.http.HttpAuthenticationException;
 
 /**
@@ -37,9 +38,14 @@ import org.wildfly.security.http.HttpAuthenticationException;
  */
 final class SecurityIdentityUtil {
 
-    static final SecurityIdentity authorize(CallbackHandler callbackHandler, String accessToken) {
+    static final SecurityIdentity authorize(CallbackHandler callbackHandler, SamlSession samlSession) {
         try {
-            EvidenceVerifyCallback evidenceVerifyCallback = new EvidenceVerifyCallback(new BearerTokenEvidence(accessToken));
+            EvidenceVerifyCallback evidenceVerifyCallback = new EvidenceVerifyCallback(new Evidence() {
+                @Override
+                public Principal getPrincipal() {
+                    return samlSession.getPrincipal();
+                }
+            });
 
             callbackHandler.handle(new Callback[]{evidenceVerifyCallback});
 
@@ -48,19 +54,19 @@ final class SecurityIdentityUtil {
 
                 try {
                     callbackHandler.handle(new Callback[] {authorizeCallback});
-
-                    authorizeCallback.isAuthorized();
                 } catch (Exception e) {
                     throw new HttpAuthenticationException(e);
                 }
 
-                SecurityIdentityCallback securityIdentityCallback = new SecurityIdentityCallback();
+                if (authorizeCallback.isAuthorized()) {
+                    SecurityIdentityCallback securityIdentityCallback = new SecurityIdentityCallback();
 
-                callbackHandler.handle(new Callback[]{AuthenticationCompleteCallback.SUCCEEDED, securityIdentityCallback});
+                    callbackHandler.handle(new Callback[]{AuthenticationCompleteCallback.SUCCEEDED, securityIdentityCallback});
 
-                SecurityIdentity securityIdentity = securityIdentityCallback.getSecurityIdentity();
+                    SecurityIdentity securityIdentity = securityIdentityCallback.getSecurityIdentity();
 
-                return securityIdentity.withPublicCredential(new BearerTokenCredential(accessToken));
+                    return securityIdentity;
+                }
             }
         } catch (UnsupportedCallbackException e) {
             throw new RuntimeException(e);

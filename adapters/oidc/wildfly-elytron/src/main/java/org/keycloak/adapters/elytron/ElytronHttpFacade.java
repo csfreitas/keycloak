@@ -18,6 +18,7 @@
 
 package org.keycloak.adapters.elytron;
 
+import org.bouncycastle.asn1.cmp.Challenge;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.adapters.AdapterDeploymentContext;
 import org.keycloak.adapters.AdapterTokenStore;
@@ -76,7 +77,7 @@ class ElytronHttpFacade implements OIDCHttpFacade {
 
     void authenticationComplete(ElytronAccount account, boolean storeToken) {
         RefreshableKeycloakSecurityContext keycloakSecurityContext = account.getKeycloakSecurityContext();
-        this.securityIdentity = SecurityIdentityUtil.authorize(this.callbackHandler, keycloakSecurityContext.getTokenString());
+        this.securityIdentity = SecurityIdentityUtil.authorize(this.callbackHandler, account.getPrincipal());
 
         if (securityIdentity != null) {
             this.request.authenticationComplete(response -> {
@@ -97,18 +98,18 @@ class ElytronHttpFacade implements OIDCHttpFacade {
     }
 
     void noAuthenticationInProgress() {
-        this.request.noAuthenticationInProgress(response -> responseConsumer.accept(response));
+        this.request.noAuthenticationInProgress();
     }
 
-    void authenticationInProgress(AuthChallenge challenge) {
-        authenticationInProgress(challenge, false);
-    }
-
-    void authenticationInProgress(AuthChallenge challenge, boolean authenticationRequired) {
+    void noAuthenticationInProgress(AuthChallenge challenge) {
         if (challenge != null) {
             challenge.challenge(this);
         }
-        this.request.authenticationInProgress(response -> responseConsumer.accept(response), authenticationRequired);
+        this.request.noAuthenticationInProgress(response -> responseConsumer.accept(response));
+    }
+
+    void authenticationInProgress() {
+        this.request.authenticationInProgress(response -> responseConsumer.accept(response));
     }
 
     HttpScope getScope(Scope scope) {

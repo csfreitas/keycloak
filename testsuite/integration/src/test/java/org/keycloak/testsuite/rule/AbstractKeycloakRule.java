@@ -25,11 +25,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import javax.servlet.DispatcherType;
@@ -39,10 +36,7 @@ import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.Application;
 
-import io.undertow.server.HandlerWrapper;
-import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.BlockingHandler;
 import io.undertow.server.session.Session;
 import io.undertow.server.session.SessionConfig;
 import io.undertow.server.session.SessionManager;
@@ -58,7 +52,6 @@ import io.undertow.servlet.api.SecurityInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.api.WebResourceCollection;
 import io.undertow.servlet.handlers.ServletRequestContext;
-import io.undertow.servlet.spec.HttpSessionImpl;
 import io.undertow.servlet.util.SavedRequest;
 import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.junit.rules.ExternalResource;
@@ -66,7 +59,7 @@ import org.junit.rules.TemporaryFolder;
 import org.keycloak.Config;
 import org.keycloak.adapters.KeycloakConfigResolver;
 import org.keycloak.adapters.elytron.KeycloakConfigurationServletListener;
-import org.keycloak.adapters.elytron.KeycloakRoleDecoder;
+import org.keycloak.adapters.elytron.KeycloakSecurityRealm;
 import org.keycloak.adapters.servlet.KeycloakOIDCFilter;
 import org.keycloak.common.util.Time;
 import org.keycloak.models.KeycloakSession;
@@ -82,16 +75,14 @@ import org.keycloak.testsuite.Retry;
 import org.keycloak.util.JsonSerialization;
 import org.wildfly.elytron.web.undertow.server.ElytronContextAssociationHandler;
 import org.wildfly.elytron.web.undertow.server.ElytronHttpExchange;
-import org.wildfly.elytron.web.undertow.server.ElytronRunAsHandler;
 import org.wildfly.elytron.web.undertow.server.ScopeSessionListener;
 import org.wildfly.security.auth.permission.LoginPermission;
-import org.wildfly.security.auth.realm.token.TokenSecurityRealm;
-import org.wildfly.security.auth.realm.token.validator.JwtValidator;
 import org.wildfly.security.auth.server.HttpAuthenticationFactory;
 import org.wildfly.security.auth.server.MechanismConfiguration;
 import org.wildfly.security.auth.server.MechanismConfigurationSelector;
 import org.wildfly.security.auth.server.MechanismRealmConfiguration;
 import org.wildfly.security.auth.server.SecurityDomain;
+import org.wildfly.security.authz.RoleDecoder;
 import org.wildfly.security.http.HttpAuthenticationException;
 import org.wildfly.security.http.HttpScope;
 import org.wildfly.security.http.HttpScopeNotification;
@@ -240,8 +231,8 @@ public abstract class AbstractKeycloakRule extends ExternalResource {
 
         SecurityDomain domain = builder
                 .setPermissionMapper((permissionMappable, roles) -> PermissionVerifier.from(LoginPermission.getInstance()))
-                .addRealm("default", TokenSecurityRealm.builder().principalClaimName("preferred_username").validator(JwtValidator.builder().build()).build())
-                .setRoleDecoder(new KeycloakRoleDecoder())
+                .addRealm("default", new KeycloakSecurityRealm())
+                .setRoleDecoder(RoleDecoder.DEFAULT)
                 .build().build();
 
         HttpAuthenticationFactory httpAuthenticationFactory = HttpAuthenticationFactory.builder()
