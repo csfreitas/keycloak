@@ -18,6 +18,8 @@
 
 package org.keycloak.adapters.elytron;
 
+import java.util.function.Consumer;
+
 import javax.security.auth.callback.CallbackHandler;
 
 import org.jboss.logging.Logger;
@@ -30,12 +32,13 @@ import org.keycloak.adapters.OidcKeycloakAccount;
 import org.keycloak.adapters.RefreshableKeycloakSecurityContext;
 import org.keycloak.adapters.RequestAuthenticator;
 import org.wildfly.security.http.HttpScope;
+import org.wildfly.security.http.HttpScopeNotification;
 import org.wildfly.security.http.Scope;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class ElytronSessionTokenStore implements AdapterTokenStore {
+public class ElytronSessionTokenStore implements ElytronTokeStore {
 
     private static Logger log = Logger.getLogger(ElytronSessionTokenStore.class);
 
@@ -133,44 +136,20 @@ public class ElytronSessionTokenStore implements AdapterTokenStore {
         session.setAttachment(ElytronAccount.class.getName(), account);
         session.setAttachment(KeycloakSecurityContext.class.getName(), account.getKeycloakSecurityContext());
 
-        session.registerForNotification(httpServerScopes -> {
-            logout();
+        session.registerForNotification(httpScopeNotification -> {
+            if (!httpScopeNotification.isOfType(HttpScopeNotification.SessionNotificationType.UNDEPLOY)) {
+                logout();
+            }
         });
 
         HttpScope scope = this.httpFacade.getScope(Scope.EXCHANGE);
 
         scope.setAttachment(KeycloakSecurityContext.class.getName(), account.getKeycloakSecurityContext());
-//        restoreRequest();
     }
 
     @Override
     public void logout() {
-        HttpScope session = this.httpFacade.getScope(Scope.SESSION);
-
-        if (!session.exists()) {
-            return;
-        }
-
-        try {
-            KeycloakSecurityContext ksc = (KeycloakSecurityContext) session.getAttachment(KeycloakSecurityContext.class.getName());
-
-            if (ksc == null) {
-                return;
-            }
-
-            KeycloakDeployment deployment = httpFacade.getDeployment();
-
-            if (!deployment.isBearerOnly() && ksc != null && ksc instanceof RefreshableKeycloakSecurityContext) {
-                ((RefreshableKeycloakSecurityContext) ksc).logout(deployment);
-            }
-
-            session.setAttachment(KeycloakSecurityContext.class.getName(), null);
-            session.setAttachment(ElytronAccount.class.getName(), null);
-            session.invalidate();
-        } catch (IllegalStateException ise) {
-            // Session may be already logged-out in case that app has adminUrl
-            log.debugf("Session %s logged-out already", session.getID());
-        }
+        logout(false);
     }
 
     @Override
@@ -187,5 +166,37 @@ public class ElytronSessionTokenStore implements AdapterTokenStore {
     @Override
     public boolean restoreRequest() {
         return this.httpFacade.restoreRequest();
+    }
+
+    @Override
+    public void logout(boolean glo) {
+        HttpScope session = this.httpFacade.getScope(Scope.SESSION);
+
+        if (!session.exists()) {
+            return;
+        }
+
+        try {
+            if (glo) {
+                KeycloakSecurityContext ksc = (KeycloakSecurityContext) session.getAttachment(KeycloakSecurityContext.class.getName());
+
+                if (ksc == null) {
+                    return;
+                }
+
+                KeycloakDeployment deployment = httpFacade.getDeployment();
+
+                if (!deployment.isBearerOnly() && ksc != null && ksc instanceof RefreshableKeycloakSecurityContext) {
+                    ((RefreshableKeycloakSecurityContext) ksc).logout(deployment);
+                }
+            }
+
+            session.setAttachment(KeycloakSecurityContext.class.getName(), null);
+            session.setAttachment(ElytronAccount.class.getName(), null);
+            session.invalidate();
+        } catch (IllegalStateException ise) {
+            // Session may be already logged-out in case that app has adminUrl
+            log.debugf("Session %s logged-out already", session.getID());
+        }
     }
 }

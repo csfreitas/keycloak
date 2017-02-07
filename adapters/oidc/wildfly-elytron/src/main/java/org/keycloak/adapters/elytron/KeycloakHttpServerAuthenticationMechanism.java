@@ -134,7 +134,7 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
         AuthOutcome outcome = authenticator.authenticate();
 
         if (AuthOutcome.AUTHENTICATED.equals(outcome)) {
-            httpFacade.getTokenStore().logout();
+            ((ElytronTokeStore) httpFacade.getTokenStore()).logout(true);
             return;
         }
     }

@@ -37,7 +37,7 @@ import javax.security.auth.callback.CallbackHandler;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class ElytronCookieTokenStore implements AdapterTokenStore {
+public class ElytronCookieTokenStore implements ElytronTokeStore {
 
     protected static Logger log = Logger.getLogger(ElytronCookieTokenStore.class);
 
@@ -119,25 +119,7 @@ public class ElytronCookieTokenStore implements AdapterTokenStore {
 
     @Override
     public void logout() {
-        KeycloakPrincipal<RefreshableKeycloakSecurityContext> principal = CookieTokenStore.getPrincipalFromCookie(this.httpFacade.getDeployment(), this.httpFacade, this);
-
-        if (principal == null) {
-            return;
-        }
-
-        CookieTokenStore.removeCookie(this.httpFacade);
-
-        KeycloakSecurityContext ksc = (KeycloakSecurityContext) principal.getKeycloakSecurityContext();
-
-        if (ksc == null) {
-            return;
-        }
-
-        KeycloakDeployment deployment = httpFacade.getDeployment();
-
-        if (!deployment.isBearerOnly() && ksc != null && ksc instanceof RefreshableKeycloakSecurityContext) {
-            ((RefreshableKeycloakSecurityContext) ksc).logout(deployment);
-        }
+        logout(false);
     }
 
     @Override
@@ -153,5 +135,30 @@ public class ElytronCookieTokenStore implements AdapterTokenStore {
     @Override
     public boolean restoreRequest() {
         return false;
+    }
+
+    @Override
+    public void logout(boolean glo) {
+        KeycloakPrincipal<RefreshableKeycloakSecurityContext> principal = CookieTokenStore.getPrincipalFromCookie(this.httpFacade.getDeployment(), this.httpFacade, this);
+
+        if (principal == null) {
+            return;
+        }
+
+        CookieTokenStore.removeCookie(this.httpFacade);
+
+        if (glo) {
+            KeycloakSecurityContext ksc = (KeycloakSecurityContext) principal.getKeycloakSecurityContext();
+
+            if (ksc == null) {
+                return;
+            }
+
+            KeycloakDeployment deployment = httpFacade.getDeployment();
+
+            if (!deployment.isBearerOnly() && ksc != null && ksc instanceof RefreshableKeycloakSecurityContext) {
+                ((RefreshableKeycloakSecurityContext) ksc).logout(deployment);
+            }
+        }
     }
 }
