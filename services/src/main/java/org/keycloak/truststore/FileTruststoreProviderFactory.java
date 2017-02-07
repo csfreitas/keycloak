@@ -71,7 +71,7 @@ public class FileTruststoreProviderFactory implements TruststoreProviderFactory 
         }
 
         try {
-            truststore = loadStore(storepath, pass == null ? null :pass.toCharArray());
+            truststore = loadStore("/home/pedroigor/development/workspace/jboss/keycloak/keycloak/testsuite/integration-arquillian/tests/base/src/test/resources/keystore/keycloak.truststore", pass == null ? null :pass.toCharArray());
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize TruststoreProviderFactory: " + new File(storepath).getAbsolutePath(), e);
         }

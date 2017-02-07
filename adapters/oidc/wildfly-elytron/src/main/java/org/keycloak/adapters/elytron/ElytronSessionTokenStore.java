@@ -140,7 +140,7 @@ public class ElytronSessionTokenStore implements AdapterTokenStore {
         HttpScope scope = this.httpFacade.getScope(Scope.EXCHANGE);
 
         scope.setAttachment(KeycloakSecurityContext.class.getName(), account.getKeycloakSecurityContext());
-        restoreRequest();
+//        restoreRequest();
     }
 
     @Override

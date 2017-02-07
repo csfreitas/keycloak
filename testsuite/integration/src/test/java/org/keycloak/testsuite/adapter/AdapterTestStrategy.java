@@ -137,7 +137,7 @@ public class AdapterTestStrategy extends ExternalResource {
         Assert.assertTrue(driver.getCurrentUrl().startsWith(LOGIN_URL));
         loginPage.login("bburke@redhat.com", "password");
         System.out.println("Current url: " + driver.getCurrentUrl());
-//        Assert.assertEquals(driver.getCurrentUrl(), APP_SERVER_BASE_URL + "/input-portal/secured/post");
+        Assert.assertEquals(driver.getCurrentUrl(), APP_SERVER_BASE_URL + "/input-portal/secured/post");
         String pageSource = driver.getPageSource();
         System.out.println(pageSource);
         Assert.assertTrue(pageSource.contains("parameter=hello"));

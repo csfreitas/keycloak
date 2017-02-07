@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -37,7 +36,6 @@ import javax.servlet.http.HttpSession;
 import javax.ws.rs.core.Application;
 
 import io.undertow.server.HttpServerExchange;
-import io.undertow.server.session.Session;
 import io.undertow.server.session.SessionConfig;
 import io.undertow.server.session.SessionManager;
 import io.undertow.servlet.api.AuthMethodConfig;
@@ -85,7 +83,6 @@ import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.authz.RoleDecoder;
 import org.wildfly.security.http.HttpAuthenticationException;
 import org.wildfly.security.http.HttpScope;
-import org.wildfly.security.http.HttpScopeNotification;
 import org.wildfly.security.http.HttpServerAuthenticationMechanism;
 import org.wildfly.security.http.Scope;
 import org.wildfly.security.http.util.FilterServerMechanismFactory;
@@ -210,109 +207,6 @@ public abstract class AbstractKeycloakRule extends ExternalResource {
         configureElytronSecurity(deploymentInfo);
 
         return deploymentInfo;
-    }
-
-    private void configureElytronSecurity(DeploymentInfo deploymentInfo) {
-        Function<HttpServerExchange, SessionConfig> sessionConfigProvider = exchange -> {
-            ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-            return servletRequestContext.getCurrentServletContext().getSessionConfig();
-        };
-        Function<HttpServerExchange, SessionManager> sessionManagerProvider = exchange -> {
-            ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-            return servletRequestContext.getDeployment().getSessionManager();
-        };
-        ScopeSessionListener elytronNotificationListener = ScopeSessionListener.builder()
-                .addScopeResolver(Scope.APPLICATION, AbstractKeycloakRule::applicationScope)
-                .build();
-
-        deploymentInfo.addSessionListener(elytronNotificationListener);
-
-        SecurityDomain.Builder builder = SecurityDomain.builder().setDefaultRealmName("default");
-
-        SecurityDomain domain = builder
-                .setPermissionMapper((permissionMappable, roles) -> PermissionVerifier.from(LoginPermission.getInstance()))
-                .addRealm("default", new KeycloakSecurityRealm())
-                .setRoleDecoder(RoleDecoder.DEFAULT)
-                .build().build();
-
-        HttpAuthenticationFactory httpAuthenticationFactory = HttpAuthenticationFactory.builder()
-                .setFactory(new FilterServerMechanismFactory(new ServiceLoaderServerMechanismFactory(getClass().getClassLoader()), false, "SPNEGO"))
-                .setSecurityDomain(domain)
-                .setMechanismConfigurationSelector(MechanismConfigurationSelector.constantSelector(
-                        MechanismConfiguration.builder()
-                                .addMechanismRealm(MechanismRealmConfiguration.builder().setRealmName("Elytron Realm").build())
-                                .build()))
-                .build();
-
-        Map<Scope, Function<HttpServerExchange, HttpScope>> scopeResolvers = new HashMap<>();
-
-        scopeResolvers.put(Scope.APPLICATION, AbstractKeycloakRule::applicationScope);
-        scopeResolvers.put(Scope.EXCHANGE, AbstractKeycloakRule::requestScope);
-
-        deploymentInfo.setInitialSecurityWrapper(handler -> ElytronContextAssociationHandler.builder()
-                .setNext(handler)
-                .setSecurityDomain(httpAuthenticationFactory.getSecurityDomain())
-                .setHttpExchangeSupplier(httpServerExchange -> new ElytronHttpExchange(httpServerExchange, scopeResolvers, elytronNotificationListener) {
-                    @Override
-                    protected SessionManager getSessionManager() {
-                        ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-                        return servletRequestContext.getDeployment().getSessionManager();
-                    }
-
-                    @Override
-                    protected SessionConfig getSessionConfig() {
-                        ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-                        return servletRequestContext.getCurrentServletContext().getSessionConfig();
-                    }
-
-                    @Override
-                    public boolean suspendRequest() {
-                        HttpScope scope = getScope(Scope.SESSION);
-                        SavedRequest attachment = (SavedRequest) scope.getAttachment(SavedRequest.class.getName());
-
-                        if (attachment == null) {
-                            SavedRequest.trySaveRequest(httpServerExchange);
-                        }
-
-                        return scope.getAttachment(SavedRequest.class.getName()) != null;
-                    }
-
-                    @Override
-                    public boolean resumeRequest() {
-                        HttpScope scope = getScope(Scope.SESSION);
-                        Object attachment = scope.getAttachment(SavedRequest.class.getName());
-
-                        final ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-                        HttpSession session = servletRequestContext.getCurrentServletContext().getSession(httpServerExchange, false);
-                        if (session != null) {
-                            SavedRequest.tryRestoreRequest(httpServerExchange, session);
-                        }
-
-                        return attachment != null && scope.getAttachment(SavedRequest.class.getName()) == null;
-                    }
-
-                })
-                .setMechanismSupplier(() -> {
-                    LoginConfig loginConfig = deploymentInfo.getLoginConfig();
-                    if (loginConfig == null) {
-                        return Collections.emptyList();
-                    }
-                    List<AuthMethodConfig> authMethods = loginConfig.getAuthMethods();
-
-                    return httpAuthenticationFactory.getMechanismNames().stream().filter(s -> authMethods.stream().anyMatch(authMethodConfig -> authMethodConfig.getName().equals(s))).map(new Function<String, HttpServerAuthenticationMechanism>() {
-                        @Override
-                        public HttpServerAuthenticationMechanism apply(String s) {
-                            try {
-                                return httpAuthenticationFactory.createMechanism(s);
-                            } catch (HttpAuthenticationException e) {
-                                throw new RuntimeException(e);
-                            }
-                        }
-                    }).collect(Collectors.toList());
-                })
-                .build());
-
-        deploymentInfo.addListener(new ListenerInfo(KeycloakConfigurationServletListener.class));
     }
 
 
@@ -541,80 +435,99 @@ public abstract class AbstractKeycloakRule extends ExternalResource {
 
     }
 
-    private static HttpScope sessionScope(HttpServerExchange exchange, ScopeSessionListener listener) {
-        return new HttpScope() {
-            Session session = getSessionManager().getSession(exchange, getSessionConfig());
-            protected SessionManager getSessionManager() {
-                ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-                return servletRequestContext.getDeployment().getSessionManager();
-            }
+    private void configureElytronSecurity(DeploymentInfo deploymentInfo) {
+        ScopeSessionListener elytronNotificationListener = ScopeSessionListener.builder()
+                .addScopeResolver(Scope.APPLICATION, AbstractKeycloakRule::applicationScope)
+                .build();
 
-            protected SessionConfig getSessionConfig() {
-                ServletRequestContext servletRequestContext = exchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
-                return servletRequestContext.getCurrentServletContext().getSessionConfig();
-            }
-            @Override
-            public String getID() {
-                return (session != null) ? session.getId() : null;
-            }
+        deploymentInfo.addSessionListener(elytronNotificationListener);
 
-            @Override
-            public boolean exists() {
-                return this.session != null;
-            }
+        SecurityDomain.Builder builder = SecurityDomain.builder().setDefaultRealmName("default");
 
-            @Override
-            public synchronized boolean create() {
-                if (session == null) {
-                    session = getSessionManager().createSession(exchange, getSessionConfig());
-                }
-                return true;
-            }
+        SecurityDomain domain = builder
+                .setPermissionMapper((permissionMappable, roles) -> PermissionVerifier.from(LoginPermission.getInstance()))
+                .addRealm("default", new KeycloakSecurityRealm())
+                .setRoleDecoder(RoleDecoder.DEFAULT)
+                .build().build();
 
-            @Override
-            public boolean supportsAttachments() {
-                return this.exists();
-            }
+        HttpAuthenticationFactory httpAuthenticationFactory = HttpAuthenticationFactory.builder()
+                .setFactory(new FilterServerMechanismFactory(new ServiceLoaderServerMechanismFactory(getClass().getClassLoader()), false, "SPNEGO"))
+                .setSecurityDomain(domain)
+                .setMechanismConfigurationSelector(MechanismConfigurationSelector.constantSelector(
+                        MechanismConfiguration.builder()
+                                .addMechanismRealm(MechanismRealmConfiguration.builder().setRealmName("Elytron Realm").build())
+                                .build()))
+                .build();
 
-            @Override
-            public void setAttachment(String key, Object value) {
-                if (session != null) {
-                    session.setAttribute(key, value);
-                }
-            }
+        Map<Scope, Function<HttpServerExchange, HttpScope>> scopeResolvers = new HashMap<>();
 
-            @Override
-            public Object getAttachment(String key) {
-                return (session != null) ? session.getAttribute(key) : null;
-            }
+        scopeResolvers.put(Scope.APPLICATION, AbstractKeycloakRule::applicationScope);
+        scopeResolvers.put(Scope.EXCHANGE, AbstractKeycloakRule::requestScope);
 
-            @Override
-            public boolean supportsInvalidation() {
-                return this.exists();
-            }
+        deploymentInfo.setInitialSecurityWrapper(handler -> ElytronContextAssociationHandler.builder()
+                .setNext(handler)
+                .setSecurityDomain(httpAuthenticationFactory.getSecurityDomain())
+                .setHttpExchangeSupplier(httpServerExchange -> new ElytronHttpExchange(httpServerExchange, scopeResolvers, elytronNotificationListener) {
+                    @Override
+                    protected SessionManager getSessionManager() {
+                        ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+                        return servletRequestContext.getDeployment().getSessionManager();
+                    }
 
-            @Override
-            public boolean invalidate() {
-                if (session != null) {
-                    try {
-                        session.invalidate(exchange);
-                    } catch (Exception e) {}
-                }
-                return true;
-            }
+                    @Override
+                    protected SessionConfig getSessionConfig() {
+                        ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+                        return servletRequestContext.getCurrentServletContext().getSessionConfig();
+                    }
 
-            @Override
-            public boolean supportsNotifications() {
-                return this.exists();
-            }
+                    @Override
+                    public boolean suspendRequest() {
+                        HttpScope scope = getScope(Scope.SESSION);
+                        SavedRequest attachment = (SavedRequest) scope.getAttachment(SavedRequest.class.getName());
 
-            @Override
-            public void registerForNotification(Consumer<HttpScopeNotification> consumer) {
-                if (session != null) {
-                    listener.registerListener(session.getId(), consumer);
-                }
-            }
-        };
+                        if (attachment == null) {
+                            SavedRequest.trySaveRequest(httpServerExchange);
+                        }
+
+                        return scope.getAttachment(SavedRequest.class.getName()) != null;
+                    }
+
+                    @Override
+                    public boolean resumeRequest() {
+                        HttpScope scope = getScope(Scope.SESSION);
+                        Object attachment = scope.getAttachment(SavedRequest.class.getName());
+
+                        final ServletRequestContext servletRequestContext = httpServerExchange.getAttachment(ServletRequestContext.ATTACHMENT_KEY);
+                        HttpSession session = servletRequestContext.getCurrentServletContext().getSession(httpServerExchange, false);
+                        if (session != null) {
+                            SavedRequest.tryRestoreRequest(httpServerExchange, session);
+                        }
+
+                        return attachment != null && scope.getAttachment(SavedRequest.class.getName()) == null;
+                    }
+
+                })
+                .setMechanismSupplier(() -> {
+                    LoginConfig loginConfig = deploymentInfo.getLoginConfig();
+                    if (loginConfig == null) {
+                        return Collections.emptyList();
+                    }
+                    List<AuthMethodConfig> authMethods = loginConfig.getAuthMethods();
+
+                    return httpAuthenticationFactory.getMechanismNames().stream().filter(s -> authMethods.stream().anyMatch(authMethodConfig -> authMethodConfig.getName().equals(s))).map(new Function<String, HttpServerAuthenticationMechanism>() {
+                        @Override
+                        public HttpServerAuthenticationMechanism apply(String s) {
+                            try {
+                                return httpAuthenticationFactory.createMechanism(s);
+                            } catch (HttpAuthenticationException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                    }).collect(Collectors.toList());
+                })
+                .build());
+
+        deploymentInfo.addListener(new ListenerInfo(KeycloakConfigurationServletListener.class));
     }
 
     private static HttpScope applicationScope(HttpServerExchange exchange) {
