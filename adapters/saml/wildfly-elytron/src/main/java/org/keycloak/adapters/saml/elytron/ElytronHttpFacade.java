@@ -136,7 +136,7 @@ class ElytronHttpFacade implements HttpFacade {
 
             @Override
             public String getRelativePath() {
-                return request.getRelativePath();
+                return request.getRequestPath();
             }
 
             @Override

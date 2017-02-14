@@ -161,7 +161,7 @@ class ElytronHttpFacade implements OIDCHttpFacade {
 
             @Override
             public String getRelativePath() {
-                return request.getRelativePath();
+                return request.getRequestPath();
             }
 
             @Override

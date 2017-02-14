@@ -109,35 +109,35 @@ class KeycloakHttpServerAuthenticationMechanism implements HttpServerAuthenticat
         httpFacade.noAuthenticationInProgress();
     }
 
-    @Override
-    public void evaluateLogoutRequest(HttpServerRequest request) throws HttpAuthenticationException {
-        LOGGER.debugf("Evaluating request for path [%s]", request.getRequestURI());
-        AdapterDeploymentContext deploymentContext = getDeploymentContext(request);
-        ElytronHttpFacade httpFacade = new ElytronHttpFacade(request, deploymentContext, callbackHandler);
-        KeycloakDeployment deployment = httpFacade.getDeployment();
-
-        if (!deployment.isConfigured()) {
-            httpFacade.noAuthenticationInProgress();
-            return;
-        }
-
-        RequestAuthenticator authenticator = createRequestAuthenticator(request, httpFacade, deployment);
-
-        httpFacade.getTokenStore().checkCurrentToken();
-
-        if (preActions(httpFacade, deploymentContext)) {
-            LOGGER.debugf("Pre-actions has aborted the evaluation of [%s]", request.getRequestURI());
-            httpFacade.noAuthenticationInProgress();
-            return;
-        }
-
-        AuthOutcome outcome = authenticator.authenticate();
-
-        if (AuthOutcome.AUTHENTICATED.equals(outcome)) {
-            ((ElytronTokeStore) httpFacade.getTokenStore()).logout(true);
-            return;
-        }
-    }
+//    @Override
+//    public void evaluateLogoutRequest(HttpServerRequest request) throws HttpAuthenticationException {
+//        LOGGER.debugf("Evaluating request for path [%s]", request.getRequestURI());
+//        AdapterDeploymentContext deploymentContext = getDeploymentContext(request);
+//        ElytronHttpFacade httpFacade = new ElytronHttpFacade(request, deploymentContext, callbackHandler);
+//        KeycloakDeployment deployment = httpFacade.getDeployment();
+//
+//        if (!deployment.isConfigured()) {
+//            httpFacade.noAuthenticationInProgress();
+//            return;
+//        }
+//
+//        RequestAuthenticator authenticator = createRequestAuthenticator(request, httpFacade, deployment);
+//
+//        httpFacade.getTokenStore().checkCurrentToken();
+//
+//        if (preActions(httpFacade, deploymentContext)) {
+//            LOGGER.debugf("Pre-actions has aborted the evaluation of [%s]", request.getRequestURI());
+//            httpFacade.noAuthenticationInProgress();
+//            return;
+//        }
+//
+//        AuthOutcome outcome = authenticator.authenticate();
+//
+//        if (AuthOutcome.AUTHENTICATED.equals(outcome)) {
+//            ((ElytronTokeStore) httpFacade.getTokenStore()).logout(true);
+//            return;
+//        }
+//    }
 
     private ElytronRequestAuthenticator createRequestAuthenticator(HttpServerRequest request, ElytronHttpFacade httpFacade, KeycloakDeployment deployment) {
         return new ElytronRequestAuthenticator(this.callbackHandler, httpFacade, deployment, getConfidentialPort(request));
