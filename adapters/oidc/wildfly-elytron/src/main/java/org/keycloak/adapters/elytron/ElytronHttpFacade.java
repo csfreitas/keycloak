@@ -84,7 +84,7 @@ class ElytronHttpFacade implements OIDCHttpFacade {
                 if (!restored) {
                     responseConsumer.accept(response);
                 }
-            });
+            }, () -> ((ElytronTokeStore) tokenStore).logout(true));
             this.account = account;
             account.setCurrentRequestInfo(keycloakSecurityContext.getDeployment(), this.tokenStore);
             if (storeToken) {

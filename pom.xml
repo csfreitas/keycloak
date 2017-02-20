@@ -76,8 +76,8 @@
         <sun.xsom.version>20140925</sun.xsom.version>
         <undertow.version>1.4.8.Final</undertow.version>
         <wildfly.core.version>2.0.10.Final</wildfly.core.version>
-        <wildfly.elytron.version>1.1.0.Beta25-SNAPSHOT</wildfly.elytron.version>
-        <wildfly.elytron.web.version>1.0.0.Beta10-SNAPSHOT</wildfly.elytron.web.version>
+        <wildfly.elytron.version>1.1.0.Beta26-SNAPSHOT</wildfly.elytron.version>
+        <wildfly.elytron.web.version>1.0.0.Beta11-SNAPSHOT</wildfly.elytron.web.version>
         <version.org.jboss.spec.jboss-json-api_1.0_spec>1.0.0.Final</version.org.jboss.spec.jboss-json-api_1.0_spec>
         <version.org.glassfish.javax.json>1.0.4</version.org.glassfish.javax.json>
         <wildfly.build-tools.version>1.1.0.Final</wildfly.build-tools.version>
