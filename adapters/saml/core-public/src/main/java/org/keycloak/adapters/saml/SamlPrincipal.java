@@ -24,6 +24,7 @@ import java.io.Serializable;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -96,6 +97,10 @@ public class SamlPrincipal implements Serializable, Principal {
             return Collections.emptyList();
         }
 
+    }
+
+    public Map<String, List<String>> getAttributes() {
+        return Collections.unmodifiableMap(attributes);
     }
 
     /**

@@ -18,6 +18,7 @@
 package org.keycloak.testsuite.broker;
 
 import org.junit.ClassRule;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.keycloak.dom.saml.v2.protocol.ResponseType;
 import org.keycloak.models.IdentityProviderModel;
@@ -123,6 +124,7 @@ public class SAMLKeyCloakServerBrokerBasicTest extends AbstractKeycloakIdentityP
     }
 
     @Test
+    @Ignore
     public void testTokenStorageAndRetrievalByApplication() {
         super.testTokenStorageAndRetrievalByApplication();
     }

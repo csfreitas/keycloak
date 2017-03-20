@@ -37,6 +37,7 @@
         <module>tomcat</module>
         <module>jetty</module>
         <module>wildfly</module>
+        <module>wildfly-elytron</module>
         <module>as7-eap6</module>
         <module>servlet-filter</module>
     </modules>

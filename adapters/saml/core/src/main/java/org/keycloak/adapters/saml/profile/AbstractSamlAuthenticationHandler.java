@@ -441,6 +441,8 @@ public abstract class AbstractSamlAuthenticationHandler implements SamlAuthentic
             }
         }
 
+        // roles should also be there as regular attributes
+        attributes.put("Roles", new ArrayList<>(roles));
 
         URI nameFormat = subjectNameID.getFormat();
         String nameFormatString = nameFormat == null ? JBossSAMLURIConstants.NAMEID_FORMAT_UNSPECIFIED.get() : nameFormat.toString();
