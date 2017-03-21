@@ -16,6 +16,16 @@
  */
 package org.keycloak.subsystem.adapter.extension;
 
+import org.jboss.as.controller.OperationContext;
+import org.jboss.as.controller.OperationFailedException;
+import org.jboss.as.controller.capability.RuntimeCapability;
+import org.jboss.dmr.ModelNode;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ValueService;
+import org.jboss.msc.value.Value;
+import org.keycloak.adapters.elytron.KeycloakSecurityRealm;
+import org.wildfly.security.auth.server.SecurityRealm;
+
 /**
  * Defines attributes and operations for a secure-deployment.
  *
@@ -23,10 +33,14 @@ package org.keycloak.subsystem.adapter.extension;
  */
 final class SecureDeploymentDefinition extends AbstractAdapterConfigurationDefinition {
 
+    static final RuntimeCapability<Void> SECURITY_REALM_RUNTIME_CAPABILITY = RuntimeCapability
+            .Builder.of("org.wildfly.security.security-realm", true, SecurityRealm.class)
+            .build();
+
     static final String TAG_NAME = "secure-deployment";
 
     public SecureDeploymentDefinition() {
-        super(TAG_NAME, ALL_ATTRIBUTES, new SecureDeploymentAddHandler(), new SecureDeploymentRemoveHandler(), new SecureDeploymentWriteAttributeHandler());
+        super(TAG_NAME, ALL_ATTRIBUTES, new SecureDeploymentAddHandler(), new SecureDeploymentRemoveHandler(), new SecureDeploymentWriteAttributeHandler(), new RuntimeCapability[] {SECURITY_REALM_RUNTIME_CAPABILITY});
     }
 
     /**
@@ -37,6 +51,19 @@ final class SecureDeploymentDefinition extends AbstractAdapterConfigurationDefin
     static final class SecureDeploymentAddHandler extends AbstractAdapterConfigurationAddHandler {
         SecureDeploymentAddHandler() {
             super(ALL_ATTRIBUTES);
+        }
+
+        @Override
+        protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
+            super.performRuntime(context, operation, model);
+            final KeycloakAdapterConfigService ckService = KeycloakAdapterConfigService.getInstance();
+            final String name = ckService.deploymentNameFromOp(operation);
+            context.getServiceTarget().addService(SECURITY_REALM_RUNTIME_CAPABILITY.fromBaseCapability(name).getCapabilityServiceName(), new ValueService<SecurityRealm>(new Value<SecurityRealm>() {
+                @Override
+                public SecurityRealm getValue() throws IllegalStateException, IllegalArgumentException {
+                    return new KeycloakSecurityRealm(ckService.getJSON(name));
+                }
+            })).setInitialMode(ServiceController.Mode.ACTIVE).install();
         }
     }
 

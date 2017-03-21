@@ -135,14 +135,6 @@
             <artifactId>keycloak-wildfly-elytron-oidc-adapter</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.jboss.spec.javax.json</groupId>
-            <artifactId>jboss-json-api_1.0_spec</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.json</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.wildfly.security.elytron-web</groupId>
             <artifactId>undertow-server</artifactId>
         </dependency>

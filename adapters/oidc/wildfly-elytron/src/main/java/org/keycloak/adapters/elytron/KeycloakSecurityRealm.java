@@ -16,15 +16,22 @@
  */
 package org.keycloak.adapters.elytron;
 
+import java.io.ByteArrayInputStream;
 import java.security.Principal;
-import java.util.ArrayList;
-import java.util.Map;
+import java.util.Set;
 
 import org.keycloak.KeycloakPrincipal;
+import org.keycloak.KeycloakSecurityContext;
+import org.keycloak.adapters.AdapterTokenStore;
 import org.keycloak.adapters.AdapterUtils;
+import org.keycloak.adapters.KeycloakDeployment;
+import org.keycloak.adapters.KeycloakDeploymentBuilder;
+import org.keycloak.adapters.OidcKeycloakAccount;
 import org.keycloak.adapters.RefreshableKeycloakSecurityContext;
-import org.keycloak.jose.jws.JWSInput;
-import org.keycloak.jose.jws.JWSInputException;
+import org.keycloak.adapters.RequestAuthenticator;
+import org.keycloak.adapters.rotation.AdapterRSATokenVerifier;
+import org.keycloak.common.VerificationException;
+import org.keycloak.representations.AccessToken;
 import org.wildfly.security.auth.SupportLevel;
 import org.wildfly.security.auth.server.RealmIdentity;
 import org.wildfly.security.auth.server.RealmUnavailableException;
@@ -34,6 +41,7 @@ import org.wildfly.security.authz.AuthorizationIdentity;
 import org.wildfly.security.authz.MapAttributes;
 import org.wildfly.security.authz.RoleDecoder;
 import org.wildfly.security.credential.Credential;
+import org.wildfly.security.evidence.BearerTokenEvidence;
 import org.wildfly.security.evidence.Evidence;
 
 /**
@@ -41,11 +49,76 @@ import org.wildfly.security.evidence.Evidence;
  */
 public class KeycloakSecurityRealm implements SecurityRealm {
 
+    private final KeycloakDeployment deployment;
+
+    public KeycloakSecurityRealm(String config) {
+        this.deployment = KeycloakDeploymentBuilder.build(new ByteArrayInputStream(config.getBytes()));
+    }
+
+    public KeycloakSecurityRealm() {
+        this.deployment = null;
+    }
+
     @Override
     public RealmIdentity getRealmIdentity(Principal principal) throws RealmUnavailableException {
         if (principal instanceof KeycloakPrincipal) {
             return createRealmIdentity((KeycloakPrincipal) principal);
         }
+        return RealmIdentity.NON_EXISTENT;
+    }
+
+    @Override
+    public RealmIdentity getRealmIdentity(Evidence evidence) throws RealmUnavailableException {
+        if (evidence instanceof BearerTokenEvidence) {
+            if (deployment == null) {
+                throw new RuntimeException("Deployment not provided");
+            }
+
+            try {
+                String token = BearerTokenEvidence.class.cast(evidence).getToken();
+                AccessToken accessToken = AdapterRSATokenVerifier.verifyToken(token, deployment);
+                KeycloakSecurityContext keycloakSecurityContext = new RefreshableKeycloakSecurityContext(deployment, new AdapterTokenStore() {
+                    @Override
+                    public void checkCurrentToken() {
+
+                    }
+
+                    @Override
+                    public boolean isCached(RequestAuthenticator authenticator) {
+                        return false;
+                    }
+
+                    @Override
+                    public void saveAccountInfo(OidcKeycloakAccount account) {
+
+                    }
+
+                    @Override
+                    public void logout() {
+
+                    }
+
+                    @Override
+                    public void refreshCallback(RefreshableKeycloakSecurityContext securityContext) {
+
+                    }
+
+                    @Override
+                    public void saveRequest() {
+
+                    }
+
+                    @Override
+                    public boolean restoreRequest() {
+                        return false;
+                    }
+                }, token, accessToken, null, null, null);
+                return createRealmIdentity(new KeycloakPrincipal(AdapterUtils.getPrincipalName(deployment, accessToken), keycloakSecurityContext));
+            } catch (VerificationException e) {
+
+            }
+        }
+
         return RealmIdentity.NON_EXISTENT;
     }
 
@@ -86,7 +159,10 @@ public class KeycloakSecurityRealm implements SecurityRealm {
                 RefreshableKeycloakSecurityContext securityContext = (RefreshableKeycloakSecurityContext) principal.getKeycloakSecurityContext();
                 Attributes attributes = new MapAttributes();
 
-                attributes.addAll(RoleDecoder.KEY_ROLES, AdapterUtils.getRolesFromSecurityContext(securityContext));
+                Set<String> roles = AdapterUtils.getRolesFromSecurityContext(securityContext);
+
+                attributes.addAll(RoleDecoder.KEY_ROLES, roles);
+                attributes.addAll("groups", roles);
 
                 return AuthorizationIdentity.basicIdentity(attributes);
             }

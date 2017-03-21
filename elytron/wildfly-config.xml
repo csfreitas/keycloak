@@ -20,36 +20,34 @@
 
 <configuration>
     <authentication-client xmlns="urn:elytron:1.0">
-        <net-authenticator/>
         <authentication-rules>
             <rule use-configuration="default">
-              <match-host name="localhost"/>
-              <match-port number="9990"/>
-            </rule>
-            <rule use-configuration="keycloak-server">
-                <match-protocol name="http"/>
                 <match-host name="localhost"/>
-                <match-port number="8180"/>
+                <match-port number="9990"/>
             </rule>
         </authentication-rules>
         <authentication-configurations>
             <configuration name="default">
                 <credentials>
                     <oauth2-bearer-token token-endpoint-uri="http://localhost:8180/auth/realms/wildfly/protocol/openid-connect/token">
-                        <resource-owner-credentials name="admin" password="admin"/>
+                        <client-credentials client-id="wildfly-cli" client-secret="826e2750-dd70-4ff8-8fd0-05f6b2e871d1"/>
                     </oauth2-bearer-token>
                 </credentials>
-                <allow-sasl-mechanisms names="JBOSS-LOCAL-USER EXTERNAL DIGEST-MD5 PLAIN ANONYMOUS OAUTHBEARER" />
+                <allow-sasl-mechanisms names="JBOSS-LOCAL-USER EXTERNAL DIGEST-MD5 PLAIN ANONYMOUS OAUTHBEARER"/>
                 <set-mechanism-properties>
-                    <property key="wildfly.sasl.local-user.quiet-auth" value="true" />
-                 </set-mechanism-properties>
-                 <use-service-loader-providers />
-             </configuration>
-             <configuration name="keycloak-server">
-                <set-user-name name="wildfly-cli"/>
+                    <property key="wildfly.sasl.local-user.quiet-auth" value="true"/>
+                </set-mechanism-properties>
+                <use-service-loader-providers/>
+            </configuration>
+            <configuration name="using-client-credentials-from-callback-handler">
                 <credentials>
-                    <clear-password password="c9cd57c3-fe0a-4e61-9956-9e2ff336ff29"/>
+                    <oauth2-bearer-token token-endpoint-uri="http://localhost:8180/auth/realms/wildfly/protocol/openid-connect/token"/>
                 </credentials>
+                <allow-sasl-mechanisms names="JBOSS-LOCAL-USER EXTERNAL DIGEST-MD5 PLAIN ANONYMOUS OAUTHBEARER"/>
+                <set-mechanism-properties>
+                    <property key="wildfly.sasl.local-user.quiet-auth" value="true"/>
+                </set-mechanism-properties>
+                <use-service-loader-providers/>
             </configuration>
         </authentication-configurations>
     </authentication-client>

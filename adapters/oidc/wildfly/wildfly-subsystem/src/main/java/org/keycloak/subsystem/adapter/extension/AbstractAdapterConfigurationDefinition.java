@@ -22,10 +22,12 @@ import org.jboss.as.controller.PathElement;
 import org.jboss.as.controller.SimpleAttributeDefinition;
 import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.SimpleResourceDefinition;
+import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.operations.common.GenericSubsystemDescribeHandler;
 import org.jboss.as.controller.operations.validation.IntRangeValidator;
 import org.jboss.as.controller.operations.validation.StringLengthValidator;
 import org.jboss.as.controller.registry.ManagementResourceRegistration;
+import org.jboss.as.controller.registry.OperationEntry;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
@@ -142,13 +144,20 @@ abstract class AbstractAdapterConfigurationDefinition extends SimpleResourceDefi
     private final AbstractAdapterConfigurationWriteAttributeHandler attrWriteHandler;
     private final List<SimpleAttributeDefinition> attributes;
 
-    protected AbstractAdapterConfigurationDefinition(String name, List<SimpleAttributeDefinition> attributes, AbstractAdapterConfigurationAddHandler addHandler, AbstractAdapterConfigurationRemoveHandler removeHandler, AbstractAdapterConfigurationWriteAttributeHandler attrWriteHandler) {
-        super(PathElement.pathElement(name),
-                KeycloakExtension.getResourceDescriptionResolver(name),
-                addHandler,
-                removeHandler);
+    protected AbstractAdapterConfigurationDefinition(String name, List<SimpleAttributeDefinition> attributes, AbstractAdapterConfigurationAddHandler addHandler, AbstractAdapterConfigurationRemoveHandler removeHandler, AbstractAdapterConfigurationWriteAttributeHandler attrWriteHandler, RuntimeCapability... capabilities) {
+        super(new Parameters(PathElement.pathElement(name),
+                KeycloakExtension.getResourceDescriptionResolver(name))
+                .setAddHandler(addHandler)
+                .setRemoveHandler(removeHandler)
+                .setAddRestartLevel(OperationEntry.Flag.RESTART_RESOURCE_SERVICES)
+                .setRemoveRestartLevel(OperationEntry.Flag.RESTART_RESOURCE_SERVICES)
+                .setCapabilities(capabilities));
         this.attributes = attributes;
         this.attrWriteHandler = attrWriteHandler;
+    }
+
+    protected AbstractAdapterConfigurationDefinition(String name, List<SimpleAttributeDefinition> attributes, AbstractAdapterConfigurationAddHandler addHandler, AbstractAdapterConfigurationRemoveHandler removeHandler, AbstractAdapterConfigurationWriteAttributeHandler attrWriteHandler) {
+        this(name, attributes, addHandler, removeHandler, attrWriteHandler, new RuntimeCapability[0]);
     }
 
     @Override

@@ -17,16 +17,16 @@
 
 package org.keycloak.subsystem.adapter.extension;
 
+import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADDRESS;
+
+import java.util.HashMap;
+import java.util.Map;
+
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
 import org.jboss.metadata.web.jboss.JBossWebMetaData;
-
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.ADDRESS;
 
 /**
  * This service keeps track of the entire Keycloak management model so as to provide
@@ -60,6 +60,13 @@ public final class KeycloakAdapterConfigService {
     public void updateRealm(ModelNode operation, String attrName, ModelNode resolvedValue) {
         ModelNode realm = this.realms.get(realmNameFromOp(operation));
         realm.get(attrName).set(resolvedValue);
+    }
+
+    public String getRealm(String name) {
+        ModelNode json = new ModelNode();
+        json.get(RealmDefinition.TAG_NAME).set(name);
+        setJSONValues(json, this.realms.get(name));
+        return json.toJSONString(true);
     }
 
     public void removeRealm(ModelNode operation) {
@@ -130,11 +137,11 @@ public final class KeycloakAdapterConfigService {
         return deployment.get(CREDENTIALS_JSON_NAME);
     }
 
-    private String realmNameFromOp(ModelNode operation) {
+    public String realmNameFromOp(ModelNode operation) {
         return valueFromOpAddress(RealmDefinition.TAG_NAME, operation);
     }
 
-    private String deploymentNameFromOp(ModelNode operation) {
+    String deploymentNameFromOp(ModelNode operation) {
         String deploymentName = valueFromOpAddress(SecureDeploymentDefinition.TAG_NAME, operation);
 
         if (deploymentName == null) {
