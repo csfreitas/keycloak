@@ -57,7 +57,7 @@ public class KeycloakHttpServerAuthenticationMechanismFactory implements HttpSer
 
     @Override
     public HttpServerAuthenticationMechanism createAuthenticationMechanism(String mechanismName, Map<String, ?> properties, CallbackHandler callbackHandler) throws HttpAuthenticationException {
-        Map<String, Object> mechanismProperties = new HashMap();
+        Map<String, Object> mechanismProperties = new HashMap<>();
 
         mechanismProperties.putAll(properties);
 
