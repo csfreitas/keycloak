@@ -1,0 +1,17 @@
+# Create a realm for both wildfly console and mgmt interface
+/subsystem=keycloak/realm=jboss-infra:add(auth-server-url=http://localhost:8180/auth,realm-public-key=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAiaRawsXdp+zPrQUVTdtuetITpIP4fGB0EO2T2NN8GMxOtMWZ/mLeq/VGxDJEjtCdQR5Hm7y5JtD1n6/Zrm9YiGuyxtz28QS8CJJukOCIka2DMUuzpkT8t3JlDytEYTnvFID4P/k1mtqDOI1ZooRwEd9nYghPhd1PidAlxTTC8RTWaK4wl6BK+rhnDES61oobKyJNNEt0DlvQSrDPSwWIOcf3MaHqBrG8i3eLRNlkaPvARjF0n5EFk2o59VRaP4qfFAZTuAtOnzC0y4p25mqka6PDu++lucwiZqBortja2YYehsoBYi7Y6CSkloGyhjX958nNjyZx3ShUqK9Aouvh4wIDAQAB)
+
+# Create a secure-deployment in order to protect mgmt interface
+/subsystem=keycloak/secure-deployment=wildfly-management:add(realm=jboss-infra,resource=wildfly-management,principal-attribute=preferred_username,bearer-only=true,ssl-required=EXTERNAL)
+
+# Protect HTTP mgmt interface with Keycloak adapter
+/core-service=management/management-interface=http-interface:undefine-attribute(name=security-realm)
+/subsystem=elytron/http-authentication-factory=keycloak-mgmt-http-authentication:add(security-domain=KeycloakDomain,http-server-mechanism-factory=wildfly-management,mechanism-configurations=[{mechanism-name=KEYCLOAK,mechanism-realm-configurations=[{realm-name=KeycloakOIDCRealm,realm-mapper=keycloak-oidc-realm-mapper}]}])
+/core-service=management/management-interface=http-interface:write-attribute(name=http-authentication-factory,value=keycloak-mgmt-http-authentication)
+
+# Enable RBAC where roles are obtained from the identity
+/core-service=management/access=authorization:write-attribute(name=provider,value=rbac)
+/core-service=management/access=authorization:write-attribute(name=use-identity-roles,value=true)
+
+# Create a secure-server in order to publish the wildfly console configuration via mgmt interface
+/subsystem=keycloak/secure-server=wildfly-console:add(realm=jboss-infra,resource=wildfly-console,public-client=true)
