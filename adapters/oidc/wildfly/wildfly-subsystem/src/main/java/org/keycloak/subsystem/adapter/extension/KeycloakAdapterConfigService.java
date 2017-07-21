@@ -187,7 +187,19 @@ public final class KeycloakAdapterConfigService {
     }
 
     private String deploymentNameFromOp(ModelNode operation) {
-        return valueFromOpAddress(SecureDeploymentDefinition.TAG_NAME, operation);
+        String deploymentName = valueFromOpAddress(SecureDeploymentDefinition.TAG_NAME, operation);
+
+        if (deploymentName == null) {
+            deploymentName = valueFromOpAddress(KeycloakHttpServerAuthenticationMechanismFactoryDefinition.TAG_NAME, operation);
+        }
+
+        if (deploymentName == null) {
+            deploymentName = valueFromOpAddress(SecureServerDefinition.TAG_NAME, operation);
+        }
+
+        if (deploymentName == null) throw new RuntimeException("Can't find deployment name in address " + operation);
+
+        return deploymentName;
     }
 
     private String credentialNameFromOp(ModelNode operation) {
@@ -199,9 +211,7 @@ public final class KeycloakAdapterConfigService {
     }
 
     private String valueFromOpAddress(String addrElement, ModelNode operation) {
-        String deploymentName = getValueOfAddrElement(operation.get(ADDRESS), addrElement);
-        if (deploymentName == null) throw new RuntimeException("Can't find '" + addrElement + "' in address " + operation.toString());
-        return deploymentName;
+        return getValueOfAddrElement(operation.get(ADDRESS), addrElement);
     }
 
     private String getValueOfAddrElement(ModelNode address, String elementName) {
@@ -229,6 +239,20 @@ public final class KeycloakAdapterConfigService {
 
     public String getJSON(DeploymentUnit deploymentUnit) {
         ModelNode deployment = getSecureDeployment(deploymentUnit);
+        String realmName = deployment.get(RealmDefinition.TAG_NAME).asString();
+        ModelNode realm = this.realms.get(realmName);
+
+        ModelNode json = new ModelNode();
+        json.get(RealmDefinition.TAG_NAME).set(realmName);
+
+        // Realm values set first.  Some can be overridden by deployment values.
+        if (realm != null) setJSONValues(json, realm);
+        setJSONValues(json, deployment);
+        return json.toJSONString(true);
+    }
+
+    public String getJSON(String deploymentName) {
+        ModelNode deployment = this.secureDeployments.get(deploymentName);
         String realmName = deployment.get(RealmDefinition.TAG_NAME).asString();
         ModelNode realm = this.realms.get(realmName);
 
