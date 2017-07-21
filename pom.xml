@@ -49,7 +49,7 @@
         <eap.build-tools.version>1.2.2.Final</eap.build-tools.version>
         <wildfly.core.version>3.0.0.Beta28</wildfly.core.version>
 
-        <version.org.wildfly.security.wildfly-elytron>1.1.0.CR2</version.org.wildfly.security.wildfly-elytron>
+        <version.org.wildfly.security.wildfly-elytron>1.1.0.CR3</version.org.wildfly.security.wildfly-elytron>
         <version.org.wildfly.security.elytron-web.undertow-server>1.0.0.CR1</version.org.wildfly.security.elytron-web.undertow-server>
 
         <aesh.version>0.66.15</aesh.version>
