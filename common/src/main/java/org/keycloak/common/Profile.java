@@ -19,12 +19,7 @@ package org.keycloak.common;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -33,7 +28,13 @@ import java.util.Set;
 public class Profile {
 
     public enum Feature {
-        AUTHORIZATION, IMPERSONATION, SCRIPTS, DOCKER, ACCOUNT2, TOKEN_EXCHANGE
+        ACCOUNT2,
+        AUTHORIZATION,
+        DOCKER,
+        IMPERSONATION,
+        OPENSHIFT_INTEGRATION,
+        SCRIPTS,
+        TOKEN_EXCHANGE
     }
 
     private enum ProductValue {
