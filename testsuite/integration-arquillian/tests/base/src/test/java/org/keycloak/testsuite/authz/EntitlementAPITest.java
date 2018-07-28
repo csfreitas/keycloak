@@ -487,6 +487,39 @@ public class EntitlementAPITest extends AbstractAuthzTest {
     }
 
     @Test
+    public void testObtainAllEntitlementsWithLimit() throws Exception {
+        org.keycloak.authorization.client.resource.AuthorizationResource authorizationResource = getAuthzClient(AUTHZ_CLIENT_CONFIG).authorization("marta", "password");
+        AuthorizationResponse response = authorizationResource.authorize();
+        AccessToken accessToken = toAccessToken(response.getToken());
+        Authorization authorization = accessToken.getAuthorization();
+
+        assertTrue(authorization.getPermissions().size() >= 20);
+
+        AuthorizationRequest request = new AuthorizationRequest();
+        Metadata metadata = new Metadata();
+
+        metadata.setLimit(10);
+
+        request.setMetadata(metadata);
+
+        response = authorizationResource.authorize(request);
+        accessToken = toAccessToken(response.getToken());
+        authorization = accessToken.getAuthorization();
+
+        assertEquals(10, authorization.getPermissions().size());
+
+        metadata.setLimit(1);
+
+        request.setMetadata(metadata);
+
+        response = authorizationResource.authorize(request);
+        accessToken = toAccessToken(response.getToken());
+        authorization = accessToken.getAuthorization();
+
+        assertEquals(1, authorization.getPermissions().size());
+    }
+
+    @Test
     public void testObtainAllEntitlementsInvalidResource() throws Exception {
         ClientResource client = getClient(getRealm(), RESOURCE_SERVER_TEST);
         AuthorizationResource authorization = client.authorization();

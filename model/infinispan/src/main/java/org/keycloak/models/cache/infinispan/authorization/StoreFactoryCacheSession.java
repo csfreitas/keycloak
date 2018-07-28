@@ -793,27 +793,27 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         @Override
         public List<Policy> findByScopeIds(List<String> scopeIds, String resourceServerId) {
             if (scopeIds == null) return null;
-            List<Policy> result = new ArrayList<>();
+            Set<Policy> result = new HashSet<>();
 
             for (String id : scopeIds) {
                 String cacheKey = getPolicyByScope(id, resourceServerId);
                 result.addAll(cacheQuery(cacheKey, PolicyScopeListQuery.class, () -> getPolicyStoreDelegate().findByScopeIds(Arrays.asList(id), resourceServerId), (revision, resources) -> new PolicyScopeListQuery(revision, cacheKey, id, resources.stream().map(resource -> resource.getId()).collect(Collectors.toSet()), resourceServerId), resourceServerId));
             }
 
-            return result;
+            return new ArrayList<>(result);
         }
 
         @Override
         public List<Policy> findByScopeIds(List<String> scopeIds, String resourceId, String resourceServerId) {
             if (scopeIds == null) return null;
-            List<Policy> result = new ArrayList<>();
+            Set<Policy> result = new HashSet<>();
 
             for (String id : scopeIds) {
                 String cacheKey = getPolicyByResourceScope(id, resourceId, resourceServerId);
                 result.addAll(cacheQuery(cacheKey, PolicyScopeListQuery.class, () -> getPolicyStoreDelegate().findByScopeIds(Arrays.asList(id), resourceId, resourceServerId), (revision, resources) -> new PolicyScopeListQuery(revision, cacheKey, id, resources.stream().map(resource -> resource.getId()).collect(Collectors.toSet()), resourceServerId), resourceServerId));
             }
 
-            return result;
+            return new ArrayList<>(result);
         }
 
         @Override

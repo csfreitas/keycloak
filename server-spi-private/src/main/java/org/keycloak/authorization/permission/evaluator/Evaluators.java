@@ -18,7 +18,7 @@
 
 package org.keycloak.authorization.permission.evaluator;
 
-import java.util.List;
+import java.util.Collection;
 
 import org.keycloak.authorization.permission.ResourcePermission;
 import org.keycloak.authorization.policy.evaluation.DefaultPolicyEvaluator;
@@ -37,11 +37,11 @@ public final class Evaluators {
         this.policyEvaluator = policyEvaluator;
     }
 
-    public PermissionEvaluator from(List<ResourcePermission> permissions, EvaluationContext evaluationContext) {
+    public PermissionEvaluator from(Collection<ResourcePermission> permissions, EvaluationContext evaluationContext) {
         return schedule(permissions, evaluationContext);
     }
 
-    public PermissionEvaluator schedule(List<ResourcePermission> permissions, EvaluationContext evaluationContext) {
+    public PermissionEvaluator schedule(Collection<ResourcePermission> permissions, EvaluationContext evaluationContext) {
         return new IterablePermissionEvaluator(permissions.iterator(), evaluationContext, this.policyEvaluator);
     }
 }

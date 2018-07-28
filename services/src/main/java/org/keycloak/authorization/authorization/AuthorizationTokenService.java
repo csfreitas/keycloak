@@ -19,6 +19,7 @@ package org.keycloak.authorization.authorization;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -167,16 +168,11 @@ public class AuthorizationTokenService {
                 evaluation = evaluateUserManagedPermissions(request, ticket, resourceServer, evaluationContext, identity);
             }
 
-            List<Permission> permissions = Permissions.permits(evaluation, request.getMetadata(), authorization, resourceServer);
+            Metadata metadata = request.getMetadata();
+            List<Permission> permissions = Permissions.permits(evaluation, metadata, authorization, resourceServer);
 
             if (isGranted(ticket, request, permissions)) {
-                ClientModel targetClient = this.authorization.getRealm().getClientById(resourceServer.getId());
-                AuthorizationResponse response = createAuthorizationResponse(identity, permissions, request, targetClient);
-
-                return Cors.add(httpRequest, Response.status(Status.OK).type(MediaType.APPLICATION_JSON_TYPE).entity(response))
-                        .allowedOrigins(getKeycloakSession().getContext().getUri(), targetClient)
-                        .allowedMethods(HttpMethod.POST)
-                        .exposedHeaders(Cors.ACCESS_CONTROL_ALLOW_METHODS).build();
+                return createSuccessfulResponse(request, resourceServer, identity, metadata, permissions);
             }
 
             if (request.isSubmitRequest()) {
@@ -193,6 +189,26 @@ public class AuthorizationTokenService {
             logger.error("Unexpected error while evaluating permissions", cause);
             throw new CorsErrorResponseException(cors, OAuthErrorException.SERVER_ERROR, "Unexpected error while evaluating permissions", Status.INTERNAL_SERVER_ERROR);
         }
+    }
+
+    private Response createSuccessfulResponse(AuthorizationRequest request, ResourceServer resourceServer, KeycloakIdentity identity, Metadata metadata, List<Permission> permissions) {
+        ClientModel targetClient = this.authorization.getRealm().getClientById(resourceServer.getId());
+        Object response;
+
+        if (metadata != null && "decision".equalsIgnoreCase(metadata.getResponseMode())) {
+            Map<String, Object> responseClaims = new HashMap<>();
+
+            responseClaims.put("result", true);
+
+            response = responseClaims;
+        } else {
+            response = createAuthorizationResponse(identity, permissions, request, targetClient);
+        }
+
+        return Cors.add(httpRequest, Response.status(Status.OK).type(MediaType.APPLICATION_JSON_TYPE).entity(response))
+                .allowedOrigins(getKeycloakSession().getContext().getUri(), targetClient)
+                .allowedMethods(HttpMethod.POST)
+                .exposedHeaders(Cors.ACCESS_CONTROL_ALLOW_METHODS).build();
     }
 
     private boolean isPublicClientRequestingEntitlementWithClaims(AuthorizationRequest request) {
@@ -223,13 +239,10 @@ public class AuthorizationTokenService {
         UserSessionModel userSessionModel = keycloakSession.sessions().getUserSession(getRealm(), accessToken.getSessionState());
         ClientModel client = getRealm().getClientByClientId(accessToken.getIssuedFor());
         AuthenticatedClientSessionModel clientSession = userSessionModel.getAuthenticatedClientSessionByClient(client.getId());
-
         ClientSessionContext clientSessionCtx = DefaultClientSessionContext.fromClientSessionScopeParameter(clientSession);
-
         AccessTokenResponseBuilder responseBuilder = tokenManager.responseBuilder(getRealm(), clientSession.getClient(), event, keycloakSession, userSessionModel, clientSessionCtx)
                 .generateAccessToken()
                 .generateRefreshToken();
-
         AccessToken rpt = responseBuilder.getAccessToken();
 
         rpt.issuedFor(client.getClientId());
@@ -332,7 +345,7 @@ public class AuthorizationTokenService {
         return evaluationContextProvider.apply(authorizationRequest, authorization);
     }
 
-    private List<ResourcePermission> createPermissions(PermissionTicketToken ticket, AuthorizationRequest request, ResourceServer resourceServer, KeycloakIdentity identity, AuthorizationProvider authorization) {
+    private Collection<ResourcePermission> createPermissions(PermissionTicketToken ticket, AuthorizationRequest request, ResourceServer resourceServer, KeycloakIdentity identity, AuthorizationProvider authorization) {
         StoreFactory storeFactory = authorization.getStoreFactory();
         Map<String, ResourcePermission> permissionsToEvaluate = new LinkedHashMap<>();
         ResourceStore resourceStore = storeFactory.getResourceStore();
@@ -352,14 +365,19 @@ public class AuthorizationTokenService {
             }
 
             List<Resource> existingResources = new ArrayList<>();
+            String resourceId = requestedResource.getResourceId();
 
-            if (requestedResource.getResourceId() != null) {
-                Resource resource = resourceStore.findById(requestedResource.getResourceId(), resourceServer.getId());
+            if (resourceId != null) {
+                Resource resource = null;
+
+                if (resourceId.indexOf('-') != -1) {
+                    resource = resourceStore.findById(resourceId, resourceServer.getId());
+                }
 
                 if (resource != null) {
                     existingResources.add(resource);
                 } else {
-                    String resourceName = requestedResource.getResourceId();
+                    String resourceName = resourceId;
                     Resource ownerResource = resourceStore.findByName(resourceName, identity.getId(), resourceServer.getId());
 
                     if (ownerResource != null) {
@@ -386,8 +404,8 @@ public class AuthorizationTokenService {
 
             List<Scope> requestedScopesModel = requestedScopes.stream().map(s -> scopeStore.findByName(s, resourceServer.getId())).filter(Objects::nonNull).collect(Collectors.toList());
 
-            if (requestedResource.getResourceId() != null && !"".equals(requestedResource.getResourceId().trim()) && existingResources.isEmpty()) {
-                throw new CorsErrorResponseException(cors, "invalid_resource", "Resource with id [" + requestedResource.getResourceId() + "] does not exist.", Status.BAD_REQUEST);
+            if (resourceId != null && !"".equals(resourceId.trim()) && existingResources.isEmpty()) {
+                throw new CorsErrorResponseException(cors, "invalid_resource", "Resource with id [" + resourceId + "] does not exist.", Status.BAD_REQUEST);
             }
 
             if ((requestedResource.getScopes() != null && !requestedResource.getScopes().isEmpty()) && requestedScopesModel.isEmpty()) {
@@ -478,7 +496,7 @@ public class AuthorizationTokenService {
             }
         }
 
-        return new ArrayList<>(permissionsToEvaluate.values());
+        return permissionsToEvaluate.values();
     }
 
     private PermissionTicketToken verifyPermissionTicket(AuthorizationRequest request) {

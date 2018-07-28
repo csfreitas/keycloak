@@ -18,12 +18,8 @@
 
 package org.keycloak.authorization.policy.evaluation;
 
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -63,20 +59,19 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         PolicyEnforcementMode enforcementMode = resourceServer.getPolicyEnforcementMode();
 
         if (PolicyEnforcementMode.DISABLED.equals(enforcementMode)) {
-            createEvaluation(permission, executionContext, decision, null).grant();
+            new DefaultEvaluation(permission, executionContext, null, decision, authorization).grant();
             return;
         }
 
-        AtomicBoolean verified = new AtomicBoolean(false);
-        Consumer<Policy> consumer = createDecisionConsumer(permission, executionContext, decision, verified);
         Resource resource = permission.getResource();
         List<Scope> scopes = permission.getScopes();
+        AtomicBoolean verified = new AtomicBoolean();
 
         if (resource != null) {
-            evaluatePolicies(() -> policyStore.findByResource(resource.getId(), resourceServer.getId()), consumer);
+            verified.compareAndSet(false, evaluatePolicies(() -> policyStore.findByResource(resource.getId(), resourceServer.getId()), permission, executionContext, decision));
 
             if (resource.getType() != null) {
-                evaluatePolicies(() -> {
+                verified.compareAndSet(false, evaluatePolicies(() -> {
                     List<Policy> policies = policyStore.findByResourceType(resource.getType(), resourceServer.getId());
 
                     if (!resource.getOwner().equals(resourceServer.getId())) {
@@ -86,122 +81,40 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
                     }
 
                     return policies;
-                }, consumer);
+                }, permission, executionContext, decision));
             }
         }
 
         if (!scopes.isEmpty()) {
-            evaluatePolicies(() -> policyStore.findByScopeIds(scopes.stream().map(Scope::getId).collect(Collectors.toList()), null, resourceServer.getId()), consumer);
+            verified.compareAndSet(false, evaluatePolicies(() -> policyStore.findByScopeIds(scopes.stream().map(Scope::getId).collect(Collectors.toList()), null, resourceServer.getId()).stream().filter(policy -> policy.getResources().isEmpty()).collect(Collectors.toList()), permission, executionContext, decision));
         }
 
-        if (PolicyEnforcementMode.PERMISSIVE.equals(enforcementMode) && !verified.get()) {
-            createEvaluation(permission, executionContext, decision, null).grant();
+        if (verified.get()) {
+            return;
+        }
+
+        if (PolicyEnforcementMode.PERMISSIVE.equals(enforcementMode)) {
+            new DefaultEvaluation(permission, executionContext, null, decision, authorization).grant();
         }
     }
 
-    private void evaluatePolicies(Supplier<List<Policy>> supplier, Consumer<Policy> consumer) {
+    private boolean evaluatePolicies(Supplier<List<Policy>> supplier, ResourcePermission permission, EvaluationContext executionContext, Decision decision) {
         List<Policy> policies = supplier.get();
 
-        if (!policies.isEmpty()) {
-            policies.forEach(consumer);
+        if (policies.isEmpty()) {
+            return false;
         }
-    }
 
-    private Consumer<Policy> createDecisionConsumer(ResourcePermission permission, EvaluationContext executionContext, Decision decision, AtomicBoolean verified) {
-        return (parentPolicy) -> {
-            if (!hasRequestedScopes(permission, parentPolicy)) {
-                return;
-            }
-
+        for (Policy parentPolicy : policies) {
             PolicyProvider policyProvider = authorization.getProvider(parentPolicy.getType());
 
             if (policyProvider == null) {
                 throw new RuntimeException("Unknown parentPolicy provider for type [" + parentPolicy.getType() + "].");
             }
 
-            DefaultEvaluation evaluation = createEvaluation(permission, executionContext, decision, parentPolicy);
-
-            policyProvider.evaluate(evaluation);
-
-            verified.compareAndSet(false, true);
-        };
-    }
-
-    private DefaultEvaluation createEvaluation(ResourcePermission permission, EvaluationContext executionContext, Decision decision, Policy parentPolicy) {
-        return new DefaultEvaluation(permission, executionContext, parentPolicy, decision, authorization);
-    }
-
-    private boolean hasRequestedScopes(final ResourcePermission permission, final Policy policy) {
-        if (permission.getScopes().isEmpty()) {
-            return true;
+            policyProvider.evaluate(new DefaultEvaluation(permission, executionContext, parentPolicy, decision, authorization));
         }
 
-        Resource resourcePermission = permission.getResource();
-        Set<Resource> policyResources = policy.getResources();
-
-        if (resourcePermission != null && !policyResources.isEmpty()) {
-            if (!policyResources.stream().filter(resource -> {
-                Iterator<Resource> policyResourceType = policy.getResources().iterator();
-                Resource policyResource = policyResourceType.hasNext() ? policyResourceType.next() : null;
-                return resource.getId().equals(resourcePermission.getId()) || (policyResourceType != null && policyResource.getType() != null && policyResource.getType().equals(resourcePermission.getType()));
-            }).findFirst().isPresent()) {
-                return false;
-            }
-        }
-
-        Set<Scope> scopes = new HashSet<>(policy.getScopes());
-
-        if (scopes.isEmpty()) {
-            Set<Resource> resources = new HashSet<>();
-
-            resources.addAll(policyResources);
-
-            for (Resource resource : resources) {
-                scopes.addAll(resource.getScopes());
-            }
-
-            if (!resources.isEmpty() && scopes.isEmpty()) {
-                return false;
-            }
-
-            if (scopes.isEmpty()) {
-                Resource resource = permission.getResource();
-                String type = resource.getType();
-
-                if (type != null) {
-                    List<Resource> resourcesByType = resourceStore.findByType(type, resource.getResourceServer().getId());
-
-                    for (Resource resourceType : resourcesByType) {
-                        if (resourceType.getOwner().equals(resource.getResourceServer().getId())) {
-                            resources.add(resourceType);
-                        }
-                    }
-                }
-            }
-
-            for (Resource resource : resources) {
-                scopes.addAll(resource.getScopes());
-            }
-        }
-
-        for (Scope givenScope : scopes) {
-            for (Scope scope : permission.getScopes()) {
-                if (givenScope.getId().equals(scope.getId())) {
-                    return true;
-                }
-            }
-        }
-
-        if (policyResources.isEmpty() && scopes.isEmpty()) {
-            String defaultResourceType = policy.getConfig().get("defaultResourceType");
-
-            if (defaultResourceType == null) {
-                return false;
-            }
-
-            return defaultResourceType.equals(permission.getResource().getType());
-        }
-
-        return false;
+        return true;
     }
 }

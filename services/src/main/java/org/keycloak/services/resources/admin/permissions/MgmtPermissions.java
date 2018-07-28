@@ -41,10 +41,12 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.representations.idm.authorization.Permission;
 import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.resources.admin.AdminAuth;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -333,14 +335,15 @@ class MgmtPermissions implements AdminPermissionEvaluator, AdminPermissionManage
         try {
             session.getContext().setRealm(realm);
             DecisionResult decisionCollector = new DecisionResult();
-            List<ResourcePermission> permissions = Permissions.permission(resourceServer, resource, scope);
-            PermissionEvaluator from = authz.evaluators().from(permissions, context);
+            ResourcePermission permissions = Permissions.permission(resourceServer, resource, scope);
+            PermissionEvaluator from = authz.evaluators().from(Arrays.asList(permissions), context);
             from.evaluate(decisionCollector);
             if (!decisionCollector.completed()) {
                 logger.error("Failed to run permission check", decisionCollector.getError());
                 return false;
             }
-            return decisionCollector.getResults().get(0).getEffect() == Decision.Effect.PERMIT;
+            List<Permission> permits = Permissions.permits(decisionCollector.getResults(), authz, resourceServer);
+            return !permits.isEmpty();
         } finally {
             session.getContext().setRealm(oldRealm);
         }

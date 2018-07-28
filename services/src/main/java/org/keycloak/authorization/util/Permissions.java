@@ -54,8 +54,8 @@ import org.keycloak.services.ErrorResponseException;
  */
 public final class Permissions {
 
-    public static List<ResourcePermission> permission(ResourceServer server, Resource resource, Scope scope) {
-       return Arrays.asList(new ResourcePermission(resource, Arrays.asList(scope), server));
+    public static ResourcePermission permission(ResourceServer server, Resource resource, Scope scope) {
+       return new ResourcePermission(resource, new ArrayList<>(Arrays.asList(scope)), server);
     }
 
     /**
@@ -73,22 +73,40 @@ public final class Permissions {
         List<ResourcePermission> permissions = new ArrayList<>();
         StoreFactory storeFactory = authorization.getStoreFactory();
         ResourceStore resourceStore = storeFactory.getResourceStore();
+        Metadata metadata = request.getMetadata();
+        long limit = Long.MAX_VALUE;
+
+        if (metadata.getLimit() != null) {
+            limit = metadata.getLimit();
+        }
 
         // obtain all resources where owner is the resource server
-        resourceStore.findByOwner(resourceServer.getId(), resourceServer.getId()).stream().forEach(resource -> permissions.addAll(createResourcePermissionsWithScopes(resource, new LinkedList(resource.getScopes()), authorization, request)));
+        resourceStore.findByOwner(resourceServer.getId(), resourceServer.getId()).stream().limit(limit).forEach(resource -> permissions.add(createResourcePermissionsWithScopes(resource, new LinkedList(resource.getScopes()), authorization, request)));
 
         // obtain all resources where owner is the current user
-        resourceStore.findByOwner(identity.getId(), resourceServer.getId()).stream().forEach(resource -> permissions.addAll(createResourcePermissionsWithScopes(resource, new LinkedList(resource.getScopes()), authorization, request)));
+        resourceStore.findByOwner(identity.getId(), resourceServer.getId()).stream().limit(limit).forEach(resource -> permissions.add(createResourcePermissionsWithScopes(resource, new LinkedList(resource.getScopes()), authorization, request)));
 
         // obtain all resources granted to the user via permission tickets (uma)
         List<PermissionTicket> tickets = storeFactory.getPermissionTicketStore().findGranted(identity.getId(), resourceServer.getId());
-        Map<String, ResourcePermission> userManagedPermissions = new HashMap<>();
 
-        for (PermissionTicket ticket : tickets) {
-            userManagedPermissions.computeIfAbsent(ticket.getResource().getId(), id -> new ResourcePermission(ticket.getResource(), new ArrayList<>(), resourceServer, request.getClaims()));
+        if (!tickets.isEmpty()) {
+            Map<String, ResourcePermission> userManagedPermissions = new HashMap<>();
+
+            for (PermissionTicket ticket : tickets) {
+                ResourcePermission permission = userManagedPermissions.get(ticket.getResource().getId());
+
+                if (permission == null) {
+                    userManagedPermissions.put(ticket.getResource().getId(), new ResourcePermission(ticket.getResource(), new ArrayList<>(), resourceServer, request.getClaims()));
+                    limit--;
+                }
+
+                if (--limit <= 0) {
+                    break;
+                }
+            }
+
+            permissions.addAll(userManagedPermissions.values());
         }
-
-        permissions.addAll(userManagedPermissions.values());
 
         return permissions;
     }
@@ -131,8 +149,7 @@ public final class Permissions {
         return new ResourcePermission(resource, scopes, resource.getResourceServer(), request.getClaims());
     }
 
-    public static List<ResourcePermission> createResourcePermissionsWithScopes(Resource resource, List<Scope> scopes, AuthorizationProvider authorization, AuthorizationRequest request) {
-        List<ResourcePermission> permissions = new ArrayList<>();
+    public static ResourcePermission createResourcePermissionsWithScopes(Resource resource, List<Scope> scopes, AuthorizationProvider authorization, AuthorizationRequest request) {
         String type = resource.getType();
         ResourceServer resourceServer = resource.getResourceServer();
 
@@ -152,9 +169,7 @@ public final class Permissions {
             });
         }
 
-        permissions.add(new ResourcePermission(resource, scopes, resource.getResourceServer(), request.getClaims()));
-
-        return permissions;
+        return new ResourcePermission(resource, scopes, resource.getResourceServer(), request.getClaims());
     }
 
     public static List<Permission> permits(List<Result> evaluation, AuthorizationProvider authorizationProvider, ResourceServer resourceServer) {
@@ -255,7 +270,6 @@ public final class Permissions {
     private static void grantPermission(AuthorizationProvider authorizationProvider, Map<String, Permission> permissions, ResourcePermission permission, ResourceServer resourceServer, Metadata metadata) {
         List<Resource> resources = new ArrayList<>();
         Resource resource = permission.getResource();
-        Set<String> scopes = permission.getScopes().stream().map(Scope::getName).collect(Collectors.toSet());
 
         if (resource != null) {
             resources.add(resource);
@@ -267,6 +281,8 @@ public final class Permissions {
                 resources.addAll(resourceStore.findByScope(permissionScopes.stream().map(Scope::getId).collect(Collectors.toList()), resourceServer.getId()));
             }
         }
+
+        Set<String> scopes = permission.getScopes().stream().map(Scope::getName).collect(Collectors.toSet());
 
         if (!resources.isEmpty()) {
             for (Resource allowedResource : resources) {
@@ -287,11 +303,7 @@ public final class Permissions {
                         evalPermission.setScopes(finalScopes);
                     }
 
-                    for (String scopeName : scopes) {
-                        if (!finalScopes.contains(scopeName)) {
-                            finalScopes.add(scopeName);
-                        }
-                    }
+                    finalScopes.addAll(scopes);
                 }
             }
         } else {

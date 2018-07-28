@@ -1132,6 +1132,8 @@ public class TokenEndpoint {
             metadata.setLimit(Integer.parseInt(responsePermissionsLimit));
         }
 
+        metadata.setResponseMode(formParams.getFirst("response_mode"));
+
         authorizationRequest.setMetadata(metadata);
 
         return new AuthorizationTokenService(session.getProvider(AuthorizationProvider.class), tokenManager, event, request, cors).authorize(authorizationRequest);
