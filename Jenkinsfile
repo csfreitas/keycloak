@@ -12,6 +12,7 @@ volumes: [
     stage('Test') {
       try {
         container('maven') {
+          checkout scm
           sh "mvn -v && ls"
         }
       }
