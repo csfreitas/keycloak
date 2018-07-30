@@ -9,31 +9,32 @@ volumes: [
   hostPathVolume(mountPath: '/var/run/docker.sock', hostPath: '/var/run/docker.sock')
 ]) {
   node(label) {
-    stage('Test') {
-      try {
-        container('maven') {
-          checkout scm
-          sh "mvn -v && ls"
-        }
-      }
-      catch (exc) {
-        println "Failed to test - ${currentBuild.fullDisplayName}"
-        throw(exc)
-      }
-    }
     stage('Build') {
       container('maven') {
+        sh "### Build Environment: ###"
+        sh "uname -a"
+        sh "java -version"
+        sh "mvn -v"
+
+        checkout scm
+
         sh "mvn -Pdistribution -DskipTests clean install"
       }
     }
-    stage('Create Docker images') {
+    stage('Test') {
       container('docker') {
-        sh "echo 'Build docker'"
+        sh "### Docker Environment: ###"
+        sh "docker info"
+
+        sh "docker images"
       }
     }
-    stage('Run kubectl') {
+    stage('Deploy') {q
       container('kubectl') {
-        sh "echo 'Run kubectl'"
+        sh "### Kubernetes Environment: ###"
+        sh kubectl cluster-info"
+
+        input 'Do you want to deploy ?'
       }
     }
   }
