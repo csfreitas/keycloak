@@ -12,7 +12,7 @@ volumes: [
     stage('Test') {
       try {
         container('maven') {
-          sh "mvn -v"
+          sh "mvn -v && ls"
         }
       }
       catch (exc) {
