@@ -34,7 +34,7 @@ import org.keycloak.representations.idm.authorization.DecisionStrategy;
  */
 public abstract class DecisionResultCollector implements Decision<DefaultEvaluation> {
 
-    private Map<ResourcePermission, Result> results = new LinkedHashMap<>();
+    private final Map<ResourcePermission, Result> results = new LinkedHashMap<>();
 
     @Override
     public void onDecision(DefaultEvaluation evaluation) {

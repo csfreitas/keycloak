@@ -18,15 +18,7 @@
 
 package org.keycloak.authorization.util;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.ws.rs.core.Response.Status;
@@ -76,7 +68,7 @@ public final class Permissions {
         Metadata metadata = request.getMetadata();
         long limit = Long.MAX_VALUE;
 
-        if (metadata.getLimit() != null) {
+        if (metadata != null && metadata.getLimit() != null) {
             limit = metadata.getLimit();
         }
 
@@ -184,7 +176,7 @@ public final class Permissions {
             Set<Scope> grantedScopes = new HashSet<>();
             boolean resourceDenied = false;
             ResourcePermission permission = result.getPermission();
-            List<Result.PolicyResult> results = result.getResults();
+            Collection<Result.PolicyResult> results = result.getResults();
             List<Result.PolicyResult> userManagedPermissions = new ArrayList<>();
             int deniedCount = results.size();
             Resource resource = permission.getResource();

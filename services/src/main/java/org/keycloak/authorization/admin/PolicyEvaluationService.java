@@ -37,6 +37,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
+import org.jboss.logging.Logger;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.admin.representation.PolicyEvaluationResponseBuilder;
@@ -78,6 +79,8 @@ import org.keycloak.sessions.AuthenticationSessionModel;
  */
 public class PolicyEvaluationService {
 
+    private static final Logger logger = Logger.getLogger(PolicyEvaluationService.class);
+
     private final AuthorizationProvider authorization;
     private final AdminPermissionEvaluator auth;
     private final ResourceServer resourceServer;
@@ -117,6 +120,7 @@ public class PolicyEvaluationService {
 
             return Response.ok(PolicyEvaluationResponseBuilder.build(evaluate(evaluationRequest, createEvaluationContext(evaluationRequest, identity), request), resourceServer, authorization, identity)).build();
         } catch (Exception e) {
+            logger.error("Error while evaluating permissions", e);
             throw new ErrorResponseException(OAuthErrorException.SERVER_ERROR, "Error while evaluating permissions.", Status.INTERNAL_SERVER_ERROR);
         } finally {
             identity.close();
@@ -171,7 +175,7 @@ public class PolicyEvaluationService {
 
             if (resource.getId() != null) {
                 Resource resourceModel = storeFactory.getResourceStore().findById(resource.getId(), resourceServer.getId());
-                return Arrays.asList(Permissions.createResourcePermissions(resourceModel, scopeNames, authorization, request)).stream();
+                return new ArrayList<>(Arrays.asList(Permissions.createResourcePermissions(resourceModel, scopeNames, authorization, request))).stream();
             } else if (resource.getType() != null) {
                 return storeFactory.getResourceStore().findByType(resource.getType(), resourceServer.getId()).stream().map(resource1 -> Permissions.createResourcePermissions(resource1, scopeNames, authorization, request));
             } else {
@@ -180,7 +184,7 @@ public class PolicyEvaluationService {
                 List<ResourcePermission> collect = new ArrayList<>();
 
                 if (!scopes.isEmpty()) {
-                    collect.addAll(scopes.stream().map(scope -> new ResourcePermission(null, Arrays.asList(scope), resourceServer)).collect(Collectors.toList()));
+                    collect.addAll(scopes.stream().map(scope -> new ResourcePermission(null, new ArrayList<>(Arrays.asList(scope)), resourceServer)).collect(Collectors.toList()));
                 } else {
                     collect.addAll(Permissions.all(resourceServer, evaluationContext.getIdentity(), authorization, request));
                 }

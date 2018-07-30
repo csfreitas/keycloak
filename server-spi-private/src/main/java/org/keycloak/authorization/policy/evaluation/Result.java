@@ -22,8 +22,8 @@ import org.keycloak.authorization.Decision.Effect;
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.permission.ResourcePermission;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.function.Function;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -31,7 +31,7 @@ import java.util.List;
 public class Result {
 
     private final ResourcePermission permission;
-    private List<PolicyResult> results = new ArrayList<>();
+    private final Map<String, PolicyResult> results = new HashMap<>();
     private Effect status;
 
     public Result(ResourcePermission permission) {
@@ -42,22 +42,12 @@ public class Result {
         return permission;
     }
 
-    public List<PolicyResult> getResults() {
-        return results;
+    public Collection<PolicyResult> getResults() {
+        return results.values();
     }
 
     public PolicyResult policy(Policy policy) {
-        for (PolicyResult result : this.results) {
-            if (result.getPolicy().equals(policy)) {
-                return result;
-            }
-        }
-
-        PolicyResult policyResult = new PolicyResult(policy);
-
-        this.results.add(policyResult);
-
-        return policyResult;
+        return results.computeIfAbsent(policy.getId(), id -> new PolicyResult(policy));
     }
 
     public void setStatus(final Effect status) {
