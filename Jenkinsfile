@@ -36,7 +36,7 @@ podTemplate(label: label,
     stage('Deploy') {q
       container('kubectl') {
         sh "### Kubernetes Environment: ###"
-        sh kubectl cluster-info"
+        sh "kubectl cluster-info"
 
         input 'Do you want to deploy ?'
       }
