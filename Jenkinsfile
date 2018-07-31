@@ -33,7 +33,7 @@ podTemplate(label: label,
         sh "docker images"
       }
     }
-    stage('Deploy') {q
+    stage('Deploy') {
       container('kubectl') {
         sh "### Kubernetes Environment: ###"
         sh "kubectl cluster-info"
