@@ -84,7 +84,13 @@ public abstract class AbstractDecisionCollector implements Decision<DefaultEvalu
 
         if (result != null) {
             onComplete(result);
+        } else {
+            onDeny(permission);
         }
+    }
+
+    protected void onDeny(ResourcePermission permission) {
+
     }
 
     protected void onComplete(Result result) {

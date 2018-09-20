@@ -52,10 +52,6 @@ public class ClientApplicationSynchronizer implements Synchronizer<ClientRemoved
         ResourceServerStore store = storeFactory.getResourceServerStore();
         ResourceServer resourceServer = store.findById(event.getClient().getId());
 
-        if (resourceServer != null) {
-            storeFactory.getResourceServerStore().delete(resourceServer.getId());
-        }
-
         Map<String, String[]> attributes = new HashMap<>();
 
         attributes.put("type", new String[] {"client"});
@@ -76,6 +72,10 @@ public class ClientApplicationSynchronizer implements Synchronizer<ClientRemoved
             } else {
                 policyFactory.onUpdate(policy, representation, authorizationProvider);
             }
+        }
+
+        if (resourceServer != null) {
+            storeFactory.getResourceServerStore().delete(resourceServer.getId());
         }
     }
 }

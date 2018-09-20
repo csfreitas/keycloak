@@ -72,7 +72,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
     }
 
     private void disablePermissions(RoleModel role) {
-        ResourceServer server = resourceServer(role);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return;
         Policy policy = mapRolePermission(role);
         if (policy != null) authz.getStoreFactory().getPolicyStore().delete(policy.getId());
@@ -97,14 +97,14 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
 
     @Override
     public Policy mapRolePermission(RoleModel role) {
-        ResourceServer server = resourceServer(role);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
         return  authz.getStoreFactory().getPolicyStore().findByName(getMapRolePermissionName(role), server.getId());
     }
 
     @Override
     public Policy mapCompositePermission(RoleModel role) {
-        ResourceServer server = resourceServer(role);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
 
         return  authz.getStoreFactory().getPolicyStore().findByName(getMapCompositePermissionName(role), server.getId());
@@ -112,7 +112,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
 
     @Override
     public Policy mapClientScopePermission(RoleModel role) {
-        ResourceServer server = resourceServer(role);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
 
         return  authz.getStoreFactory().getPolicyStore().findByName(getMapClientScopePermissionName(role), server.getId());
@@ -121,15 +121,9 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
     @Override
     public Resource resource(RoleModel role) {
         ResourceStore resourceStore = authz.getStoreFactory().getResourceStore();
-        ResourceServer server = resourceServer(role);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
         return  resourceStore.findByName(getRoleResourceName(role), server.getId());
-    }
-
-    @Override
-    public ResourceServer resourceServer(RoleModel role) {
-        ClientModel client = getRoleClient(role);
-        return root.resourceServer(client);
     }
 
     private boolean checkAdminRoles(RoleModel role) {
@@ -297,7 +291,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
             return false;
         }
 
-        ResourceServer resourceServer = resourceServer(role);
+        ResourceServer resourceServer = root.realmResourceServer();
         if (resourceServer == null) return false;
 
         Policy policy = authz.getStoreFactory().getPolicyStore().findByName(getMapRolePermissionName(role), resourceServer.getId());
@@ -381,7 +375,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
             return false;
         }
 
-        ResourceServer resourceServer = resourceServer(role);
+        ResourceServer resourceServer = root.realmResourceServer();
         if (resourceServer == null) return false;
 
         Policy policy = authz.getStoreFactory().getPolicyStore().findByName(getMapCompositePermissionName(role), resourceServer.getId());
@@ -420,7 +414,7 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
             return false;
         }
 
-        ResourceServer resourceServer = resourceServer(role);
+        ResourceServer resourceServer = root.realmResourceServer();
         if (resourceServer == null) return false;
 
         Policy policy = authz.getStoreFactory().getPolicyStore().findByName(getMapClientScopePermissionName(role), resourceServer.getId());
@@ -533,10 +527,9 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
 
 
     private void initialize(RoleModel role) {
-        ResourceServer server = resourceServer(role);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) {
-            ClientModel client = getRoleClient(role);
-            server = root.findOrCreateResourceServer(client);
+            server = root.initializeRealmResourceServer();
         }
         Scope mapRoleScope = mapRoleScope(server);
         if (mapRoleScope == null) {
@@ -591,11 +584,6 @@ class RolePermissions implements RolePermissionEvaluator, RolePermissionManageme
 
     private String getMapCompositePermissionName(RoleModel role) {
         return MAP_ROLE_COMPOSITE_SCOPE + ".permission." + role.getId();
-    }
-
-    private ResourceServer sdfgetResourceServer(RoleModel role) {
-        ClientModel client = getRoleClient(role);
-        return root.findOrCreateResourceServer(client);
     }
 
     private static String getRoleResourceName(RoleModel role) {

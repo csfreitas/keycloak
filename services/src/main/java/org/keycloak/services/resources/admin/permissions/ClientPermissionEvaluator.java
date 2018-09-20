@@ -19,6 +19,7 @@ package org.keycloak.services.resources.admin.permissions;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.ClientScopeModel;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -81,4 +82,6 @@ public interface ClientPermissionEvaluator {
     boolean canMapClientScopeRoles(ClientModel client);
 
     Map<String, Boolean> getAccess(ClientModel client);
+
+    boolean canView(List<ClientModel> clientModels);
 }

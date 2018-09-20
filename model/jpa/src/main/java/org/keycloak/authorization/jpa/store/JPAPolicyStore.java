@@ -149,15 +149,37 @@ public class JPAPolicyStore implements PolicyStore {
                     predicates.add(builder.not(root.get("type").in("resource", "scope", "uma")));
                 }
             } else if ("id".equals(name)) {
-                predicates.add(root.get(name).in(value));
+                if (value.length == 1) {
+                    predicates.add(builder.equal(root.get(name), value[0]));
+                } else {
+                    predicates.add(root.get(name).in(value));
+                }
+            } else if ("type".equals(name)) {
+                if (value.length == 1) {
+                    predicates.add(builder.equal(root.get(name), value[0]));
+                } else {
+                    predicates.add(root.get(name).in(value));
+                }
             } else if ("owner".equals(name)) {
-                predicates.add(root.get(name).in(value));
+                if (value.length == 1) {
+                    predicates.add(builder.equal(root.get(name), value[0]));
+                } else {
+                    predicates.add(root.get(name).in(value));
+                }
             } else if ("owner_is_not_null".equals(name)) {
                 predicates.add(builder.isNotNull(root.get("owner")));
             } else if ("resource".equals(name)) {
-                predicates.add(root.join("resources").get("id").in(value));
+                if (value.length == 1) {
+                    predicates.add(builder.equal(root.join("resources").get("id"), value[0]));
+                } else {
+                    predicates.add(root.join("resources").get("id").in(value));
+                }
             } else if ("scope".equals(name)) {
-                predicates.add(root.join("scopes").get("id").in(value));
+                if (value.length == 1) {
+                    predicates.add(builder.equal(root.join("scopes").get("id"), value[0]));
+                } else {
+                    predicates.add(root.join("scopes").get("id").in(value));
+                }
             } else if (name.startsWith("config:")) {
                 predicates.add(root.joinMap("config").key().in(name.substring("config:".length())));
                 predicates.add(builder.like(root.joinMap("config").value().as(String.class), "%" + value[0] + "%"));

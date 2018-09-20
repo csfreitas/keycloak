@@ -29,8 +29,9 @@ import org.keycloak.models.ModelException;
 import org.keycloak.storage.StorageId;
 
 import javax.persistence.EntityManager;
-import javax.persistence.TypedQuery;
-import java.util.List;
+import javax.persistence.criteria.CriteriaBuilder;
+import javax.persistence.criteria.CriteriaDelete;
+import javax.persistence.criteria.Root;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -63,55 +64,11 @@ public class JPAResourceServerStore implements ResourceServerStore {
     public void delete(String id) {
         ResourceServerEntity entity = entityManager.find(ResourceServerEntity.class, id);
         if (entity == null) return;
-        //This didn't work, had to loop through and remove each policy individually
-        //entityManager.createNamedQuery("deletePolicyByResourceServer")
-        //        .setParameter("serverId", id).executeUpdate();
 
-        {
-            TypedQuery<String> query = entityManager.createNamedQuery("findPolicyIdByServerId", String.class);
-            query.setParameter("serverId", id);
-            List<String> result = query.getResultList();
-            for (String policyId : result) {
-                entityManager.remove(entityManager.getReference(PolicyEntity.class, policyId));
-            }
-        }
-
-        {
-            TypedQuery<String> query = entityManager.createNamedQuery("findPermissionTicketIdByServerId", String.class);
-
-            query.setParameter("serverId", id);
-
-            List<String> result = query.getResultList();
-            for (String permissionId : result) {
-                entityManager.remove(entityManager.getReference(PermissionTicketEntity.class, permissionId));
-            }
-        }
-
-        //entityManager.createNamedQuery("deleteResourceByResourceServer")
-        //        .setParameter("serverId", id).executeUpdate();
-        {
-            TypedQuery<String> query = entityManager.createNamedQuery("findResourceIdByServerId", String.class);
-
-            query.setParameter("serverId", id);
-
-            List<String> result = query.getResultList();
-            for (String resourceId : result) {
-                entityManager.remove(entityManager.getReference(ResourceEntity.class, resourceId));
-            }
-        }
-
-        //entityManager.createNamedQuery("deleteScopeByResourceServer")
-        //        .setParameter("serverId", id).executeUpdate();
-        {
-            TypedQuery<String> query = entityManager.createNamedQuery("findScopeIdByResourceServer", String.class);
-
-            query.setParameter("serverId", id);
-
-            List<String> result = query.getResultList();
-            for (String scopeId : result) {
-                entityManager.remove(entityManager.getReference(ScopeEntity.class, scopeId));
-            }
-        }
+        delete(PolicyEntity.class, entity);
+        delete(PermissionTicketEntity.class, entity);
+        delete(ResourceEntity.class, entity);
+        delete(ScopeEntity.class, entity);
 
         this.entityManager.remove(entity);
         entityManager.flush();
@@ -123,5 +80,15 @@ public class JPAResourceServerStore implements ResourceServerStore {
         ResourceServerEntity entity = entityManager.find(ResourceServerEntity.class, id);
         if (entity == null) return null;
         return new ResourceServerAdapter(entity, entityManager, provider.getStoreFactory());
+    }
+
+    private void delete(Class type, ResourceServerEntity entity) {
+        CriteriaBuilder criteriaBuilder = entityManager.getCriteriaBuilder();
+        CriteriaDelete criteriaDelete = criteriaBuilder.createCriteriaDelete(type);
+        Root from = criteriaDelete.from(type);
+
+        criteriaDelete.where(criteriaBuilder.equal(from.get("resourceServer").get("id"), entity.getId()));
+
+        entityManager.createQuery(criteriaDelete).executeUpdate();
     }
 }

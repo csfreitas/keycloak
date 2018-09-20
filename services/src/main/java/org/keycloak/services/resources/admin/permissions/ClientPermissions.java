@@ -24,22 +24,30 @@ import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.Resource;
 import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.model.Scope;
+import org.keycloak.authorization.permission.ResourcePermission;
 import org.keycloak.authorization.policy.evaluation.EvaluationContext;
+import org.keycloak.authorization.store.ResourceStore;
 import org.keycloak.models.AdminRoles;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.ClientScopeModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.representations.idm.authorization.Permission;
 import org.keycloak.services.ForbiddenException;
 import org.keycloak.storage.StorageId;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static org.keycloak.services.resources.admin.permissions.AdminPermissionManagement.TOKEN_EXCHANGE;
 
@@ -92,7 +100,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
     }
 
      private void initialize(ClientModel client) {
-        ResourceServer server = root.findOrCreateResourceServer(client);
+        ResourceServer server = root.initializeRealmResourceServer();
         Scope manageScope = manageScope(server);
         if (manageScope == null) {
             manageScope = authz.getStoreFactory().getScopeStore().create(AdminPermissionManagement.MANAGE_SCOPE, server);
@@ -171,7 +179,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
     }
 
     private void deletePermissions(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return;
         deletePolicy(getManagePermissionName(client), server);
         deletePolicy(getViewPermissionName(client), server);
@@ -186,7 +194,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
 
     @Override
     public boolean isPermissionsEnabled(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return false;
 
         return authz.getStoreFactory().getResourceStore().findByName(getResourceName(client), server.getId()) != null;
@@ -277,7 +285,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
 
     @Override
     public Resource resource(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
         Resource resource =  authz.getStoreFactory().getResourceStore().findByName(getResourceName(client), server.getId());
         if (resource == null) return null;
@@ -302,7 +310,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
     public boolean canExchangeTo(ClientModel authorizedClient, ClientModel to) {
 
         if (!authorizedClient.equals(to)) {
-            ResourceServer server = resourceServer(to);
+            ResourceServer server = root.realmResourceServer();
             if (server == null) {
                 logger.debug("No resource server set up for target client");
                 return false;
@@ -358,7 +366,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
             return false;
         }
 
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return false;
 
         Resource resource =  authz.getStoreFactory().getResourceStore().findByName(getResourceName(client), server.getId());
@@ -386,7 +394,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
             return false;
         }
 
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return false;
 
         Resource resource =  authz.getStoreFactory().getResourceStore().findByName(getResourceName(client), server.getId());
@@ -426,13 +434,54 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
         return hasView(client) || canConfigure(client);
     }
 
+    @Override
+    public boolean canView(List<ClientModel> clientModels) {
+        if (canView()) {
+            return true;
+        }
+
+        if (!root.isAdminSameRealm()) {
+            return false;
+        }
+
+        ResourceServer server = root.realmResourceServer();
+
+        if (server == null) {
+            return false;
+        }
+
+        ResourceStore resourceStore = authz.getStoreFactory().getResourceStore();
+        List<Resource> resources = new ArrayList<>();
+        Map<String, ClientModel> mapping = new HashMap<>();
+        Iterator<ClientModel> iterator = clientModels.iterator();
+
+        while (iterator.hasNext()) {
+            ClientModel client = iterator.next();
+            Resource resource =  resourceStore.findByName(getResourceName(client), server.getId());
+
+            if (resource != null) {
+                resources.add(resource);
+                mapping.put(resource.getId(), client);
+            } else {
+                iterator.remove();
+            }
+        }
+
+        Scope viewScope = viewScope(server);
+        Scope manageScope = configureScope(server);
+
+        root.evaluatePermission(resources, Arrays.asList(viewScope, manageScope), server, permission -> clientModels.remove(mapping.get(permission.getResource().getId())));
+
+        return !resources.isEmpty();
+    }
+
     private boolean hasView(ClientModel client) {
         if (canView()) return true;
         if (!root.isAdminSameRealm()) {
             return false;
         }
 
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return false;
 
         Resource resource =  authz.getStoreFactory().getResourceStore().findByName(getResourceName(client), server.getId());
@@ -511,7 +560,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
 
     @Override
     public boolean canMapRoles(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return false;
 
         Resource resource =  authz.getStoreFactory().getResourceStore().findByName(getResourceName(client), server.getId());
@@ -534,61 +583,56 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
 
     @Override
     public Policy exchangeToPermission(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
         return authz.getStoreFactory().getPolicyStore().findByName(getExchangeToPermissionName(client), server.getId());
     }
 
     @Override
     public Policy mapRolesPermission(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
         return authz.getStoreFactory().getPolicyStore().findByName(getMapRolesPermissionName(client), server.getId());
     }
 
     @Override
     public Policy mapRolesClientScopePermission(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
         return authz.getStoreFactory().getPolicyStore().findByName(getMapRolesClientScopePermissionName(client), server.getId());
     }
 
     @Override
     public Policy mapRolesCompositePermission(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
         return authz.getStoreFactory().getPolicyStore().findByName(getMapRolesCompositePermissionName(client), server.getId());
     }
 
     @Override
     public Policy managePermission(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
         return authz.getStoreFactory().getPolicyStore().findByName(getManagePermissionName(client), server.getId());
     }
 
     @Override
     public Policy configurePermission(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
         return authz.getStoreFactory().getPolicyStore().findByName(getConfigurePermissionName(client), server.getId());
     }
 
     @Override
     public Policy viewPermission(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return null;
         return authz.getStoreFactory().getPolicyStore().findByName(getViewPermissionName(client), server.getId());
     }
 
     @Override
-    public ResourceServer resourceServer(ClientModel client) {
-        return root.resourceServer(client);
-    }
-
-    @Override
     public boolean canMapCompositeRoles(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return false;
 
         Resource resource =  authz.getStoreFactory().getResourceStore().findByName(getResourceName(client), server.getId());
@@ -610,7 +654,7 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
     }
     @Override
     public boolean canMapClientScopeRoles(ClientModel client) {
-        ResourceServer server = resourceServer(client);
+        ResourceServer server = root.realmResourceServer();
         if (server == null) return false;
 
         Resource resource =  authz.getStoreFactory().getResourceStore().findByName(getResourceName(client), server.getId());
@@ -639,6 +683,4 @@ class ClientPermissions implements ClientPermissionEvaluator,  ClientPermissionM
         map.put("configure", StorageId.isLocalStorage(client) && canConfigure(client));
         return map;
     }
-
-
 }

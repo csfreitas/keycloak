@@ -56,6 +56,4 @@ public interface ClientPermissionManagement {
     Policy configurePermission(ClientModel client);
 
     Policy viewPermission(ClientModel client);
-
-    ResourceServer resourceServer(ClientModel client);
 }

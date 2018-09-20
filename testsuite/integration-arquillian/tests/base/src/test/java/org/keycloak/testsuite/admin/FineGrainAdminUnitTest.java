@@ -127,7 +127,7 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
         {
             permissions.roles().setPermissionsEnabled(client1Role, true);
             Policy mapRolePermission = permissions.roles().mapRolePermission(client1Role);
-            ResourceServer server = permissions.roles().resourceServer(client1Role);
+            ResourceServer server = permissions.realmResourceServer();
             Policy mapperPolicy = permissions.roles().rolePolicy(server, mapperRole);
             mapRolePermission.addAssociatedPolicy(mapperPolicy);
         }
@@ -135,7 +135,7 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
         {
             permissions.roles().setPermissionsEnabled(realmRole, true);
             Policy mapRolePermission = permissions.roles().mapRolePermission(realmRole);
-            ResourceServer server = permissions.roles().resourceServer(realmRole);
+            ResourceServer server = permissions.realmResourceServer();
             Policy mapperPolicy = permissions.roles().rolePolicy(server, mapperRole);
             mapRolePermission.addAssociatedPolicy(mapperPolicy);
         }
@@ -172,16 +172,11 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
             permission.addAssociatedPolicy(adminPolicy);
             permission.setDecisionStrategy(DecisionStrategy.UNANIMOUS);
         }
-
-
     }
 
     public static void setupUsers(KeycloakSession session) {
         RealmModel realm = session.realms().getRealmByName(TEST);
         ClientModel client = realm.getClientByClientId(CLIENT_NAME);
-        RoleModel realmRole = realm.getRole("realm-role");
-        RoleModel realmRole2 = realm.getRole("realm-role2");
-        RoleModel clientRole = client.getRole("client-role");
         RoleModel mapperRole = realm.getRole("mapper");
         RoleModel managerRole = realm.getRole("manager");
         RoleModel compositeRole = realm.getRole("composite-role");
@@ -248,7 +243,8 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
         groupManagerRep.setName("groupManagers");
         groupManagerRep.addUser("groupManager");
         groupManagerRep.addUser("noMapperGroupManager");
-        ResourceServer server = permissions.realmResourceServer();
+        ResourceServer resourceServer = permissions.realmResourceServer();
+        ResourceServer server = resourceServer;
         Policy groupManagerPolicy = permissions.authz().getStoreFactory().getPolicyStore().create(groupManagerRep, server);
         Policy groupManagerPermission = permissions.groups().manageMembersPermission(group);
         groupManagerPermission.addAssociatedPolicy(groupManagerPolicy);
@@ -263,7 +259,7 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
         UserPolicyRepresentation userRep = new UserPolicyRepresentation();
         userRep.setName("userClientMapper");
         userRep.addUser("clientMapper");
-        Policy userPolicy = permissions.authz().getStoreFactory().getPolicyStore().create(userRep, permissions.clients().resourceServer(client));
+        Policy userPolicy = permissions.authz().getStoreFactory().getPolicyStore().create(userRep, resourceServer);
         clientMapperPolicy.addAssociatedPolicy(userPolicy);
 
         UserModel clientManager = session.users().addUser(realm, "clientManager");
@@ -275,7 +271,7 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
         userRep = new UserPolicyRepresentation();
         userRep.setName("clientManager");
         userRep.addUser("clientManager");
-        userPolicy = permissions.authz().getStoreFactory().getPolicyStore().create(userRep, permissions.clients().resourceServer(client));
+        userPolicy = permissions.authz().getStoreFactory().getPolicyStore().create(userRep, resourceServer);
         clientManagerPolicy.addAssociatedPolicy(userPolicy);
 
 
@@ -288,7 +284,7 @@ public class FineGrainAdminUnitTest extends AbstractKeycloakTest {
         userRep = new UserPolicyRepresentation();
         userRep.setName("clientConfigure");
         userRep.addUser("clientConfigurer");
-        userPolicy = permissions.authz().getStoreFactory().getPolicyStore().create(userRep, permissions.clients().resourceServer(client));
+        userPolicy = permissions.authz().getStoreFactory().getPolicyStore().create(userRep, resourceServer);
         clientConfigurePolicy.addAssociatedPolicy(userPolicy);
 
 

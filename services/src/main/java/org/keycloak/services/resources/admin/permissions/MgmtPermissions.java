@@ -28,8 +28,10 @@ import org.keycloak.authorization.model.Resource;
 import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.model.Scope;
 import org.keycloak.authorization.permission.ResourcePermission;
-import org.keycloak.authorization.permission.evaluator.PermissionEvaluator;
+import org.keycloak.authorization.policy.evaluation.DecisionPermissionCollector;
+import org.keycloak.authorization.policy.evaluation.DefaultEvaluation;
 import org.keycloak.authorization.policy.evaluation.EvaluationContext;
+import org.keycloak.authorization.policy.evaluation.Result;
 import org.keycloak.authorization.store.ResourceServerStore;
 import org.keycloak.authorization.util.Permissions;
 import org.keycloak.models.AdminRoles;
@@ -39,11 +41,18 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.representations.idm.authorization.AuthorizationRequest;
+import org.keycloak.representations.idm.authorization.Permission;
 import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.managers.RealmManager;
 import org.keycloak.services.resources.admin.AdminAuth;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -237,14 +246,6 @@ class MgmtPermissions implements AdminPermissionEvaluator, AdminPermissionManage
         return groups;
     }
 
-    public ResourceServer findOrCreateResourceServer(ClientModel client) {
-         return initializeRealmResourceServer();
-    }
-
-    public ResourceServer resourceServer(ClientModel client) {
-        return realmResourceServer();
-    }
-
     @Override
     public ResourceServer realmResourceServer() {
         if (realmResourceServer != null) return realmResourceServer;
@@ -314,27 +315,70 @@ class MgmtPermissions implements AdminPermissionEvaluator, AdminPermissionManage
     }
 
     public boolean evaluatePermission(Resource resource, Scope scope, ResourceServer resourceServer) {
+        return evaluatePermission(new ArrayList<>(Arrays.asList(resource)), scope, resourceServer);
+    }
+
+    public boolean evaluatePermission(List<Resource> resources, Scope scope, ResourceServer resourceServer) {
         Identity identity = identity();
         if (identity == null) {
             throw new RuntimeException("Identity of admin is not set for permission query");
         }
-        return evaluatePermission(resource, scope, resourceServer, identity);
+        return evaluatePermission(resources, scope, resourceServer, identity, null);
+    }
+
+    public boolean evaluatePermission(List<Resource> resources, Scope scope, ResourceServer resourceServer, Consumer<ResourcePermission> consumer) {
+        return evaluatePermission(resources, Arrays.asList(scope), resourceServer, consumer);
+    }
+
+    public boolean evaluatePermission(List<Resource> resources, List<Scope> scopes, ResourceServer resourceServer, Consumer<ResourcePermission> consumer) {
+        Identity identity = identity();
+        if (identity == null) {
+            throw new RuntimeException("Identity of admin is not set for permission query");
+        }
+        return evaluatePermission(resources, scopes, resourceServer, identity, consumer);
     }
 
     public boolean evaluatePermission(Resource resource, Scope scope, ResourceServer resourceServer, Identity identity) {
+        return evaluatePermission(new ArrayList<>(Arrays.asList(resource)), scope, resourceServer, identity, null);
+    }
+
+    public boolean evaluatePermission(List<Resource> resources, Scope scope, ResourceServer resourceServer, Identity identity, Consumer<ResourcePermission> consumer) {
+        return evaluatePermission(resources, Arrays.asList(scope), resourceServer, identity, consumer);
+    }
+
+    public boolean evaluatePermission(List<Resource> resources, List<Scope> scopes, ResourceServer resourceServer, Identity identity, Consumer<ResourcePermission> consumer) {
         EvaluationContext context = new DefaultEvaluationContext(identity, session);
-        return evaluatePermission(resource, scope, resourceServer, context);
+        return evaluatePermission(resources, scopes, resourceServer, context, consumer);
     }
 
     public boolean evaluatePermission(Resource resource, Scope scope, ResourceServer resourceServer, EvaluationContext context) {
+        return evaluatePermission(new ArrayList<>(Arrays.asList(resource)), scope, resourceServer, context, null);
+    }
+
+    public boolean evaluatePermission(List<Resource> resources, Scope scope, ResourceServer resourceServer, EvaluationContext context, Consumer<ResourcePermission> consumer) {
+        return evaluatePermission(resources, Arrays.asList(scope), resourceServer, context, consumer);
+    }
+
+    public boolean evaluatePermission(List<Resource> resources, List<Scope> scope, ResourceServer resourceServer, EvaluationContext context, Consumer<ResourcePermission> consumer) {
         RealmModel oldRealm = session.getContext().getRealm();
         try {
             session.getContext().setRealm(realm);
-            ResourcePermission permission = Permissions.permission(resourceServer, resource, scope);
-            return !authz.evaluators().from(Arrays.asList(permission), context).evaluate(resourceServer, null).isEmpty();
+            List<ResourcePermission> permissions = resources.stream().map(resource1 -> new ResourcePermission(resource1, scope, resourceServer)).collect(Collectors.toList());
+
+            authz.evaluators().from(permissions, context).evaluate(new DecisionPermissionCollector(authz, resourceServer, null) {
+                @Override
+                protected void onDeny(ResourcePermission permission) {
+                    if (consumer != null) {
+                        consumer.accept(permission);
+                    }
+                    resources.remove(permission.getResource());
+                }
+            });
         } finally {
             session.getContext().setRealm(oldRealm);
         }
+
+        return !resources.isEmpty();
     }
 
     @Override

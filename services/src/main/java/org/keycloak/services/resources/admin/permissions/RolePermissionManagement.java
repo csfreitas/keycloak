@@ -46,8 +46,6 @@ public interface RolePermissionManagement {
 
     Resource resource(RoleModel role);
 
-    ResourceServer resourceServer(RoleModel role);
-
     Policy manageUsersPolicy(ResourceServer server);
 
     Policy viewUsersPolicy(ResourceServer server);

@@ -105,6 +105,7 @@ public class DecisionPermissionCollector extends AbstractDecisionCollector {
 
             if (userManagedPermissions.isEmpty()) {
                 if (!resourceGranted && (grantedScopes.isEmpty() && !requestedScopes.isEmpty())) {
+                    onDeny(permission);
                     return;
                 }
             } else {
@@ -113,6 +114,7 @@ public class DecisionPermissionCollector extends AbstractDecisionCollector {
                 }
 
                 if (grantedScopes.isEmpty() && !resource.getScopes().isEmpty()) {
+                    onDeny(permission);
                     return;
                 }
 
@@ -120,6 +122,7 @@ public class DecisionPermissionCollector extends AbstractDecisionCollector {
             }
 
             if (anyDeny && grantedScopes.isEmpty()) {
+                onDeny(permission);
                 return;
             }
 

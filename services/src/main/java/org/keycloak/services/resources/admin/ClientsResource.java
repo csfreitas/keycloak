@@ -101,13 +101,14 @@ public class ClientsResource {
         if (clientId == null || clientId.trim().equals("")) {
             List<ClientModel> clientModels = realm.getClients();
             auth.clients().requireList();
-            boolean view = auth.clients().canView();
+            clientModels = new ArrayList<>(clientModels);
+            auth.clients().canView(clientModels);
             for (ClientModel clientModel : clientModels) {
-                if (view || auth.clients().canView(clientModel)) {
+                if (viewableOnly) {
                     ClientRepresentation representation = ModelToRepresentation.toRepresentation(clientModel, session);
                     rep.add(representation);
                     representation.setAccess(auth.clients().getAccess(clientModel));
-                } else if (!viewableOnly) {
+                } else {
                     ClientRepresentation client = new ClientRepresentation();
                     client.setId(clientModel.getId());
                     client.setClientId(clientModel.getClientId());
