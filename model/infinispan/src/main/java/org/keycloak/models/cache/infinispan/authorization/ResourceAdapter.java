@@ -23,6 +23,8 @@ import org.keycloak.authorization.model.ResourceServer;
 import org.keycloak.authorization.model.Scope;
 import org.keycloak.authorization.store.PermissionTicketStore;
 import org.keycloak.authorization.store.PolicyStore;
+import org.keycloak.models.cache.infinispan.DefaultLazyLoader;
+import org.keycloak.models.cache.infinispan.LazyLoader;
 import org.keycloak.models.cache.infinispan.authorization.entities.CachedResource;
 
 import java.util.Collections;
@@ -30,7 +32,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -39,31 +40,22 @@ import java.util.stream.Collectors;
  */
 public class ResourceAdapter implements Resource, CachedModel<Resource> {
 
-    private final Supplier<Resource> resourceSupplier;
-    protected CachedResource cached;
-    protected StoreFactoryCacheSession cacheSession;
+    private final LazyLoader<CachedResource, Resource> modelSupplier;
+    protected final CachedResource cached;
+    protected final StoreFactoryCacheSession cacheSession;
     protected Resource updated;
 
     public ResourceAdapter(CachedResource cached, StoreFactoryCacheSession cacheSession) {
         this.cached = cached;
         this.cacheSession = cacheSession;
-        this.resourceSupplier = new Supplier<Resource>() {
-            Resource model;
-            @Override
-            public Resource get() {
-                if (model == null) {
-                    model = cacheSession.getResourceStoreDelegate().findById(cached.getId(), cached.getResourceServerId());
-                }
-                return model;
-            }
-        };
+        this.modelSupplier = new DefaultLazyLoader<>(this::getResourceModel);
     }
 
     @Override
     public Resource getDelegateForUpdate() {
         if (updated == null) {
-            cacheSession.registerResourceInvalidation(cached.getId(), cached.getName(), cached.getType(), cached.getUris(resourceSupplier), cached.getScopesIds(resourceSupplier), cached.getResourceServerId(), cached.getOwner());
-            updated = resourceSupplier.get();
+            updated = getResourceModel();
+            cacheSession.registerResourceInvalidation(cached.getId(), cached.getName(), cached.getType(), cached.getUris(updated), cached.getScopesIds(updated), cached.getResourceServerId(), cached.getOwner());
             if (updated == null) throw new IllegalStateException("Not found in database");
         }
         return updated;
@@ -111,7 +103,7 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
     @Override
     public void setName(String name) {
         getDelegateForUpdate();
-        cacheSession.registerResourceInvalidation(cached.getId(), name, cached.getType(), cached.getUris(resourceSupplier), cached.getScopesIds(resourceSupplier), cached.getResourceServerId(), cached.getOwner());
+        cacheSession.registerResourceInvalidation(cached.getId(), name, cached.getType(), cached.getUris(updated), cached.getScopesIds(updated), cached.getResourceServerId(), cached.getOwner());
         updated.setName(name);
     }
 
@@ -124,7 +116,7 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
     @Override
     public void setDisplayName(String name) {
         getDelegateForUpdate();
-        cacheSession.registerResourceInvalidation(cached.getId(), name, cached.getType(), cached.getUris(resourceSupplier), cached.getScopesIds(resourceSupplier), cached.getResourceServerId(), cached.getOwner());
+        cacheSession.registerResourceInvalidation(cached.getId(), name, cached.getType(), cached.getUris(updated), cached.getScopesIds(updated), cached.getResourceServerId(), cached.getOwner());
         updated.setDisplayName(name);
     }
 
@@ -149,13 +141,13 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
     @Override
     public Set<String> getUris() {
         if (isUpdated()) return updated.getUris();
-        return cached.getUris(resourceSupplier);
+        return cached.getUris(getResourceModel());
     }
 
     @Override
     public void updateUris(Set<String> uris) {
         getDelegateForUpdate();
-        cacheSession.registerResourceInvalidation(cached.getId(), cached.getName(), cached.getType(), uris, cached.getScopesIds(resourceSupplier), cached.getResourceServerId(), cached.getOwner());
+        cacheSession.registerResourceInvalidation(cached.getId(), cached.getName(), cached.getType(), uris, cached.getScopesIds(updated), cached.getResourceServerId(), cached.getOwner());
         updated.updateUris(uris);
     }
 
@@ -168,7 +160,7 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
     @Override
     public void setType(String type) {
         getDelegateForUpdate();
-        cacheSession.registerResourceInvalidation(cached.getId(), cached.getName(), type, cached.getUris(resourceSupplier), cached.getScopesIds(resourceSupplier), cached.getResourceServerId(), cached.getOwner());
+        cacheSession.registerResourceInvalidation(cached.getId(), cached.getName(), type, cached.getUris(updated), cached.getScopesIds(updated), cached.getResourceServerId(), cached.getOwner());
         updated.setType(type);
 
     }
@@ -180,7 +172,7 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
         if (isUpdated()) return updated.getScopes();
         if (scopes != null) return scopes;
         scopes = new LinkedList<>();
-        for (String scopeId : cached.getScopesIds(resourceSupplier)) {
+        for (String scopeId : cached.getScopesIds(getResourceModel())) {
             scopes.add(cacheSession.getScopeStore().findById(scopeId, cached.getResourceServerId()));
         }
         return scopes = Collections.unmodifiableList(scopes);
@@ -201,7 +193,7 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
     @Override
     public void setOwnerManagedAccess(boolean ownerManagedAccess) {
         getDelegateForUpdate();
-        cacheSession.registerResourceInvalidation(cached.getId(), cached.getName(), cached.getType(), cached.getUris(resourceSupplier), cached.getScopesIds(resourceSupplier), cached.getResourceServerId(), cached.getOwner());
+        cacheSession.registerResourceInvalidation(cached.getId(), cached.getName(), cached.getType(), cached.getUris(updated), cached.getScopesIds(updated), cached.getResourceServerId(), cached.getOwner());
         updated.setOwnerManagedAccess(ownerManagedAccess);
     }
 
@@ -228,21 +220,21 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
             }
         }
 
-        cacheSession.registerResourceInvalidation(cached.getId(), cached.getName(), cached.getType(), cached.getUris(resourceSupplier), scopes.stream().map(scope1 -> scope1.getId()).collect(Collectors.toSet()), cached.getResourceServerId(), cached.getOwner());
+        cacheSession.registerResourceInvalidation(cached.getId(), cached.getName(), cached.getType(), cached.getUris(updated), scopes.stream().map(scope1 -> scope1.getId()).collect(Collectors.toSet()), cached.getResourceServerId(), cached.getOwner());
         updated.updateScopes(scopes);
     }
 
     @Override
     public Map<String, List<String>> getAttributes() {
         if (updated != null) return updated.getAttributes();
-        return cached.getAttributes(resourceSupplier);
+        return cached.getAttributes(getResourceModel());
     }
 
     @Override
     public String getSingleAttribute(String name) {
         if (updated != null) return updated.getSingleAttribute(name);
 
-        List<String> values = cached.getAttributes(resourceSupplier).getOrDefault(name, Collections.emptyList());
+        List<String> values = cached.getAttributes(getResourceModel()).getOrDefault(name, Collections.emptyList());
 
         if (values.isEmpty()) {
             return null;
@@ -255,7 +247,7 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
     public List<String> getAttribute(String name) {
         if (updated != null) return updated.getAttribute(name);
 
-        List<String> values = cached.getAttributes(resourceSupplier).getOrDefault(name, Collections.emptyList());
+        List<String> values = cached.getAttributes(getResourceModel()).getOrDefault(name, Collections.emptyList());
 
         if (values.isEmpty()) {
             return null;
@@ -278,7 +270,7 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
 
     @Override
     public boolean isFetched(String association) {
-        return resourceSupplier.get().isFetched("uris");
+        return getResourceModel().isFetched("uris");
     }
 
     @Override
@@ -295,4 +287,11 @@ public class ResourceAdapter implements Resource, CachedModel<Resource> {
         return getId().hashCode();
     }
 
+    private Resource getResourceModel() {
+        return modelSupplier.get(cached);
+    }
+
+    private Resource getResourceModel(CachedResource cached) {
+        return cacheSession.getResourceStoreDelegate().findById(cached.getId(), cached.getResourceServerId());
+    }
 }

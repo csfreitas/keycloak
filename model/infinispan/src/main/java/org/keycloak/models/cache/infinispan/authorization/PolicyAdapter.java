@@ -24,6 +24,8 @@ import org.keycloak.authorization.model.Scope;
 import org.keycloak.authorization.store.PolicyStore;
 import org.keycloak.authorization.store.ResourceStore;
 import org.keycloak.authorization.store.ScopeStore;
+import org.keycloak.models.cache.infinispan.DefaultLazyLoader;
+import org.keycloak.models.cache.infinispan.LazyLoader;
 import org.keycloak.models.cache.infinispan.authorization.entities.CachedPolicy;
 import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.Logic;
@@ -33,7 +35,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -43,7 +44,7 @@ import java.util.stream.Collectors;
  */
 public class PolicyAdapter implements Policy, CachedModel<Policy> {
 
-    private final Supplier<Policy> policySupplier;
+    private final LazyLoader<CachedPolicy, Policy> modelLoader;
     protected final CachedPolicy cached;
     protected final StoreFactoryCacheSession cacheSession;
     protected Policy updated;
@@ -51,24 +52,15 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
     public PolicyAdapter(CachedPolicy cached, StoreFactoryCacheSession cacheSession) {
         this.cached = cached;
         this.cacheSession = cacheSession;
-        this.policySupplier = new Supplier<Policy>() {
-            Policy policy;
-            @Override
-            public Policy get() {
-                if (policy == null) {
-                    policy = cacheSession.getPolicyStoreDelegate().findById(cached.getId(), cached.getResourceServerId());
-                }
-                return policy;
-            }
-        };
+        this.modelLoader = new DefaultLazyLoader<>(this::getPolicyModel);
     }
 
     @Override
     public Policy getDelegateForUpdate() {
         if (updated == null) {
-            updated = policySupplier.get();
+            updated = getPolicyModel();
             String defaultResourceType = updated.getConfig().get("defaultResourceType");
-            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(policySupplier), cached.getScopesIds(policySupplier), defaultResourceType, cached.getResourceServerId());
+            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(updated), cached.getScopesIds(updated), defaultResourceType, cached.getResourceServerId());
             if (updated == null) throw new IllegalStateException("Not found in database");
         }
         return updated;
@@ -116,7 +108,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
     @Override
     public void setName(String name) {
         getDelegateForUpdate();
-        cacheSession.registerPolicyInvalidation(cached.getId(), name, cached.getResourcesIds(policySupplier), cached.getScopesIds(policySupplier), cached.getConfig(policySupplier).get("defaultResourceType"), cached.getResourceServerId());
+        cacheSession.registerPolicyInvalidation(cached.getId(), name, cached.getResourcesIds(updated), cached.getScopesIds(updated), cached.getConfig(updated).get("defaultResourceType"), cached.getResourceServerId());
         updated.setName(name);
     }
 
@@ -160,15 +152,15 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
     @Override
     public Map<String, String> getConfig() {
         if (isUpdated()) return updated.getConfig();
-        return cached.getConfig(policySupplier);
+        return cached.getConfig(getPolicyModel());
     }
 
     @Override
     public void setConfig(Map<String, String> config) {
         getDelegateForUpdate();
-        if (config.containsKey("defaultResourceType") || cached.getConfig(policySupplier).containsKey("defaultResourceType")) {
-            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(policySupplier), cached.getScopesIds(policySupplier), cached.getConfig(policySupplier).get("defaultResourceType"), cached.getResourceServerId());
-            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(policySupplier), cached.getScopesIds(policySupplier), config.get("defaultResourceType"), cached.getResourceServerId());
+        if (config.containsKey("defaultResourceType") || cached.getConfig(updated).containsKey("defaultResourceType")) {
+            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(updated), cached.getScopesIds(updated), cached.getConfig(updated).get("defaultResourceType"), cached.getResourceServerId());
+            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(updated), cached.getScopesIds(updated), config.get("defaultResourceType"), cached.getResourceServerId());
         }
         updated.setConfig(config);
 
@@ -178,7 +170,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
     public void removeConfig(String name) {
         getDelegateForUpdate();
         if (name.equals("defaultResourceType")) {
-            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(policySupplier), cached.getScopesIds(policySupplier), cached.getConfig(policySupplier).get("defaultResourceType"), cached.getResourceServerId());
+            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(updated), cached.getScopesIds(updated), cached.getConfig(updated).get("defaultResourceType"), cached.getResourceServerId());
         }
         updated.removeConfig(name);
 
@@ -188,8 +180,8 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
     public void putConfig(String name, String value) {
         getDelegateForUpdate();
         if (name.equals("defaultResourceType")) {
-            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(policySupplier), cached.getScopesIds(policySupplier), cached.getConfig(policySupplier).get("defaultResourceType"), cached.getResourceServerId());
-            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(policySupplier), cached.getScopesIds(policySupplier), value, cached.getResourceServerId());
+            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(updated), cached.getScopesIds(updated), cached.getConfig(updated).get("defaultResourceType"), cached.getResourceServerId());
+            cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(updated), cached.getScopesIds(updated), value, cached.getResourceServerId());
         }
         updated.putConfig(name, value);
     }
@@ -217,7 +209,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         associatedPolicies = new HashSet<>();
         PolicyStore policyStore = cacheSession.getPolicyStore();
         String resourceServerId = cached.getResourceServerId();
-        for (String id : cached.getAssociatedPoliciesIds(policySupplier)) {
+        for (String id : cached.getAssociatedPoliciesIds(getPolicyModel())) {
             Policy policy = policyStore.findById(id, resourceServerId);
             cacheSession.cachePolicy(policy);
             associatedPolicies.add(policy);
@@ -233,7 +225,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         if (resources != null) return resources;
         resources = new HashSet<>();
         ResourceStore resourceStore = cacheSession.getResourceStore();
-        for (String resourceId : cached.getResourcesIds(policySupplier)) {
+        for (String resourceId : cached.getResourcesIds(getPolicyModel())) {
             String resourceServerId = cached.getResourceServerId();
             Resource resource = resourceStore.findById(resourceId, resourceServerId);
             cacheSession.cacheResource(resource);
@@ -245,14 +237,14 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
     @Override
     public void addScope(Scope scope) {
         getDelegateForUpdate();
-        cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(policySupplier), new HashSet<>(Arrays.asList(scope.getId())), cached.getConfig(policySupplier).get("defaultResourceType"), cached.getResourceServerId());
+        cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(updated), new HashSet<>(Arrays.asList(scope.getId())), cached.getConfig(updated).get("defaultResourceType"), cached.getResourceServerId());
         updated.addScope(scope);
     }
 
     @Override
     public void removeScope(Scope scope) {
         getDelegateForUpdate();
-        cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(policySupplier), new HashSet<>(Arrays.asList(scope.getId())), cached.getConfig(policySupplier).get("defaultResourceType"), cached.getResourceServerId());
+        cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(updated), new HashSet<>(Arrays.asList(scope.getId())), cached.getConfig(updated).get("defaultResourceType"), cached.getResourceServerId());
         updated.removeScope(scope);
     }
 
@@ -275,7 +267,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         getDelegateForUpdate();
         HashSet<String> resources = new HashSet<>();
         resources.add(resource.getId());
-        cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), resources, cached.getScopesIds(policySupplier), cached.getConfig(policySupplier).get("defaultResourceType"), cached.getResourceServerId());
+        cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), resources, cached.getScopesIds(updated), cached.getConfig(updated).get("defaultResourceType"), cached.getResourceServerId());
         updated.addResource(resource);
 
     }
@@ -285,14 +277,14 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         getDelegateForUpdate();
         HashSet<String> resources = new HashSet<>();
         resources.add(resource.getId());
-        cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), resources, cached.getScopesIds(policySupplier), cached.getConfig(policySupplier).get("defaultResourceType"), cached.getResourceServerId());
+        cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), resources, cached.getScopesIds(updated), cached.getConfig(updated).get("defaultResourceType"), cached.getResourceServerId());
         updated.removeResource(resource);
 
     }
 
     @Override
     public boolean isFetched(String association) {
-        return policySupplier.get().isFetched(association);
+        return getPolicyModel().isFetched(association);
     }
 
     protected Set<Scope> scopes;
@@ -304,7 +296,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         scopes = new HashSet<>();
         ScopeStore scopeStore = cacheSession.getScopeStore();
         String resourceServerId = cached.getResourceServerId();
-        for (String scopeId : cached.getScopesIds(policySupplier)) {
+        for (String scopeId : cached.getScopesIds(getPolicyModel())) {
             Scope scope = scopeStore.findById(scopeId, resourceServerId);
             cacheSession.cacheScope(scope);
             scopes.add(scope);
@@ -321,7 +313,7 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
     @Override
     public void setOwner(String owner) {
         getDelegateForUpdate();
-        cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(policySupplier), cached.getScopesIds(policySupplier), cached.getConfig(policySupplier).get("defaultResourceType"), cached.getResourceServerId());
+        cacheSession.registerPolicyInvalidation(cached.getId(), cached.getName(), cached.getResourcesIds(updated), cached.getScopesIds(updated), cached.getConfig(updated).get("defaultResourceType"), cached.getResourceServerId());
         updated.setOwner(owner);
     }
 
@@ -339,7 +331,11 @@ public class PolicyAdapter implements Policy, CachedModel<Policy> {
         return getId().hashCode();
     }
 
+    private Policy getPolicyModel() {
+        return modelLoader.get(cached);
+    }
 
-
-
+    private Policy getPolicyModel(CachedPolicy cached) {
+        return cacheSession.getPolicyStoreDelegate().findById(cached.getId(), cached.getResourceServerId());
+    }
 }

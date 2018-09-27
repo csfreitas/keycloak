@@ -21,11 +21,11 @@ import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
+import org.keycloak.models.cache.infinispan.DefaultLazyLoader;
+import org.keycloak.models.cache.infinispan.LazyLoader;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -33,65 +33,38 @@ import java.util.stream.Collectors;
  * @version $Revision: 1 $
  */
 public class CachedGroup extends AbstractRevisioned implements InRealm {
-    private String realm;
-    private String name;
-    private String parentId;
-    private Function<Supplier<GroupModel>, MultivaluedHashMap<String, String>> attributes;
-    private Function<Supplier<GroupModel>, Set<String>> roleMappings;
-    private Function<Supplier<GroupModel>, Set<String>> subGroups;
+
+    private final String realm;
+    private final String name;
+    private final String parentId;
+    private final LazyLoader<GroupModel, MultivaluedHashMap<String, String>> attributes;
+    private final LazyLoader<GroupModel, Set<String>> roleMappings;
+    private final LazyLoader<GroupModel, Set<String>> subGroups;
 
     public CachedGroup(Long revision, RealmModel realm, GroupModel group) {
         super(revision, group.getId());
         this.realm = realm.getId();
         this.name = group.getName();
         this.parentId = group.getParentId();
-
-        this.attributes = new Function<Supplier<GroupModel>, MultivaluedHashMap<String, String>>() {
-            MultivaluedHashMap<String, String> cached;
-            @Override
-            public MultivaluedHashMap<String, String> apply(Supplier<GroupModel> group) {
-                if (cached == null) {
-                    cached = new MultivaluedHashMap<>(group.get().getAttributes());
-                }
-                return cached;
-            }
-        };
-        this.roleMappings = new Function<Supplier<GroupModel>, Set<String>>() {
-            Set<String> cached;
-            @Override
-            public Set<String> apply(Supplier<GroupModel> groupModelSupplier) {
-                if (cached == null) {
-                    cached = groupModelSupplier.get().getRoleMappings().stream().map(RoleModel::getId).collect(Collectors.toSet());
-                }
-                return cached;
-            }
-        };
-        this.subGroups = new Function<Supplier<GroupModel>, Set<String>>() {
-            Set<String> cached;
-            @Override
-            public Set<String> apply(Supplier<GroupModel> groupModelSupplier) {
-                if (cached == null) {
-                    cached = groupModelSupplier.get().getSubGroups().stream().map(GroupModel::getId).collect(Collectors.toSet());
-                }
-                return cached;
-            }
-        };
+        this.attributes = new DefaultLazyLoader<>(source -> new MultivaluedHashMap<>(source.getAttributes()));
+        this.roleMappings = new DefaultLazyLoader<>(source -> source.getRoleMappings().stream().map(RoleModel::getId).collect(Collectors.toSet()));
+        this.subGroups = new DefaultLazyLoader<>(source -> source.getSubGroups().stream().map(GroupModel::getId).collect(Collectors.toSet()));
     }
 
     public String getRealm() {
         return realm;
     }
 
-    public MultivaluedHashMap<String, String> getAttributes(Supplier<GroupModel> group) {
-        return attributes.apply(group);
+    public MultivaluedHashMap<String, String> getAttributes(GroupModel group) {
+        return attributes.get(group);
     }
 
-    public Set<String> getRoleMappings(Supplier<GroupModel> group) {
+    public Set<String> getRoleMappings(GroupModel group) {
         // it may happen that groups were not loaded before so we don't actually need to invalidate entries in the cache
         if (group == null) {
             return Collections.emptySet();
         }
-        return roleMappings.apply(group);
+        return roleMappings.get(group);
     }
 
     public String getName() {
@@ -102,7 +75,7 @@ public class CachedGroup extends AbstractRevisioned implements InRealm {
         return parentId;
     }
 
-    public Set<String> getSubGroups(Supplier<GroupModel> group) {
-        return subGroups.apply(group);
+    public Set<String> getSubGroups(GroupModel group) {
+        return subGroups.get(group);
     }
 }

@@ -239,11 +239,7 @@ public class UsersResource {
             Set<String> groupModels = auth.groups().getGroupsWithViewPermission();
 
             if (!groupModels.isEmpty()) {
-                try {
-                    session.setAttribute(UserModel.GROUPS, JsonSerialization.writeValueAsPrettyString(groupModels));
-                } catch (IOException cause) {
-                    throw new RuntimeException("Failed to create groups filter", cause);
-                }
+                session.setAttribute(UserModel.GROUPS, groupModels);
             }
         }
 

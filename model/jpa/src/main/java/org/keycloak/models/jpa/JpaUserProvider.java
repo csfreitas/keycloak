@@ -49,7 +49,6 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.storage.StorageId;
 import org.keycloak.storage.UserStorageProvider;
 import org.keycloak.storage.client.ClientStorageProvider;
-import org.keycloak.util.JsonSerialization;
 
 import javax.persistence.EntityManager;
 import javax.persistence.TypedQuery;
@@ -58,10 +57,8 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -739,7 +736,7 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
             }
         }
 
-        String userGroups = (String) session.getAttribute(UserModel.GROUPS);
+        Set<String> userGroups = (Set<String>) session.getAttribute(UserModel.GROUPS);
 
         if (userGroups != null) {
             Subquery subquery = queryBuilder.subquery(String.class);
@@ -749,14 +746,8 @@ public class JpaUserProvider implements UserProvider, UserCredentialStore {
 
             List<Predicate> subPredicates = new ArrayList<>();
 
-            try {
-                subPredicates.add(from.get("groupId").in(JsonSerialization.readValue(userGroups, List.class)));
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to parse groups", e);
-            }
-
+            subPredicates.add(from.get("groupId").in(userGroups));
             subPredicates.add(builder.equal(from.get("user").get("id"), root.get("id")));
-
 
             Subquery subquery1 = queryBuilder.subquery(String.class);
 

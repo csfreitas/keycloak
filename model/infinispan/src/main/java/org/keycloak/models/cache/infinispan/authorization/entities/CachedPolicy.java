@@ -21,6 +21,8 @@ package org.keycloak.models.cache.infinispan.authorization.entities;
 import org.keycloak.authorization.model.Policy;
 import org.keycloak.authorization.model.Resource;
 import org.keycloak.authorization.model.Scope;
+import org.keycloak.models.cache.infinispan.DefaultLazyLoader;
+import org.keycloak.models.cache.infinispan.LazyLoader;
 import org.keycloak.models.cache.infinispan.entities.AbstractRevisioned;
 import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.Logic;
@@ -28,8 +30,6 @@ import org.keycloak.representations.idm.authorization.Logic;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -37,16 +37,16 @@ import java.util.stream.Collectors;
  */
 public class CachedPolicy extends AbstractRevisioned implements InResourceServer {
 
-    private String type;
-    private DecisionStrategy decisionStrategy;
-    private Logic logic;
-    private String name;
-    private String description;
-    private String resourceServerId;
-    private Function<Supplier<Policy>, Set<String>> associatedPoliciesIds;
-    private Function<Supplier<Policy>, Set<String>> resourcesIds;
-    private Function<Supplier<Policy>, Set<String>> scopesIds;
-    private Function<Supplier<Policy>, Map<String, String>> config;
+    private final String type;
+    private final DecisionStrategy decisionStrategy;
+    private final Logic logic;
+    private final String name;
+    private final String description;
+    private final String resourceServerId;
+    private final LazyLoader<Policy, Set<String>> associatedPoliciesIds;
+    private final LazyLoader<Policy, Set<String>> resourcesIds;
+    private final LazyLoader<Policy, Set<String>> scopesIds;
+    private final LazyLoader<Policy, Map<String, String>> config;
     private final String owner;
 
     public CachedPolicy(Long revision, Policy policy) {
@@ -59,72 +59,33 @@ public class CachedPolicy extends AbstractRevisioned implements InResourceServer
         this.resourceServerId = policy.getResourceServer().getId();
 
         if (policy.isFetched("associatedPolicies")) {
-            Set<String> cached = policy.getAssociatedPolicies().stream().map(Policy::getId).collect(Collectors.toSet());
-            this.associatedPoliciesIds = supplier -> cached;
+            Set<String> data = policy.getAssociatedPolicies().stream().map(Policy::getId).collect(Collectors.toSet());
+            this.associatedPoliciesIds = source -> data;
         } else {
-            this.associatedPoliciesIds = new Function<Supplier<Policy>, Set<String>>() {
-                Set<String> cached;
-
-                @Override
-                public Set<String> apply(Supplier<Policy> supplier) {
-                    if (cached == null) {
-                        cached = supplier.get().getAssociatedPolicies().stream().map(Policy::getId).collect(Collectors.toSet());
-                    }
-                    return cached;
-                }
-            };
+            this.associatedPoliciesIds = new DefaultLazyLoader<>(source -> source.getAssociatedPolicies().stream().map(Policy::getId).collect(Collectors.toSet()));
         }
 
         if (policy.isFetched("resources")) {
-            Set<String> cached = policy.getResources().stream().map(Resource::getId).collect(Collectors.toSet());
-            this.resourcesIds = supplier -> cached;
+            Set<String> data = policy.getResources().stream().map(Resource::getId).collect(Collectors.toSet());
+            this.resourcesIds = source -> data;
         } else {
-            this.resourcesIds = new Function<Supplier<Policy>, Set<String>>() {
-                Set<String> cached;
-
-                @Override
-                public Set<String> apply(Supplier<Policy> supplier) {
-                    if (cached == null) {
-                        cached = supplier.get().getResources().stream().map(Resource::getId).collect(Collectors.toSet());
-                    }
-                    return cached;
-                }
-            };
+            this.resourcesIds = new DefaultLazyLoader<>(source -> source.getResources().stream().map(Resource::getId).collect(Collectors.toSet()));
         }
 
         if (policy.isFetched("scopes")) {
-            Set<String> cached = policy.getScopes().stream().map(Scope::getId).collect(Collectors.toSet());
-            this.scopesIds = supplier -> cached;
+            Set<String> data = policy.getScopes().stream().map(Scope::getId).collect(Collectors.toSet());
+            this.scopesIds = source -> data;
         } else {
-            this.scopesIds = new Function<Supplier<Policy>, Set<String>>() {
-                Set<String> cached;
-
-                @Override
-                public Set<String> apply(Supplier<Policy> supplier) {
-                    if (cached == null) {
-                        cached = supplier.get().getScopes().stream().map(Scope::getId).collect(Collectors.toSet());
-                    }
-                    return cached;
-                }
-            };
+            this.scopesIds = new DefaultLazyLoader<>(source -> source.getScopes().stream().map(Scope::getId).collect(Collectors.toSet()));
         }
 
         if (policy.isFetched("config")) {
-            Map<String, String> cached = new HashMap<>(policy.getConfig());
-            this.config = supplier -> cached;
+            Map<String, String> data = new HashMap<>(policy.getConfig());
+            this.config = source -> data;
         } else {
-            this.config = new Function<Supplier<Policy>, Map<String, String>>() {
-                Map<String, String> cached;
-
-                @Override
-                public Map<String, String> apply(Supplier<Policy> supplier) {
-                    if (cached == null) {
-                        cached = new HashMap<>(supplier.get().getConfig());
-                    }
-                    return cached;
-                }
-            };
+            this.config = new DefaultLazyLoader<>(source -> new HashMap<>(source.getConfig()));
         }
+
         this.owner = policy.getOwner();
     }
 
@@ -140,8 +101,8 @@ public class CachedPolicy extends AbstractRevisioned implements InResourceServer
         return this.logic;
     }
 
-    public Map<String, String> getConfig(Supplier<Policy> policy) {
-        return this.config.apply(policy);
+    public Map<String, String> getConfig(Policy policy) {
+        return this.config.get(policy);
     }
 
     public String getName() {
@@ -152,16 +113,16 @@ public class CachedPolicy extends AbstractRevisioned implements InResourceServer
         return this.description;
     }
 
-    public Set<String> getAssociatedPoliciesIds(Supplier<Policy> policy) {
-        return this.associatedPoliciesIds.apply(policy);
+    public Set<String> getAssociatedPoliciesIds(Policy policy) {
+        return this.associatedPoliciesIds.get(policy);
     }
 
-    public Set<String> getResourcesIds(Supplier<Policy> policy) {
-        return this.resourcesIds.apply(policy);
+    public Set<String> getResourcesIds(Policy policy) {
+        return this.resourcesIds.get(policy);
     }
 
-    public Set<String> getScopesIds(Supplier<Policy> policy) {
-        return this.scopesIds.apply(policy);
+    public Set<String> getScopesIds(Policy policy) {
+        return this.scopesIds.get(policy);
     }
 
     public String getResourceServerId() {

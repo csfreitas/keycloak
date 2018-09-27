@@ -223,6 +223,24 @@ public abstract class AbstractMigrationTest extends AbstractKeycloakTest {
         }
     }
 
+    protected void testMigrationTo4_6_0(boolean supportsAuthzService) {
+        if (supportsAuthzService) {
+            testGroupPolicyTypeFineGrainedAdminPermission();
+        }
+    }
+
+    private void testGroupPolicyTypeFineGrainedAdminPermission() {
+        ClientsResource clients = migrationRealm.clients();
+        ClientRepresentation clientRepresentation = clients.findByClientId("realm-management").get(0);
+        List<ResourceRepresentation> resources = clients.get(clientRepresentation.getId()).authorization().resources().resources();
+
+        assertEquals(5, resources.size());
+
+        for (ResourceRepresentation resource : resources) {
+            assertEquals("Group", resource.getType());
+        }
+    }
+
     private void testCliConsoleScopeSize(RealmResource realm) {
         ClientRepresentation cli = realm.clients().findByClientId(Constants.ADMIN_CLI_CLIENT_ID).get(0);
         ClientRepresentation console = realm.clients().findByClientId(Constants.ADMIN_CONSOLE_CLIENT_ID).get(0);
@@ -546,6 +564,7 @@ public abstract class AbstractMigrationTest extends AbstractKeycloakTest {
     protected void testMigrationTo4_x(boolean supportsAuthzServices) {
         testMigrationTo4_0_0();
         testMigrationTo4_2_0(supportsAuthzServices);
+        testMigrationTo4_6_0(supportsAuthzServices);
     }
 
     protected void testMigrationTo4_x() {
