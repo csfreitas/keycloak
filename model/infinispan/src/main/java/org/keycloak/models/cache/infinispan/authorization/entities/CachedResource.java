@@ -23,9 +23,12 @@ import org.keycloak.authorization.model.Scope;
 import org.keycloak.common.util.MultivaluedHashMap;
 import org.keycloak.models.cache.infinispan.entities.AbstractRevisioned;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -39,23 +42,71 @@ public class CachedResource extends AbstractRevisioned implements InResourceServ
     private String type;
     private String name;
     private String displayName;
-    private Set<String> uris;
-    private Set<String> scopesIds;
+    private Function<Supplier<Resource>, Set<String>> uris;
+    private Function<Supplier<Resource>, Set<String>> scopesIds;
     private boolean ownerManagedAccess;
-    private MultivaluedHashMap<String, String> attributes = new MultivaluedHashMap<>();
+    private Function<Supplier<Resource>, MultivaluedHashMap<String, String>> attributes;
 
     public CachedResource(Long revision, Resource resource) {
         super(revision, resource.getId());
         this.name = resource.getName();
         this.displayName = resource.getDisplayName();
-        this.uris = resource.getUris();
         this.type = resource.getType();
         this.owner = resource.getOwner();
         this.iconUri = resource.getIconUri();
         this.resourceServerId = resource.getResourceServer().getId();
-        this.scopesIds = resource.getScopes().stream().map(Scope::getId).collect(Collectors.toSet());
         ownerManagedAccess = resource.isOwnerManagedAccess();
-        this.attributes.putAll(resource.getAttributes());
+
+        if (resource.isFetched("uris")) {
+            Set<String> cached = new HashSet<>(resource.getUris());
+            this.uris = supplier -> cached;
+        } else {
+            this.uris = new Function<Supplier<Resource>, Set<String>>() {
+                Set<String> cached;
+
+                @Override
+                public Set<String> apply(Supplier<Resource> resource) {
+                    if (cached == null) {
+                        cached = new HashSet<>(resource.get().getUris());
+                    }
+                    return cached;
+                }
+            };
+        }
+
+        if (resource.isFetched("scopes")) {
+            Set<String> scopes = resource.getScopes().stream().map(Scope::getId).collect(Collectors.toSet());
+            this.scopesIds = supplier -> scopes;
+        } else {
+            this.scopesIds = new Function<Supplier<Resource>, Set<String>>() {
+                Set<String> cached;
+
+                @Override
+                public Set<String> apply(Supplier<Resource> resource) {
+                    if (cached == null) {
+                        cached = resource.get().getScopes().stream().map(Scope::getId).collect(Collectors.toSet());
+                    }
+                    return cached;
+                }
+            };
+        }
+
+        if (resource.isFetched("attributes")) {
+            MultivaluedHashMap<String, String> cached = new MultivaluedHashMap<>(resource.getAttributes());
+            this.attributes = supplier -> cached;
+        } else {
+            this.attributes = new Function<Supplier<Resource>, MultivaluedHashMap<String, String>>() {
+                MultivaluedHashMap<String, String> cached;
+
+                @Override
+                public MultivaluedHashMap<String, String> apply(Supplier<Resource> resource) {
+                    if (cached == null) {
+                        cached = new MultivaluedHashMap<>(resource.get().getAttributes());
+                    }
+                    return cached;
+                }
+            };
+        }
     }
 
 
@@ -67,8 +118,8 @@ public class CachedResource extends AbstractRevisioned implements InResourceServ
         return this.displayName;
     }
 
-    public Set<String> getUris() {
-        return this.uris;
+    public Set<String> getUris(Supplier<Resource> resource) {
+        return this.uris.apply(resource);
     }
 
     public String getType() {
@@ -91,11 +142,11 @@ public class CachedResource extends AbstractRevisioned implements InResourceServ
         return this.resourceServerId;
     }
 
-    public Set<String> getScopesIds() {
-        return this.scopesIds;
+    public Set<String> getScopesIds(Supplier<Resource> resource) {
+        return this.scopesIds.apply(resource);
     }
 
-    public Map<String, List<String>> getAttributes() {
-        return attributes;
+    public Map<String, List<String>> getAttributes(Supplier<Resource> resource) {
+        return attributes.apply(resource);
     }
 }

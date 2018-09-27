@@ -76,6 +76,7 @@ public interface KeycloakSession {
     Class<? extends Provider> getProviderClass(String providerClassName);
 
     Object getAttribute(String attribute);
+    <T> T getAttributeOrDefault(String attribute, T defaultValue);
     <T> T getAttribute(String attribute, Class<T> clazz);
 
     Object removeAttribute(String attribute);

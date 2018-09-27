@@ -25,6 +25,9 @@ import org.keycloak.models.UserModel;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -41,10 +44,10 @@ public class CachedUser extends AbstractExtendableRevisioned implements InRealm 
     private boolean enabled;
     private String federationLink;
     private String serviceAccountClientLink;
-    private MultivaluedHashMap<String, String> attributes = new MultivaluedHashMap<>();
-    private Set<String> requiredActions = new HashSet<>();
-    private Set<String> roleMappings = new HashSet<>();
-    private Set<String> groups = new HashSet<>();
+    private Function<Supplier<UserModel>, MultivaluedHashMap<String, String>> attributes;
+    private Function<Supplier<UserModel>, Set<String>> requiredActions;
+    private Function<Supplier<UserModel>, Set<String>> roleMappings;
+    private Function<Supplier<UserModel>, Set<String>> groups;
     private int notBefore;
 
 
@@ -56,22 +59,52 @@ public class CachedUser extends AbstractExtendableRevisioned implements InRealm 
         this.createdTimestamp = user.getCreatedTimestamp();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
-        this.attributes.putAll(user.getAttributes());
+        String id = user.getId();
+        this.attributes = new Function<Supplier<UserModel>, MultivaluedHashMap<String, String>>() {
+            MultivaluedHashMap<String, String> cached;
+            @Override
+            public MultivaluedHashMap<String, String> apply(Supplier<UserModel> userModel) {
+                if (cached == null) {
+                    cached = new MultivaluedHashMap(userModel.get().getAttributes());
+                }
+                return cached;
+            }
+        };
         this.email = user.getEmail();
         this.emailVerified = user.isEmailVerified();
         this.enabled = user.isEnabled();
         this.federationLink = user.getFederationLink();
         this.serviceAccountClientLink = user.getServiceAccountClientLink();
-        this.requiredActions.addAll(user.getRequiredActions());
-        for (RoleModel role : user.getRoleMappings()) {
-            roleMappings.add(role.getId());
-        }
-        Set<GroupModel> groupMappings = user.getGroups();
-        if (groupMappings != null) {
-            for (GroupModel group : groupMappings) {
-                groups.add(group.getId());
+        this.requiredActions = new Function<Supplier<UserModel>, Set<String>>() {
+            Set<String> cached;
+            @Override
+            public Set<String> apply(Supplier<UserModel> userModel) {
+                if (cached == null) {
+                    cached = new HashSet<>(userModel.get().getRequiredActions());
+                }
+                return cached;
             }
-        }
+        };
+        this.roleMappings = new Function<Supplier<UserModel>, Set<String>>() {
+            Set<String> cached;
+            @Override
+            public Set<String> apply(Supplier<UserModel> userModel) {
+                if (cached == null) {
+                    cached = userModel.get().getRoleMappings().stream().map(RoleModel::getId).collect(Collectors.toSet());
+                }
+                return cached;
+            }
+        };
+        this.groups = new Function<Supplier<UserModel>, Set<String>>() {
+            Set<String> cached;
+            @Override
+            public Set<String> apply(Supplier<UserModel> userModel) {
+                if (cached == null) {
+                    cached = userModel.get().getGroups().stream().map(GroupModel::getId).collect(Collectors.toSet());
+                }
+                return cached;
+            }
+        };
         this.notBefore = notBefore;
     }
 
@@ -107,16 +140,16 @@ public class CachedUser extends AbstractExtendableRevisioned implements InRealm 
         return enabled;
     }
 
-    public MultivaluedHashMap<String, String> getAttributes() {
-        return attributes;
+    public MultivaluedHashMap<String, String> getAttributes(Supplier<UserModel> userModel) {
+        return attributes.apply(userModel);
     }
 
-    public Set<String> getRequiredActions() {
-        return requiredActions;
+    public Set<String> getRequiredActions(Supplier<UserModel> userModel) {
+        return requiredActions.apply(userModel);
     }
 
-    public Set<String> getRoleMappings() {
-        return roleMappings;
+    public Set<String> getRoleMappings(Supplier<UserModel> userModel) {
+        return roleMappings.apply(userModel);
     }
 
     public String getFederationLink() {
@@ -127,8 +160,8 @@ public class CachedUser extends AbstractExtendableRevisioned implements InRealm 
         return serviceAccountClientLink;
     }
 
-    public Set<String> getGroups() {
-        return groups;
+    public Set<String> getGroups(Supplier<UserModel> userModel) {
+        return groups.apply(userModel);
     }
 
     public int getNotBefore() {

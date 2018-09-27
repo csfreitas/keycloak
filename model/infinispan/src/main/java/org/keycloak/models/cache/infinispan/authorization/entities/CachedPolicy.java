@@ -28,6 +28,8 @@ import org.keycloak.representations.idm.authorization.Logic;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -38,13 +40,13 @@ public class CachedPolicy extends AbstractRevisioned implements InResourceServer
     private String type;
     private DecisionStrategy decisionStrategy;
     private Logic logic;
-    private Map<String, String> config;
     private String name;
     private String description;
     private String resourceServerId;
-    private Set<String> associatedPoliciesIds;
-    private Set<String> resourcesIds;
-    private Set<String> scopesIds;
+    private Function<Supplier<Policy>, Set<String>> associatedPoliciesIds;
+    private Function<Supplier<Policy>, Set<String>> resourcesIds;
+    private Function<Supplier<Policy>, Set<String>> scopesIds;
+    private Function<Supplier<Policy>, Map<String, String>> config;
     private final String owner;
 
     public CachedPolicy(Long revision, Policy policy) {
@@ -52,13 +54,77 @@ public class CachedPolicy extends AbstractRevisioned implements InResourceServer
         this.type = policy.getType();
         this.decisionStrategy = policy.getDecisionStrategy();
         this.logic = policy.getLogic();
-        this.config = new HashMap(policy.getConfig());
         this.name = policy.getName();
         this.description = policy.getDescription();
         this.resourceServerId = policy.getResourceServer().getId();
-        this.associatedPoliciesIds = policy.getAssociatedPolicies().stream().map(Policy::getId).collect(Collectors.toSet());
-        this.resourcesIds = policy.getResources().stream().map(Resource::getId).collect(Collectors.toSet());
-        this.scopesIds = policy.getScopes().stream().map(Scope::getId).collect(Collectors.toSet());
+
+        if (policy.isFetched("associatedPolicies")) {
+            Set<String> cached = policy.getAssociatedPolicies().stream().map(Policy::getId).collect(Collectors.toSet());
+            this.associatedPoliciesIds = supplier -> cached;
+        } else {
+            this.associatedPoliciesIds = new Function<Supplier<Policy>, Set<String>>() {
+                Set<String> cached;
+
+                @Override
+                public Set<String> apply(Supplier<Policy> supplier) {
+                    if (cached == null) {
+                        cached = supplier.get().getAssociatedPolicies().stream().map(Policy::getId).collect(Collectors.toSet());
+                    }
+                    return cached;
+                }
+            };
+        }
+
+        if (policy.isFetched("resources")) {
+            Set<String> cached = policy.getResources().stream().map(Resource::getId).collect(Collectors.toSet());
+            this.resourcesIds = supplier -> cached;
+        } else {
+            this.resourcesIds = new Function<Supplier<Policy>, Set<String>>() {
+                Set<String> cached;
+
+                @Override
+                public Set<String> apply(Supplier<Policy> supplier) {
+                    if (cached == null) {
+                        cached = supplier.get().getResources().stream().map(Resource::getId).collect(Collectors.toSet());
+                    }
+                    return cached;
+                }
+            };
+        }
+
+        if (policy.isFetched("scopes")) {
+            Set<String> cached = policy.getScopes().stream().map(Scope::getId).collect(Collectors.toSet());
+            this.scopesIds = supplier -> cached;
+        } else {
+            this.scopesIds = new Function<Supplier<Policy>, Set<String>>() {
+                Set<String> cached;
+
+                @Override
+                public Set<String> apply(Supplier<Policy> supplier) {
+                    if (cached == null) {
+                        cached = supplier.get().getScopes().stream().map(Scope::getId).collect(Collectors.toSet());
+                    }
+                    return cached;
+                }
+            };
+        }
+
+        if (policy.isFetched("config")) {
+            Map<String, String> cached = new HashMap<>(policy.getConfig());
+            this.config = supplier -> cached;
+        } else {
+            this.config = new Function<Supplier<Policy>, Map<String, String>>() {
+                Map<String, String> cached;
+
+                @Override
+                public Map<String, String> apply(Supplier<Policy> supplier) {
+                    if (cached == null) {
+                        cached = new HashMap<>(supplier.get().getConfig());
+                    }
+                    return cached;
+                }
+            };
+        }
         this.owner = policy.getOwner();
     }
 
@@ -74,8 +140,8 @@ public class CachedPolicy extends AbstractRevisioned implements InResourceServer
         return this.logic;
     }
 
-    public Map<String, String> getConfig() {
-        return this.config;
+    public Map<String, String> getConfig(Supplier<Policy> policy) {
+        return this.config.apply(policy);
     }
 
     public String getName() {
@@ -86,16 +152,16 @@ public class CachedPolicy extends AbstractRevisioned implements InResourceServer
         return this.description;
     }
 
-    public Set<String> getAssociatedPoliciesIds() {
-        return this.associatedPoliciesIds;
+    public Set<String> getAssociatedPoliciesIds(Supplier<Policy> policy) {
+        return this.associatedPoliciesIds.apply(policy);
     }
 
-    public Set<String> getResourcesIds() {
-        return this.resourcesIds;
+    public Set<String> getResourcesIds(Supplier<Policy> policy) {
+        return this.resourcesIds.apply(policy);
     }
 
-    public Set<String> getScopesIds() {
-        return this.scopesIds;
+    public Set<String> getScopesIds(Supplier<Policy> policy) {
+        return this.scopesIds.apply(policy);
     }
 
     public String getResourceServerId() {

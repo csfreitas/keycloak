@@ -22,8 +22,11 @@ import org.keycloak.models.GroupModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -33,9 +36,9 @@ public class CachedGroup extends AbstractRevisioned implements InRealm {
     private String realm;
     private String name;
     private String parentId;
-    private MultivaluedHashMap<String, String> attributes = new MultivaluedHashMap<>();
-    private Set<String> roleMappings = new HashSet<>();
-    private Set<String> subGroups = new HashSet<>();
+    private Function<Supplier<GroupModel>, MultivaluedHashMap<String, String>> attributes;
+    private Function<Supplier<GroupModel>, Set<String>> roleMappings;
+    private Function<Supplier<GroupModel>, Set<String>> subGroups;
 
     public CachedGroup(Long revision, RealmModel realm, GroupModel group) {
         super(revision, group.getId());
@@ -43,28 +46,52 @@ public class CachedGroup extends AbstractRevisioned implements InRealm {
         this.name = group.getName();
         this.parentId = group.getParentId();
 
-        this.attributes.putAll(group.getAttributes());
-        for (RoleModel role : group.getRoleMappings()) {
-            roleMappings.add(role.getId());
-        }
-        Set<GroupModel> subGroups1 = group.getSubGroups();
-        if (subGroups1 != null) {
-            for (GroupModel subGroup : subGroups1) {
-                subGroups.add(subGroup.getId());
+        this.attributes = new Function<Supplier<GroupModel>, MultivaluedHashMap<String, String>>() {
+            MultivaluedHashMap<String, String> cached;
+            @Override
+            public MultivaluedHashMap<String, String> apply(Supplier<GroupModel> group) {
+                if (cached == null) {
+                    cached = new MultivaluedHashMap<>(group.get().getAttributes());
+                }
+                return cached;
             }
-        }
+        };
+        this.roleMappings = new Function<Supplier<GroupModel>, Set<String>>() {
+            Set<String> cached;
+            @Override
+            public Set<String> apply(Supplier<GroupModel> groupModelSupplier) {
+                if (cached == null) {
+                    cached = groupModelSupplier.get().getRoleMappings().stream().map(RoleModel::getId).collect(Collectors.toSet());
+                }
+                return cached;
+            }
+        };
+        this.subGroups = new Function<Supplier<GroupModel>, Set<String>>() {
+            Set<String> cached;
+            @Override
+            public Set<String> apply(Supplier<GroupModel> groupModelSupplier) {
+                if (cached == null) {
+                    cached = groupModelSupplier.get().getSubGroups().stream().map(GroupModel::getId).collect(Collectors.toSet());
+                }
+                return cached;
+            }
+        };
     }
 
     public String getRealm() {
         return realm;
     }
 
-    public MultivaluedHashMap<String, String> getAttributes() {
-        return attributes;
+    public MultivaluedHashMap<String, String> getAttributes(Supplier<GroupModel> group) {
+        return attributes.apply(group);
     }
 
-    public Set<String> getRoleMappings() {
-        return roleMappings;
+    public Set<String> getRoleMappings(Supplier<GroupModel> group) {
+        // it may happen that groups were not loaded before so we don't actually need to invalidate entries in the cache
+        if (group == null) {
+            return Collections.emptySet();
+        }
+        return roleMappings.apply(group);
     }
 
     public String getName() {
@@ -75,7 +102,7 @@ public class CachedGroup extends AbstractRevisioned implements InRealm {
         return parentId;
     }
 
-    public Set<String> getSubGroups() {
-        return subGroups;
+    public Set<String> getSubGroups(Supplier<GroupModel> group) {
+        return subGroups.apply(group);
     }
 }
