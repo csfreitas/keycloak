@@ -725,7 +725,7 @@ public class OAuthClient {
 
     public Map<String, String> getCurrentQuery() {
         Map<String, String> m = new HashMap<>();
-        List<NameValuePair> pairs = URLEncodedUtils.parse(getCurrentUri(), Charset.forName("UTF-8"));
+        List<NameValuePair> pairs = URLEncodedUtils.parse(getCurrentUri(), "UTF-8");
         for (NameValuePair p : pairs) {
             m.put(p.getName(), p.getValue());
         }

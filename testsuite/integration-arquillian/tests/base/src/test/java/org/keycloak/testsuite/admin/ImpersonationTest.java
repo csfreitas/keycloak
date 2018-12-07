@@ -47,6 +47,7 @@ import org.keycloak.testsuite.auth.page.AuthRealm;
 import org.keycloak.testsuite.client.KeycloakTestingClient;
 import org.keycloak.testsuite.pages.AppPage;
 import org.keycloak.testsuite.pages.LoginPage;
+import org.keycloak.testsuite.util.AdminClientUtil;
 import org.keycloak.testsuite.util.ClientBuilder;
 import org.keycloak.testsuite.util.CredentialBuilder;
 import org.keycloak.testsuite.util.OAuthClient;
@@ -115,9 +116,10 @@ public class ImpersonationTest extends AbstractKeycloakTest {
 
     @Test
     public void testImpersonateByMasterImpersonator() {
-        Response response = adminClient.realm("master").users().create(UserBuilder.create().username("master-impersonator").build());
-        String userId = ApiUtil.getCreatedId(response);
-        response.close();
+        String userId;
+        try (Response response = adminClient.realm("master").users().create(UserBuilder.create().username("master-impersonator").build())) {
+            userId = ApiUtil.getCreatedId(response);
+        }
 
         UserResource user = adminClient.realm("master").users().get(userId);
         user.resetPassword(CredentialBuilder.create().password("password").build());
@@ -153,9 +155,10 @@ public class ImpersonationTest extends AbstractKeycloakTest {
 
     @Test
     public void testImpersonateByMastertBadImpersonator() {
-        Response response = adminClient.realm("master").users().create(UserBuilder.create().username("master-bad-impersonator").build());
-        String userId = ApiUtil.getCreatedId(response);
-        response.close();
+        String userId;
+        try (Response response = adminClient.realm("master").users().create(UserBuilder.create().username("master-bad-impersonator").build())) {
+            userId = ApiUtil.getCreatedId(response);
+        }
         adminClient.realm("master").users().get(userId).resetPassword(CredentialBuilder.create().password("password").build());
 
         testForbiddenImpersonation("master-bad-impersonator", Config.getAdminRealm());
@@ -192,27 +195,37 @@ public class ImpersonationTest extends AbstractKeycloakTest {
 
     // Return the SSO cookie from the impersonated session
     protected String testSuccessfulImpersonation(String admin, String adminRealm) {
-        ResteasyClient resteasyClient = new ResteasyClientBuilder().connectionPoolSize(10).build();
-
-        // Login adminClient
-        Keycloak client = login(admin, adminRealm, resteasyClient);
+        Keycloak client = null;
+        KeycloakTestingClient testingClient = null;
+        ResteasyClient resteasyClient = null;
         try {
+            ResteasyClientBuilder resteasyClientBuilder = new ResteasyClientBuilder();
+            resteasyClientBuilder.connectionPoolSize(10);
+            resteasyClientBuilder.httpEngine(AdminClientUtil.getCustomClientHttpEngine(resteasyClientBuilder, 10));
+            resteasyClient = resteasyClientBuilder.build();
+
+            // Login adminClient
+            client = login(admin, adminRealm, resteasyClient);
+        
             // Impersonate
             impersonate(client, admin, adminRealm);
 
             // Get the SSO cookie. Needs to use same RestEasyClient used by adminClient to be able to see the cookies
-            KeycloakTestingClient testingClient = KeycloakTestingClient.getInstance(AuthServerTestEnricher.getAuthServerContextRoot() + "/auth", resteasyClient);
+            testingClient = KeycloakTestingClient.getInstance(AuthServerTestEnricher.getAuthServerContextRoot() + "/auth", 
+                    resteasyClient);
             String kcIdentity = testingClient.testing("test").getSSOCookieValue();
             Assert.assertNotNull(kcIdentity);
 
             return kcIdentity;
         } finally {
-            resteasyClient.close();
+            if (testingClient != null) testingClient.close();
+            if (client != null) client.close();
+            if (resteasyClient != null) resteasyClient.close();
         }
     }
 
     private void impersonate(Keycloak adminClient, String admin, String adminRealm) {
-        Map data = adminClient.realms().realm("test").users().get(impersonatedUserId).impersonate();
+        Map<String, Object> data = adminClient.realms().realm("test").users().get(impersonatedUserId).impersonate();
         Assert.assertNotNull(data);
         Assert.assertNotNull(data.get("redirect"));
 
@@ -228,8 +241,9 @@ public class ImpersonationTest extends AbstractKeycloakTest {
         Keycloak client = createAdminClient(adminRealm, establishClientId(adminRealm), admin);
         try {
             client.realms().realm("test").users().get(impersonatedUserId).impersonate();
+            Assert.fail("Expected ClientErrorException wasn't thrown.");
         } catch (ClientErrorException e) {
-            Assert.assertTrue(e.getMessage().indexOf("403 Forbidden") != -1);
+            Assert.assertTrue(e.getMessage().contains("403 Forbidden"));
         } finally {
             client.close();
         }
