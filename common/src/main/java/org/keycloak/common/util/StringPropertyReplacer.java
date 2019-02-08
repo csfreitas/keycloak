@@ -165,7 +165,7 @@ public final class StringPropertyReplacer
                                 else
                                     value = System.getProperty(realKey);
 
-                                if (value == null)
+                                if (value == null || "".equals(value))
                                 {
                                     // Check for a composite key, "key1,key2"
                                     value = resolveCompositeKey(realKey, props);
