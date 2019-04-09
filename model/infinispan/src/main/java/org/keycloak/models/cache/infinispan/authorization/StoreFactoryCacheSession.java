@@ -400,6 +400,10 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         return "permission.ticket.granted." + userId + "." + serverId;
     }
 
+    public static String getPermissionTicketByResourceNameAndGranted(String resourceName, String userId, String serverId) {
+        return "permission.ticket.granted." + resourceName + "." + userId + "." + serverId;
+    }
+
     public static String getPermissionTicketByOwner(String owner, String serverId) {
         return "permission.ticket.owner." + owner + "." + serverId;
     }
@@ -1072,6 +1076,13 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         public List<PermissionTicket> findGranted(String userId, String resourceServerId) {
             String cacheKey = getPermissionTicketByGranted(userId, resourceServerId);
             return cacheQuery(cacheKey, PermissionTicketListQuery.class, () -> getPermissionTicketStoreDelegate().findGranted(userId, resourceServerId),
+                    (revision, permissions) -> new PermissionTicketListQuery(revision, cacheKey, permissions.stream().map(permission -> permission.getId()).collect(Collectors.toSet()), resourceServerId), resourceServerId);
+        }
+
+        @Override
+        public List<PermissionTicket> findGranted(String resourceName, String userId, String resourceServerId) {
+            String cacheKey = getPermissionTicketByResourceNameAndGranted(resourceName, userId, resourceServerId);
+            return cacheQuery(cacheKey, PermissionTicketListQuery.class, () -> getPermissionTicketStoreDelegate().findGranted(resourceName, userId, resourceServerId),
                     (revision, permissions) -> new PermissionTicketListQuery(revision, cacheKey, permissions.stream().map(permission -> permission.getId()).collect(Collectors.toSet()), resourceServerId), resourceServerId);
         }
 
