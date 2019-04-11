@@ -35,6 +35,7 @@ import org.keycloak.admin.client.resource.AuthorizationResource;
 import org.keycloak.admin.client.resource.ClientResource;
 import org.keycloak.authorization.client.AuthorizationDeniedException;
 import org.keycloak.authorization.client.resource.PermissionResource;
+import org.keycloak.authorization.client.util.HttpResponseException;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.authorization.AuthorizationRequest;
 import org.keycloak.representations.idm.authorization.AuthorizationResponse;
@@ -382,6 +383,33 @@ public class UserManagedAccessTest extends AbstractResourceServerTest {
         assertEquals(1, permissions.size());
         Permission koloPermission = permissions.get(0);
         assertEquals("Resource A", koloPermission.getResourceName());
+        assertTrue(koloPermission.getScopes().containsAll(Arrays.asList("ScopeA", "ScopeB")));
+
+        ResourceRepresentation resourceRep = getAuthzClient().protection().resource().findById(resource.getId());
+
+        resourceRep.setName("Resource A Changed");
+
+        getAuthzClient().protection().resource().update(resourceRep);
+
+        request = new AuthorizationRequest();
+        // Try to use the old name
+        request.addPermission("Resource A", "ScopeA", "ScopeB");
+
+        try {
+            authorize("kolo", "password", request);
+            fail("User should not have access to resource from another user");
+        } catch (RuntimeException ade) {
+            assertTrue(ade.getCause().toString().contains("invalid_resource"));
+        }
+
+        request = new AuthorizationRequest();
+        request.addPermission(resourceRep.getName(), "ScopeA", "ScopeB");
+
+        permissions = authorize("kolo", "password", request);
+
+        assertEquals(1, permissions.size());
+        koloPermission = permissions.get(0);
+        assertEquals(resourceRep.getName(), koloPermission.getResourceName());
         assertTrue(koloPermission.getScopes().containsAll(Arrays.asList("ScopeA", "ScopeB")));
     }
 

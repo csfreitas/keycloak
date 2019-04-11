@@ -295,12 +295,12 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         invalidationEvents.add(PolicyUpdatedEvent.create(id, name, resources, resourceTypes, scopes, serverId));
     }
 
-    public void registerPermissionTicketInvalidation(String id, String owner, String requester, String resource,  String scope,  String serverId) {
-        cache.permissionTicketUpdated(id, owner, requester, resource, scope, serverId, invalidations);
+    public void registerPermissionTicketInvalidation(String id, String owner, String requester, String resource, String resourceName, String scope, String serverId) {
+        cache.permissionTicketUpdated(id, owner, requester, resource, resourceName, scope, serverId, invalidations);
         PermissionTicketAdapter adapter = managedPermissionTickets.get(id);
         if (adapter != null) adapter.invalidateFlag();
 
-        invalidationEvents.add(PermissionTicketUpdatedEvent.create(id, owner, requester, resource, scope, serverId));
+        invalidationEvents.add(PermissionTicketUpdatedEvent.create(id, owner, requester, resource, resourceName, scope, serverId));
     }
 
     private Set<String> getResourceTypes(Set<String> resources, String serverId) {
@@ -997,7 +997,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         @Override
         public PermissionTicket create(String resourceId, String scopeId, String requester, ResourceServer resourceServer) {
             PermissionTicket created = getPermissionTicketStoreDelegate().create(resourceId, scopeId, requester, resourceServer);
-            registerPermissionTicketInvalidation(created.getId(), created.getOwner(), created.getRequester(), created.getResource().getId(), scopeId, created.getResourceServer().getId());
+            registerPermissionTicketInvalidation(created.getId(), created.getOwner(), created.getRequester(), created.getResource().getId(), created.getResource().getName(), scopeId, created.getResourceServer().getId());
             return created;
         }
 
@@ -1012,8 +1012,8 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
             if (permission.getScope() != null) {
                 scopeId = permission.getScope().getId();
             }
-            invalidationEvents.add(PermissionTicketRemovedEvent.create(id, permission.getOwner(), permission.getRequester(), permission.getResource().getId(), scopeId, permission.getResourceServer().getId()));
-            cache.permissionTicketRemoval(id, permission.getOwner(), permission.getRequester(), permission.getResource().getId(), scopeId, permission.getResourceServer().getId(), invalidations);
+            invalidationEvents.add(PermissionTicketRemovedEvent.create(id, permission.getOwner(), permission.getRequester(), permission.getResource().getId(), permission.getResource().getName(), scopeId, permission.getResourceServer().getId()));
+            cache.permissionTicketRemoval(id, permission.getOwner(), permission.getRequester(), permission.getResource().getId(), permission.getResource().getName(),scopeId, permission.getResourceServer().getId(), invalidations);
             getPermissionTicketStoreDelegate().delete(id);
             UserManagedPermissionUtil.removePolicy(permission, StoreFactoryCacheSession.this);
 
@@ -1083,7 +1083,7 @@ public class StoreFactoryCacheSession implements CachedStoreFactoryProvider {
         public List<PermissionTicket> findGranted(String resourceName, String userId, String resourceServerId) {
             String cacheKey = getPermissionTicketByResourceNameAndGranted(resourceName, userId, resourceServerId);
             return cacheQuery(cacheKey, PermissionTicketListQuery.class, () -> getPermissionTicketStoreDelegate().findGranted(resourceName, userId, resourceServerId),
-                    (revision, permissions) -> new PermissionTicketListQuery(revision, cacheKey, permissions.stream().map(permission -> permission.getId()).collect(Collectors.toSet()), resourceServerId), resourceServerId);
+                    (revision, permissions) -> new PermissionTicketResourceListQuery(revision, cacheKey, resourceName, permissions.stream().map(permission -> permission.getId()).collect(Collectors.toSet()), resourceServerId), resourceServerId);
         }
 
         @Override
