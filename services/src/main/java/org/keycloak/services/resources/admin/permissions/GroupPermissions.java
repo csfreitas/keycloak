@@ -307,27 +307,12 @@ class GroupPermissions implements GroupPermissionEvaluator, GroupPermissionManag
 
     @Override
     public Set<String> getGroupsWithViewPermission() {
-        if (root.users().canView() || root.users().canManage()) return Collections.emptySet();
+        return getGroupsWithWithPermission(VIEW_MEMBERS_SCOPE, MANAGE_MEMBERS_SCOPE);
+    }
 
-        if (!root.isAdminSameRealm()) {
-            return Collections.emptySet();
-        }
-
-        ResourceServer server = root.realmResourceServer();
-
-        if (server == null) {
-            return Collections.emptySet();
-        }
-
-        Set<String> granted = new HashSet<>();
-
-        resourceStore.findByType("Group", server.getId(), resource -> {
-            if (hasPermission(resource, null, VIEW_MEMBERS_SCOPE, MANAGE_MEMBERS_SCOPE)) {
-                granted.add(resource.getName().substring(RESOURCE_NAME_PREFIX.length()));
-            }
-        });
-
-        return granted;
+    @Override
+    public Set<String> getGroupsWithViewOnlyPermission() {
+        return getGroupsWithWithPermission(MgmtPermissions.VIEW_SCOPE, MgmtPermissions.MANAGE_SCOPE);
     }
 
     @Override
@@ -454,5 +439,29 @@ class GroupPermissions implements GroupPermissionEvaluator, GroupPermissionManag
         }
         Resource resource = groupResource(group);
         if (resource != null) resourceStore.delete(resource.getId());
+    }
+
+    private Set<String> getGroupsWithWithPermission(String... scopes) {
+        if (root.users().canView() || root.users().canManage()) return Collections.emptySet();
+
+        if (!root.isAdminSameRealm()) {
+            return Collections.emptySet();
+        }
+
+        ResourceServer server = root.realmResourceServer();
+
+        if (server == null) {
+            return Collections.emptySet();
+        }
+
+        Set<String> granted = new HashSet<>();
+
+        resourceStore.findByType("Group", server.getId(), resource -> {
+            if (hasPermission(resource, null, scopes)) {
+                granted.add(resource.getName().substring(RESOURCE_NAME_PREFIX.length()));
+            }
+        });
+
+        return granted;
     }
 }

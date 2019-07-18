@@ -48,6 +48,8 @@ public interface GroupPermissionEvaluator {
 
     boolean getGroupsWithViewPermission(GroupModel group);
 
+    Set<String> getGroupsWithViewOnlyPermission();
+
     void requireViewMembers(GroupModel group);
 
     boolean canManageMembers(GroupModel group);

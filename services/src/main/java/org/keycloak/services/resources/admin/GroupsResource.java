@@ -24,6 +24,7 @@ import org.keycloak.events.admin.ResourceType;
 import org.keycloak.models.GroupModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.services.ErrorResponse;
@@ -44,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -88,7 +90,13 @@ public class GroupsResource {
          * (2) or we fetch results in backend page by page until we get all required results.
          */
         if (Objects.nonNull(search)) {
-            results = realm.searchForGroupByName(search.trim(),null, null);
+            if (!auth.groups().canView()) {
+                Set<String> groups = auth.groups().getGroupsWithViewOnlyPermission();
+                session.setAttribute(UserModel.GROUPS, groups);
+            }
+            results = realm.searchForGroupByName(search.trim(), firstResult, maxResults);
+        } else if (firstResult != null && maxResults != null) {
+            results = realm.getTopLevelGroups(firstResult, maxResults);
         } else {
             results = realm.getTopLevelGroups();
         }

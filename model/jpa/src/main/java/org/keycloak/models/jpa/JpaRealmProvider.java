@@ -31,6 +31,7 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RealmProvider;
 import org.keycloak.models.RoleContainerModel;
 import org.keycloak.models.RoleModel;
+import org.keycloak.models.UserModel;
 import org.keycloak.models.jpa.entities.ClientEntity;
 import org.keycloak.models.jpa.entities.ClientInitialAccessEntity;
 import org.keycloak.models.jpa.entities.ClientScopeEntity;
@@ -631,9 +632,22 @@ public class JpaRealmProvider implements RealmProvider {
 
     @Override
     public List<GroupModel> searchForGroupByName(RealmModel realm, String search, Integer first, Integer max) {
-        TypedQuery<String> query = em.createNamedQuery("getGroupIdsByNameContaining", String.class)
+        Object ids = session.getAttribute(UserModel.GROUPS);
+        String queryName = "getGroupIdsByNameContaining";
+
+        if (ids != null) {
+            queryName = "getGroupIdsByNameInGroups";
+        }
+
+        TypedQuery<String> query = em.createNamedQuery(queryName, String.class)
                 .setParameter("realm", realm.getId())
                 .setParameter("search", search);
+
+        
+        if (ids != null) {
+            query.setParameter("ids", ids);    
+        }
+        
         if(Objects.nonNull(first) && Objects.nonNull(max)) {
             query= query.setFirstResult(first).setMaxResults(max);
         }
