@@ -16,6 +16,12 @@
  */
 package org.keycloak.subsystem.server.extension;
 
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import java.io.IOException;
+import java.util.List;
+
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
@@ -30,9 +36,7 @@ import org.jboss.modules.ModuleLoader;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.util.AbstractVirtualFileFilterWithAttributes;
 import org.keycloak.provider.KeycloakDeploymentInfo;
-
-import java.io.IOException;
-import java.util.List;
+import org.xml.sax.SAXException;
 
 /**
  * @author <a href="mailto:bill@burkecentral.com">Bill Burke</a>
@@ -85,28 +89,35 @@ public class KeycloakProviderDependencyProcessor implements DeploymentUnitProces
         if (resourceRoot != null) {
             final VirtualFile deploymentRoot = resourceRoot.getRoot();
             if (deploymentRoot != null && deploymentRoot.exists()) {
-                if (deploymentRoot.getChild("META-INF/keycloak-themes.json").exists() && deploymentRoot.getChild("theme").exists()) {
-                    info.themes();
-                }
+                if (deploymentRoot.getName().endsWith(".xml")) {
+                    for (ScriptProviderMetadata provider : getScriptProviders(deploymentRoot)) {
+                        info.addProvider(provider.getSpi(), provider.createFactory());
+                    }
+                } else {
+                    if (deploymentRoot.getChild("META-INF/keycloak-themes.json").exists() && deploymentRoot.getChild("theme")
+                            .exists()) {
+                        info.themes();
+                    }
 
-                if (deploymentRoot.getChild("theme-resources").exists()) {
-                    info.themeResources();
-                }
+                    if (deploymentRoot.getChild("theme-resources").exists()) {
+                        info.themeResources();
+                    }
 
-                VirtualFile services = deploymentRoot.getChild("META-INF/services");
-                if(services.exists()) {
-                    try {
-                        List<VirtualFile> archives = services.getChildren(new AbstractVirtualFileFilterWithAttributes() {
-                            @Override
-                            public boolean accepts(VirtualFile file) {
-                                return file.getName().startsWith("org.keycloak");
+                    VirtualFile services = deploymentRoot.getChild("META-INF/services");
+                    if (services.exists()) {
+                        try {
+                            List<VirtualFile> archives = services.getChildren(new AbstractVirtualFileFilterWithAttributes() {
+                                @Override
+                                public boolean accepts(VirtualFile file) {
+                                    return file.getName().startsWith("org.keycloak");
+                                }
+                            });
+                            if (!archives.isEmpty()) {
+                                info.services();
                             }
-                        });
-                        if (!archives.isEmpty()) {
-                            info.services();
+                        } catch (IOException e) {
+                            e.printStackTrace();
                         }
-                    } catch (IOException e) {
-                        e.printStackTrace();
                     }
                 }
             }
@@ -120,4 +131,21 @@ public class KeycloakProviderDependencyProcessor implements DeploymentUnitProces
 
     }
 
+    private static List<ScriptProviderMetadata> getScriptProviders(VirtualFile deploymentRoot) {
+        ScriptProviderXmlParser handler = new ScriptProviderXmlParser();
+
+        try {
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            SAXParser parser = factory.newSAXParser();
+            parser.parse(deploymentRoot.openStream(), handler);
+        } catch (ParserConfigurationException e) {
+            throw new RuntimeException(e);
+        } catch (SAXException e) {
+            throw new RuntimeException("Failed to parse file " + deploymentRoot.getName(), e);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to open file", e);
+        }
+
+        return handler.getProviders();
+    }
 }

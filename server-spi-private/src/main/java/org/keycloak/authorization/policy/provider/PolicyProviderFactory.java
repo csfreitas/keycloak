@@ -66,4 +66,12 @@ public interface PolicyProviderFactory<R extends AbstractPolicyRepresentation> e
     default PolicyProviderAdminService getAdminResource(ResourceServer resourceServer, AuthorizationProvider authorization) {
         return null;
     }
+
+    default AbstractPolicyRepresentation toRepresentation() {
+        return null;
+    }
+
+    default boolean isDefault() {
+        return false;
+    }
 }

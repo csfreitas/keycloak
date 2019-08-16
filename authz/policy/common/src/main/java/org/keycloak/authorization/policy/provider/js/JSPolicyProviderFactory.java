@@ -104,7 +104,7 @@ public class JSPolicyProviderFactory implements PolicyProviderFactory<JSPolicyRe
         });
     }
 
-    private ScriptModel getScriptModel(final Policy policy, final RealmModel realm, final ScriptingProvider scripting) {
+    protected ScriptModel getScriptModel(final Policy policy, final RealmModel realm, final ScriptingProvider scripting) {
         String scriptName = policy.getName();
         String scriptCode = policy.getConfig().get("code");
         String scriptDescription = policy.getDescription();

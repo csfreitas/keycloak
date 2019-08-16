@@ -34,6 +34,8 @@ import javax.ws.rs.core.UriInfo;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authorization.AuthorizationProvider;
 import org.keycloak.authorization.model.ResourceServer;
+import org.keycloak.authorization.policy.provider.PolicyProvider;
+import org.keycloak.authorization.policy.provider.PolicyProviderFactory;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
 import org.keycloak.exportimport.util.ExportUtils;
@@ -42,6 +44,7 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
+import org.keycloak.provider.ProviderFactory;
 import org.keycloak.representations.idm.authorization.DecisionStrategy;
 import org.keycloak.representations.idm.authorization.Logic;
 import org.keycloak.representations.idm.authorization.PolicyRepresentation;
@@ -52,6 +55,8 @@ import org.keycloak.services.resources.admin.AdminEventBuilder;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 
 import java.util.Collections;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -86,6 +91,16 @@ public class ResourceServerService {
         if (this.resourceServer == null) {
             this.resourceServer = RepresentationToModel.createResourceServer(client, session, true);
             createDefaultPermission(createDefaultResource(), createDefaultPolicy());
+            List<ProviderFactory> policyProviders = session.getKeycloakSessionFactory().getProviderFactories(PolicyProvider.class);
+
+            for (ProviderFactory provider : policyProviders) {
+                PolicyProviderFactory cast = PolicyProviderFactory.class.cast(provider);
+
+                if (cast.isDefault()) {
+                    getPolicyResource().create(cast.toRepresentation());
+                }
+            }
+
             audit(OperationType.CREATE, session.getContext().getUri(), newClient);
         }
 
