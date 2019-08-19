@@ -175,6 +175,7 @@ public class SessionResource {
 
         DeviceRepresentation representation = new DeviceRepresentation();
 
+        representation.setId(device.getId());
         representation.setCreated(device.getCreated());
         representation.setLastAccess(device.getLastAccess());
         representation.setBrowser(device.getBrowser());
