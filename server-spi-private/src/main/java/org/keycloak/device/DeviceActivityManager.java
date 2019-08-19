@@ -50,7 +50,7 @@ public class DeviceActivityManager {
                     DeviceModel device = getUserDevice(userSession, current, deviceProvider, provider);
 
                     if (device == null) {
-                        registerDevice(userSession, current, deviceProvider, session);
+                        device = registerDevice(userSession, current, deviceProvider, session);
                     } else {
                         updateDevice(userSession, device, session);
                     }
@@ -106,11 +106,12 @@ public class DeviceActivityManager {
         return null;
     }
 
-    private static void registerDevice(UserSessionModel userSession, DeviceModel current, UserDeviceStore deviceProvider,
+    private static DeviceModel registerDevice(UserSessionModel userSession, DeviceModel current, UserDeviceStore deviceProvider,
             KeycloakSession session) {
         current.setIp(session.getContext().getConnection().getRemoteAddr());
         current.setLastAccess(userSession.getLastSessionRefresh());
         deviceProvider.addDevice(userSession.getRealm(), userSession.getUser(), current);
+        return current;
     }
 
     private static void updateDevice(UserSessionModel userSession, DeviceModel device, KeycloakSession session) {
