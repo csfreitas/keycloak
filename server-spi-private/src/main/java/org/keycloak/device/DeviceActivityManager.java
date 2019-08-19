@@ -55,6 +55,10 @@ public class DeviceActivityManager {
                         updateDevice(userSession, device, session);
                     }
 
+                    if (userSession.getNote(DeviceModel.DEVICE_ID) == null) {
+                        userSession.setNote(DeviceModel.DEVICE_ID, device.getId());
+                    }
+
                     session.setAttribute(DEVICE_UPDATED_FLAG, false);
                     return;
                 }
@@ -107,9 +111,6 @@ public class DeviceActivityManager {
         current.setIp(session.getContext().getConnection().getRemoteAddr());
         current.setLastAccess(userSession.getLastSessionRefresh());
         deviceProvider.addDevice(userSession.getRealm(), userSession.getUser(), current);
-        if (userSession.getNote(DeviceModel.DEVICE_ID) == null) {
-            userSession.setNote(DeviceModel.DEVICE_ID, current.getId());
-        }
     }
 
     private static void updateDevice(UserSessionModel userSession, DeviceModel device, KeycloakSession session) {
