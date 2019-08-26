@@ -296,6 +296,13 @@ public class AccountRestService {
         return new ResourcesService(session, user, auth, request);
     }
 
+    @Path("/applications")
+    public ApplicationResource applications() {
+        checkAccountApiEnabled();
+//        auth.requireOneOf(AccountRoles.MANAGE_ACCOUNT, AccountRoles.VIEW_PROFILE);
+        return new ApplicationResource(session, user, auth, request);
+    }
+
    // TODO Federated identities
     // TODO Applications
     // TODO Logs
