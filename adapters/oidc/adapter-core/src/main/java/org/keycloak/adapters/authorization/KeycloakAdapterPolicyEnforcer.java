@@ -41,6 +41,8 @@ import org.keycloak.representations.idm.authorization.AuthorizationRequest;
 import org.keycloak.representations.idm.authorization.AuthorizationResponse;
 import org.keycloak.representations.idm.authorization.Permission;
 import org.keycloak.representations.idm.authorization.PermissionRequest;
+import org.keycloak.representations.idm.authorization.ResourceRepresentation;
+import org.keycloak.representations.idm.authorization.ScopeRepresentation;
 import org.keycloak.util.JsonSerialization;
 
 /**
@@ -55,10 +57,12 @@ public class KeycloakAdapterPolicyEnforcer extends AbstractPolicyEnforcer {
     }
 
     @Override
-    protected boolean isAuthorized(PathConfig pathConfig, PolicyEnforcerConfig.MethodConfig methodConfig, AccessToken accessToken, OIDCHttpFacade httpFacade, Map<String, List<String>> claims) {
+    protected boolean isAuthorized(PathConfig pathConfig, PolicyEnforcerConfig.MethodConfig methodConfig,
+            AccessToken accessToken, OIDCHttpFacade httpFacade, Map<String, List<String>> claims,
+            Map<String, ResourceRepresentation> permissions) {
         AccessToken original = accessToken;
 
-        if (super.isAuthorized(pathConfig, methodConfig, accessToken, httpFacade, claims)) {
+        if (super.isAuthorized(pathConfig, methodConfig, accessToken, httpFacade, claims, permissions)) {
             return true;
         }
 
@@ -90,15 +94,17 @@ public class KeycloakAdapterPolicyEnforcer extends AbstractPolicyEnforcer {
 
         original.setAuthorization(authorization);
 
-        return super.isAuthorized(pathConfig, methodConfig, accessToken, httpFacade, claims);
+        return super.isAuthorized(pathConfig, methodConfig, accessToken, httpFacade, claims, permissions);
     }
 
     @Override
-    protected boolean challenge(PathConfig pathConfig, PolicyEnforcerConfig.MethodConfig methodConfig, OIDCHttpFacade httpFacade) {
+    protected boolean challenge(PathConfig pathConfig, PolicyEnforcerConfig.MethodConfig methodConfig,
+            OIDCHttpFacade httpFacade,
+            Map<String, ResourceRepresentation> permissions) {
         if (isBearerAuthorization(httpFacade)) {
             HttpFacade.Response response = httpFacade.getResponse();
             AuthzClient authzClient = getAuthzClient();
-            String ticket = getPermissionTicket(pathConfig, methodConfig, authzClient, httpFacade);
+            String ticket = getPermissionTicket(pathConfig, methodConfig, authzClient, httpFacade, permissions);
 
             if (ticket != null) {
                 response.setStatus(401);
@@ -180,22 +186,39 @@ public class KeycloakAdapterPolicyEnforcer extends AbstractPolicyEnforcer {
         return null;
     }
 
-    private String getPermissionTicket(PathConfig pathConfig, PolicyEnforcerConfig.MethodConfig methodConfig, AuthzClient authzClient, OIDCHttpFacade httpFacade) {
+    private String getPermissionTicket(PathConfig pathConfig, PolicyEnforcerConfig.MethodConfig methodConfig,
+            AuthzClient authzClient, OIDCHttpFacade httpFacade,
+            Map<String, ResourceRepresentation> permissions) {
         if (getEnforcerConfig().getUserManagedAccess() != null) {
             ProtectionResource protection = authzClient.protection();
             PermissionResource permission = protection.permission();
-            PermissionRequest permissionRequest = new PermissionRequest();
 
-            permissionRequest.setResourceId(pathConfig.getId());
-            permissionRequest.setScopes(new HashSet<>(methodConfig.getScopes()));
+            if (permissions.isEmpty()) {
+                PermissionRequest permissionRequest = new PermissionRequest();
 
-            Map<String, List<String>> claims = resolveClaims(pathConfig, httpFacade);
+                permissionRequest.setResourceId(pathConfig.getId());
+                permissionRequest.setScopes(new HashSet<>(methodConfig.getScopes()));
 
-            if (!claims.isEmpty()) {
-                permissionRequest.setClaims(claims);
+                Map<String, List<String>> claims = resolveClaims(pathConfig, httpFacade);
+
+                if (!claims.isEmpty()) {
+                    permissionRequest.setClaims(claims);
+                }
+
+                return permission.create(permissionRequest).getTicket();       
+            } else {
+                List<PermissionRequest> permissionRequests = new ArrayList<>();
+                for (Map.Entry<String, ResourceRepresentation> resource : permissions.entrySet()) {
+                    PermissionRequest permissionRequest = new PermissionRequest();
+                    permissionRequest.setResourceId(resource.getKey());
+                    for (ScopeRepresentation scope : resource.getValue().getScopes()) {
+                        permissionRequest.addScope(scope.getName());
+                    }
+                    permissionRequests.add(permissionRequest);
+
+                }
+                return permission.create(permissionRequests).getTicket();    
             }
-
-            return permission.create(permissionRequest).getTicket();
         }
 
         return null;
