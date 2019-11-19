@@ -11,12 +11,6 @@ public class Resteasy4Provider implements ResteasyProvider {
     }
 
     @Override
-    public void pushDefaultContextObject(Class type, Object instance) {
-        ResteasyContext.getContextData(org.jboss.resteasy.spi.Dispatcher.class).getDefaultContextObjects()
-                .put(type, instance);
-    }
-
-    @Override
     public void pushContext(Class type, Object instance) {
         ResteasyContext.pushContext(type, instance);
     }

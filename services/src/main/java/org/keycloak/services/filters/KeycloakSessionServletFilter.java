@@ -23,6 +23,7 @@ import org.keycloak.common.util.Resteasy;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakTransaction;
+import org.keycloak.services.resources.KeycloakApplication;
 
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -54,6 +55,7 @@ public class KeycloakSessionServletFilter implements Filter {
         KeycloakSessionFactory sessionFactory = (KeycloakSessionFactory) servletRequest.getServletContext().getAttribute(KeycloakSessionFactory.class.getName());
         KeycloakSession session = sessionFactory.create();
         Resteasy.pushContext(KeycloakSession.class, session);
+        Resteasy.pushContext(KeycloakApplication.class, servletRequest.getServletContext().getAttribute(KeycloakApplication.class.getName()));
         ClientConnection connection = new ClientConnection() {
             @Override
             public String getRemoteAddr() {

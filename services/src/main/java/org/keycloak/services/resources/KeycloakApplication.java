@@ -112,22 +112,6 @@ public class KeycloakApplication extends Application {
 
         try {
 
-            logger.debugv("RestEasy provider: {0}", Resteasy.getProvider().getClass().getName());
-
-            ServletContext context = Resteasy.getContextData(ServletContext.class);
-
-            if ("true".equals(context.getInitParameter(KEYCLOAK_EMBEDDED))) {
-                embedded = true;
-            }
-
-            loadConfig(context);
-
-            this.sessionFactory = createSessionFactory();
-
-            Resteasy.pushDefaultContextObject(KeycloakApplication.class, this);
-            Resteasy.pushContext(KeycloakApplication.class, this); // for injection
-            context.setAttribute(KeycloakSessionFactory.class.getName(), this.sessionFactory);
-
             singletons.add(new RobotsResource());
             singletons.add(new RealmsResource());
             singletons.add(new AdminRoot());
@@ -151,20 +135,29 @@ public class KeycloakApplication extends Application {
 
     }
 
-    private void init(Runnable function) {
+    protected void init(Runnable function) {
+        function.run();
+    }
 
-        ServiceLoader<Startup> loader = ServiceLoader.load(Startup.class);
-        Iterator<Startup> iterator = loader.iterator();
-
-        if (iterator.hasNext()) {
-            iterator.next().execute(function);
-        } else {
-            function.run();
-        }
-
+    protected ServletContext getServletContext() {
+        return Resteasy.getContextData(ServletContext.class);
     }
 
     protected void startup() {
+        ServletContext context = getServletContext();
+        logger.debugv("RestEasy provider: {0}", Resteasy.getProvider().getClass().getName());
+
+        if ("true".equals(context.getInitParameter(KEYCLOAK_EMBEDDED))) {
+            embedded = true;
+        }
+
+//        Resteasy.pushDefaultContextObject(KeycloakApplication.class, this);
+        Resteasy.pushContext(KeycloakApplication.class, this); // for injection
+        loadConfig(context);
+        this.sessionFactory = createSessionFactory();
+
+        context.setAttribute(KeycloakSessionFactory.class.getName(), this.sessionFactory);
+        context.setAttribute(KeycloakApplication.class.getName(), this);
 
         ExportImportManager[] exportImportManager = new ExportImportManager[1];
 
@@ -496,8 +489,4 @@ public class KeycloakApplication extends Application {
             }
         }.start();
     }
-
-    public static interface Startup extends Executor {
-    }
-
 }

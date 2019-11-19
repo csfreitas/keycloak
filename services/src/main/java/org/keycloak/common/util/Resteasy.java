@@ -68,15 +68,4 @@ public final class Resteasy {
     public static void clearContextData() {
         provider.clearContextData();
     }
-
-    /**
-     * Push the given {@code instance} with type/key {@code type} to the Resteasy global context.
-     *
-     * @param type the type/key to associate the {@code instance} with
-     * @param instance the instance
-     */
-    public static void pushDefaultContextObject(Class type, Object instance) {
-        provider.pushDefaultContextObject(type, instance);
-    }
-
 }
