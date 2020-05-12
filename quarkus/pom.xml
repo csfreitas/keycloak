@@ -31,10 +31,14 @@
     <packaging>pom</packaging>
 
     <properties>
-        <quarkus.version>999-SNAPSHOT</quarkus.version>
+        <quarkus.version>1.4.2.Final</quarkus.version>
         <resteasy.version>4.4.2.Final</resteasy.version>
         <jackson.version>2.10.2</jackson.version>
         <jackson.databind.version>${jackson.version}</jackson.databind.version>
+<<<<<<< HEAD
+=======
+        <hibernate.version>5.4.14.Final</hibernate.version>
+>>>>>>> 1184c3caf4... fixup! KEYCLOAK-14135 Don't include built-in themes in themes directory of Quarkus dist
 
         <surefire-plugin.version>2.22.0</surefire-plugin.version>
 
