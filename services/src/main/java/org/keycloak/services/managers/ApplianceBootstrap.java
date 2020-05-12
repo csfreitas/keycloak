@@ -19,6 +19,7 @@ package org.keycloak.services.managers;
 import org.keycloak.Config;
 import org.keycloak.common.Version;
 import org.keycloak.common.enums.SslRequired;
+import org.keycloak.migration.MigrationModel;
 import org.keycloak.models.AdminRoles;
 import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
@@ -43,23 +44,24 @@ public class ApplianceBootstrap {
     }
 
     public boolean isNewInstall() {
-        if (session.realms().getRealm(Config.getAdminRealm()) != null) {
-            return false;
-        } else {
+        MigrationModel model = session.realms().getMigrationModel();
+
+        if (model.getStoredVersion() == null) {
             return true;
         }
+        
+        return false;
     }
 
     public boolean isNoMasterUser() {
         RealmModel realm = session.realms().getRealm(Config.getAdminRealm());
+        if (realm == null) {
+            return true;
+        }
         return session.users().getUsersCount(realm) == 0;
     }
 
     public boolean createMasterRealm() {
-        if (!isNewInstall()) {
-            throw new IllegalStateException("Can't create default realm as realms already exists");
-        }
-
         String adminRealmName = Config.getAdminRealm();
         ServicesLogger.LOGGER.initializingAdminRealm(adminRealmName);
 

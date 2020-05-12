@@ -90,8 +90,8 @@ public class UserSessionPredicate implements Predicate<Map.Entry<String, Session
     }
 
     public UserSessionPredicate expired(Integer expired, Integer expiredRefresh, Integer expiredRememberMe, Integer expiredRefreshRememberMe) {
-        this.expired = expired;
         this.expiredRefresh = expiredRefresh;
+        this.expired = expired;
         this.expiredRememberMe = expiredRememberMe;
         this.expiredRefreshRememberMe = expiredRefreshRememberMe;
         return this;

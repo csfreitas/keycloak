@@ -27,6 +27,8 @@ import liquibase.datatype.DataTypeFactory;
 import liquibase.exception.LiquibaseException;
 import liquibase.logging.LogFactory;
 import liquibase.logging.LogLevel;
+import liquibase.parser.ChangeLogParser;
+import liquibase.parser.ChangeLogParserFactory;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.resource.ResourceAccessor;
 import liquibase.servicelocator.ServiceLocator;
@@ -45,6 +47,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 
 import java.sql.Connection;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
@@ -54,7 +58,8 @@ public class DefaultLiquibaseConnectionProvider implements LiquibaseConnectionPr
     private static final Logger logger = Logger.getLogger(DefaultLiquibaseConnectionProvider.class);
 
     private volatile boolean initialized = false;
-    
+    private ClassLoaderResourceAccessor resourceAccessor;
+
     @Override
     public LiquibaseConnectionProvider create(KeycloakSession session) {
         if (!initialized) {
@@ -70,7 +75,18 @@ public class DefaultLiquibaseConnectionProvider implements LiquibaseConnectionPr
 
     protected void baseLiquibaseInitialization() {
         ServiceLocator sl = ServiceLocator.getInstance();
-        sl.setResourceAccessor(new ClassLoaderResourceAccessor(getClass().getClassLoader()));
+        sl.setResourceAccessor(resourceAccessor = new ClassLoaderResourceAccessor(getClass().getClassLoader()));
+//        Iterator<ChangeLogParser> parsers = ChangeLogParserFactory.getInstance().getParsers().iterator();
+//        
+//        while (parsers.hasNext()) {
+//            ChangeLogParser parser = parsers.next();
+//
+//            if (parser instanceof liquibase.parser.core.xml.XMLChangeLogSAXParser) {
+//                parsers.remove();
+//            }
+//        }
+//
+//        ChangeLogParserFactory.getInstance().register(new XMLChangeLogSAXParser());
 
         if (!System.getProperties().containsKey("liquibase.scan.packages")) {
             if (sl.getPackages().remove("liquibase.core")) {
@@ -139,7 +155,6 @@ public class DefaultLiquibaseConnectionProvider implements LiquibaseConnectionPr
         }
 
         String changelog = LiquibaseJpaUpdaterProvider.CHANGELOG;
-        ResourceAccessor resourceAccessor = new ClassLoaderResourceAccessor(getClass().getClassLoader());
 
         logger.debugf("Using changelog file %s and changelogTableName %s", changelog, database.getDatabaseChangeLogTableName());
         

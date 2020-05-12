@@ -56,8 +56,11 @@ import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
@@ -71,22 +74,23 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
     public static final String DEPLOYMENT_ID_COLUMN = "DEPLOYMENT_ID";
 
     private final KeycloakSession session;
+    private Map<String, List<ChangeSet>> changeSets = new HashMap<>();
 
     public LiquibaseJpaUpdaterProvider(KeycloakSession session) {
         this.session = session;
     }
 
     @Override
-    public void update(Connection connection, String defaultSchema) {
-        update(connection, null, defaultSchema);
+    public void update(Connection connection, String defaultSchema, boolean updateMasterChangeLog) {
+        update(connection, null, defaultSchema, updateMasterChangeLog);
     }
 
     @Override
-    public void export(Connection connection, String defaultSchema, File file) {
-        update(connection, file, defaultSchema);
+    public void export(Connection connection, String defaultSchema, File file, boolean updateMasterChangeLog) {
+        update(connection, file, defaultSchema, updateMasterChangeLog);
     }
 
-    private void update(Connection connection, File file, String defaultSchema) {
+    private void update(Connection connection, File file, String defaultSchema, boolean updateMasterChangeLog) {
         logger.debug("Starting database update");
 
         // Need ThreadLocal as liquibase doesn't seem to have API to inject custom objects into tasks
@@ -94,12 +98,14 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
 
         Writer exportWriter = null;
         try {
-            // Run update with keycloak master changelog first
-            Liquibase liquibase = getLiquibaseForKeycloakUpdate(connection, defaultSchema);
-            if (file != null) {
-                exportWriter = new FileWriter(file);
+            if (updateMasterChangeLog) {
+                // Run update with keycloak master changelog first
+                Liquibase liquibase = getLiquibaseForKeycloakUpdate(connection, defaultSchema);
+                if (file != null) {
+                    exportWriter = new FileWriter(file);
+                }
+                updateChangeSet(liquibase, connection, exportWriter);
             }
-            updateChangeSet(liquibase, connection, exportWriter);
 
             // Run update for each custom JpaEntityProvider
             Set<JpaEntityProvider> jpaProviders = session.getAllProviders(JpaEntityProvider.class);
@@ -108,7 +114,7 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
                 if (customChangelog != null) {
                     String factoryId = jpaProvider.getFactoryId();
                     String changelogTableName = JpaUtils.getCustomChangelogTableName(factoryId);
-                    liquibase = getLiquibaseForCustomProviderUpdate(connection, defaultSchema, customChangelog, jpaProvider.getClass().getClassLoader(), changelogTableName);
+                    Liquibase liquibase = getLiquibaseForCustomProviderUpdate(connection, defaultSchema, customChangelog, jpaProvider.getClass().getClassLoader(), changelogTableName);
                     updateChangeSet(liquibase, connection, exportWriter);
                 }
             }
@@ -214,17 +220,19 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
     }
 
     @Override
-    public Status validate(Connection connection, String defaultSchema) {
+    public Status validate(Connection connection, String defaultSchema, boolean updateMasterChangeLog) {
         logger.debug("Validating if database is updated");
         ThreadLocalSessionContext.setCurrentSession(session);
 
         try {
-            // Validate with keycloak master changelog first
-            Liquibase liquibase = getLiquibaseForKeycloakUpdate(connection, defaultSchema);
+            if (updateMasterChangeLog) {
+                // Validate with keycloak master changelog first
+                Liquibase liquibase = getLiquibaseForKeycloakUpdate(connection, defaultSchema);
 
-            Status status = validateChangeSet(liquibase, liquibase.getChangeLogFile());
-            if (status != Status.VALID) {
-                return status;
+                Status status = validateChangeSet(liquibase, liquibase.getChangeLogFile());
+                if (status != Status.VALID) {
+                    return status;
+                }
             }
 
             // Validate each custom JpaEntityProvider
@@ -234,7 +242,7 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
                 if (customChangelog != null) {
                     String factoryId = jpaProvider.getFactoryId();
                     String changelogTableName = JpaUtils.getCustomChangelogTableName(factoryId);
-                    liquibase = getLiquibaseForCustomProviderUpdate(connection, defaultSchema, customChangelog, jpaProvider.getClass().getClassLoader(), changelogTableName);
+                    Liquibase liquibase = getLiquibaseForCustomProviderUpdate(connection, defaultSchema, customChangelog, jpaProvider.getClass().getClassLoader(), changelogTableName);
                     if (validateChangeSet(liquibase, liquibase.getChangeLogFile()) != Status.VALID) {
                         return Status.OUTDATED;
                     }
@@ -277,11 +285,19 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
 
     @SuppressWarnings("unchecked")
     private List<ChangeSet> getLiquibaseUnrunChangeSets(Liquibase liquibase) {
-        // TODO tracked as: https://issues.jboss.org/browse/KEYCLOAK-3730
-        // TODO: When https://liquibase.jira.com/browse/CORE-2919 is resolved, replace the following two lines with:
-        // List<ChangeSet> changeSets = liquibase.listUnrunChangeSets((Contexts) null, new LabelExpression(), false);
-        Method listUnrunChangeSets = Reflections.findDeclaredMethod(Liquibase.class, "listUnrunChangeSets", Contexts.class, LabelExpression.class, boolean.class);
-        return Reflections.invokeMethod(true, listUnrunChangeSets, List.class, liquibase, (Contexts) null, new LabelExpression(), false);
+        // we don't need to fetch change sets if they were previously obtained
+        return changeSets.computeIfAbsent(liquibase.getChangeLogFile(), new Function<String, List<ChangeSet>>() {
+            @Override
+            public List<ChangeSet> apply(String s) {
+                // TODO tracked as: https://issues.jboss.org/browse/KEYCLOAK-3730
+                // TODO: When https://liquibase.jira.com/browse/CORE-2919 is resolved, replace the following two lines with:
+                // List<ChangeSet> changeSets = liquibase.listUnrunChangeSets((Contexts) null, new LabelExpression(), false);
+                Method listUnrunChangeSets = Reflections.findDeclaredMethod(Liquibase.class, "listUnrunChangeSets", Contexts.class, LabelExpression.class, boolean.class);
+
+                return Reflections
+                        .invokeMethod(true, listUnrunChangeSets, List.class, liquibase, (Contexts) null, new LabelExpression(), false);
+            }
+        });
     }
 
     private Liquibase getLiquibaseForKeycloakUpdate(Connection connection, String defaultSchema) throws LiquibaseException {
@@ -296,6 +312,8 @@ public class LiquibaseJpaUpdaterProvider implements JpaUpdaterProvider {
 
     @Override
     public void close() {
+        changeSets.clear();
+        changeSets = null;
     }
 
     public static String getTable(String table, String defaultSchema) {

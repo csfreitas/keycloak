@@ -32,16 +32,20 @@ public class QuarkusJtaTransactionManagerLookup implements JtaTransactionManager
 
     @Override
     public TransactionManager getTransactionManager() {
-        return tm;
+        if (tm == null) {
+//            tm = CDI.current().select(TransactionManager.class).get();
+//            logger.tracev("TransactionManager = {0}", tm);
+//            if (tm == null) {
+//                logger.debug("could not locate transactionmanager");
+//            }
+        }
+        // we need to check whether or not the datasource supports XA as well as if configuration tells that
+        return null;
     }
 
     @Override
     public void init(Config.Scope config) {
-        tm = CDI.current().select(TransactionManager.class).get();
-        logger.tracev("TransactionManager = {0}", tm);
-        if (tm == null) {
-            logger.debug("Could not locate TransactionManager");
-        }
+        
     }
 
     @Override

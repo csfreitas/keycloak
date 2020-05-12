@@ -207,8 +207,6 @@ public class KeycloakOnUndertow implements DeployableContainer<KeycloakOnUnderto
         ResteasyDeployment deployment = (ResteasyDeployment) di.getServletContextAttributes().get(ResteasyDeployment.class.getName());
         sessionFactory = ((KeycloakApplication) deployment.getApplication()).getSessionFactory();
 
-        setupDevConfig();
-
         log.infof("Auth server started in %dms on http://%s:%d/auth", (System.currentTimeMillis() - start), configuration.getBindAddress(), configuration.getBindHttpPort());
     }
 

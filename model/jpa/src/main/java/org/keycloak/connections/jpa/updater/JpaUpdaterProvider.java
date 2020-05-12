@@ -49,23 +49,26 @@ public interface JpaUpdaterProvider extends Provider {
      * Updates the Keycloak database
      * @param connection DB connection
      * @param defaultSchema DB connection
+     * @param updateMasterChangeLog
      */
-    void update(Connection connection, String defaultSchema);
+    void update(Connection connection, String defaultSchema, boolean updateMasterChangeLog);
 
     /**
      * Checks whether Keycloak database is up to date with the most recent changesets
      * @param connection DB connection
      * @param defaultSchema DB schema to use
+     * @param updateMasterChangeLog
      * @return
      */
-    Status validate(Connection connection, String defaultSchema);
+    Status validate(Connection connection, String defaultSchema, boolean updateMasterChangeLog);
 
     /**
      * Exports the SQL update script into the given File.
      * @param connection DB connection
      * @param defaultSchema DB schema to use
      * @param file File to write to
+     * @param updateMasterChangeLog
      */
-    void export(Connection connection, String defaultSchema, File file);
+    void export(Connection connection, String defaultSchema, File file, boolean updateMasterChangeLog);
 
 }

@@ -17,11 +17,15 @@
 package org.keycloak.services.resources;
 
 import org.jboss.logging.Logger;
+import org.keycloak.Config;
 import org.keycloak.common.ClientConnection;
 import org.keycloak.common.Version;
 import org.keycloak.common.util.Base64Url;
 import org.keycloak.common.util.MimeTypeUtil;
+import org.keycloak.exportimport.ExportImportManager;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakSessionTask;
+import org.keycloak.models.utils.DefaultKeyProviders;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.services.ForbiddenException;
 import org.keycloak.services.ServicesLogger;
@@ -84,8 +88,6 @@ public class WelcomeResource {
     @GET
     @Produces(MediaType.TEXT_HTML_UTF_8)
     public Response getWelcomePage() throws URISyntaxException {
-        checkBootstrap();
-
         String requestUri = session.getContext().getUri().getRequestUri().toString();
         if (!requestUri.endsWith("/")) {
             return Response.seeOther(new URI(requestUri + "/")).build();
@@ -98,8 +100,6 @@ public class WelcomeResource {
     @Consumes(MediaType.APPLICATION_FORM_URLENCODED)
     @Produces(MediaType.TEXT_HTML_UTF_8)
     public Response createUser(final MultivaluedMap<String, String> formData) {
-        checkBootstrap();
-
         if (!shouldBootstrap()) {
             return createWelcomePage(null, null);
         } else {
@@ -133,8 +133,12 @@ public class WelcomeResource {
             expireCsrfCookie();
 
             ApplianceBootstrap applianceBootstrap = new ApplianceBootstrap(session);
+
+            if (session.realms().getRealm(Config.getAdminRealm()) == null) {
+                applianceBootstrap.createMasterRealm();
+            }
+
             if (applianceBootstrap.isNoMasterUser()) {
-                setBootstrap(false);
                 applianceBootstrap.createMasterRealmUser(username, password);
 
                 ServicesLogger.LOGGER.createdInitialAdminUser(username);
@@ -221,17 +225,8 @@ public class WelcomeResource {
         }
     }
 
-    private void checkBootstrap() {
-        if (shouldBootstrap())
-            KeycloakApplication.BOOTSTRAP_ADMIN_USER.compareAndSet(true, new ApplianceBootstrap(session).isNoMasterUser());
-    }
-
     private boolean shouldBootstrap() {
-        return KeycloakApplication.BOOTSTRAP_ADMIN_USER.get();
-    }
-
-    private void setBootstrap(boolean value) {
-        KeycloakApplication.BOOTSTRAP_ADMIN_USER.set(value);
+        return new ApplianceBootstrap(session).isNoMasterUser();
     }
 
     private boolean isLocal() {
