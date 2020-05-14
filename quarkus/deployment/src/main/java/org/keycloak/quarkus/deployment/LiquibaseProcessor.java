@@ -11,6 +11,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.agroal.api.configuration.AgroalDataSourceConfiguration;
+import io.quarkus.agroal.deployment.JdbcDataSourceBuildItem;
+import io.quarkus.arc.deployment.BeanContainerListenerBuildItem;
+import io.quarkus.datasource.runtime.DataSourceBuildTimeConfig;
+import io.quarkus.datasource.runtime.DataSourcesBuildTimeConfig;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;

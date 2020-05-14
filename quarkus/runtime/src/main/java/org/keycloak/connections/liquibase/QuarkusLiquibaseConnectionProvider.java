@@ -73,69 +73,12 @@ public class QuarkusLiquibaseConnectionProvider implements LiquibaseConnectionPr
     }
 
     protected void baseLiquibaseInitialization(KeycloakSession session) {
-        LogFactory.setInstance(new LogFactory() {
-            KeycloakLogger logger = new KeycloakLogger();
-
-            @Override
-            public liquibase.logging.Logger getLog(String name) {
-                return logger;
-            }
-
-            @Override
-            public liquibase.logging.Logger getLog() {
-                return logger;
-            }
-        });
-
         resourceAccessor = new ClassLoaderResourceAccessor(getClass().getClassLoader());
 
         JpaConnectionProviderFactory jpaConnectionProvider = (JpaConnectionProviderFactory) session
                 .getKeycloakSessionFactory().getProviderFactory(JpaConnectionProvider.class);
 
         // registers only the database we are using
-        try (Connection connection = jpaConnectionProvider.getConnection()) {
-            Database database = DatabaseFactory.getInstance()
-                    .findCorrectDatabaseImplementation(new JdbcConnection(connection));
-            DatabaseFactory.getInstance().clearRegistry();
-            if (database.getDatabaseProductName().equals(PostgresDatabase.PRODUCT_NAME)) {
-                // Adding PostgresPlus support to liquibase
-                DatabaseFactory.getInstance().register(new PostgresPlusDatabase());
-            } else if (database.getDatabaseProductName().equals(MySQLDatabase.PRODUCT_NAME)) {
-                // Adding newer version of MySQL/MariaDB support to liquibase
-                DatabaseFactory.getInstance().register(new UpdatedMySqlDatabase());
-                // Adding CustomVarcharType for MySQL 8 and newer
-                DataTypeFactory.getInstance().register(MySQL8VarcharType.class);
-            } else if (database.getDatabaseProductName().equals(MariaDBDatabase.PRODUCT_NAME)) {
-                DatabaseFactory.getInstance().register(new UpdatedMariaDBDatabase());
-                // Adding CustomVarcharType for MySQL 8 and newer
-                DataTypeFactory.getInstance().register(MySQL8VarcharType.class);
-            } else {
-                DatabaseFactory.getInstance().register(database);
-            }
-            
-            FastServiceLocator.class.cast(ServiceLocator.getInstance()).register(database.getClass());
-            
-            // disables XML validation
-            for (ChangeLogParser parser : ChangeLogParserFactory.getInstance().getParsers()) {
-                if (parser instanceof XMLChangeLogSAXParser) {
-                    Method getSaxParserFactory = null;
-                    try {
-                        getSaxParserFactory = XMLChangeLogSAXParser.class.getDeclaredMethod("getSaxParserFactory");
-                        getSaxParserFactory.setAccessible(true);
-                        SAXParserFactory saxParserFactory = (SAXParserFactory) getSaxParserFactory.invoke(parser);
-                        saxParserFactory.setValidating(false);
-                    } catch (Exception e) {
-                        logger.warnf("Failed to disable liquibase XML validations");
-                    } finally {
-                        if (getSaxParserFactory != null) {
-                            getSaxParserFactory.setAccessible(false);
-                        }
-                    }
-                }
-            }
-        } catch (Exception cause) {
-            throw new RuntimeException("Failed to configure Liquibase database", cause);
-        }
     }
 
     @Override
