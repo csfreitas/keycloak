@@ -32,7 +32,7 @@
 
     <properties>
         <quarkus.version>1.4.2.Final</quarkus.version>
-        <resteasy.version>4.4.2.Final</resteasy.version>
+        <resteasy.version>4.5.3.Final</resteasy.version>
         <jackson.version>2.10.2</jackson.version>
         <jackson.databind.version>${jackson.version}</jackson.databind.version>
         <hibernate.version>5.4.14.Final</hibernate.version>
@@ -50,6 +50,13 @@
         <dependencies>
             <dependency>
                 <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom-deployment</artifactId>
+                <version>${quarkus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.quarkus</groupId>
                 <artifactId>quarkus-bom</artifactId>
                 <version>${quarkus.version}</version>
                 <type>pom</type>
@@ -57,7 +64,7 @@
             </dependency>
             <dependency>
                 <groupId>org.keycloak</groupId>
-                <artifactId>keycloak-quarkus-extensions</artifactId>
+                <artifactId>keycloak-quarkus-server</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>
@@ -80,7 +87,8 @@
     </dependencyManagement>
 
     <modules>
-        <module>extensions</module>
+        <module>deployment</module>
+        <module>runtime</module>
         <module>server</module>
     </modules>
 

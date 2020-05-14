@@ -88,8 +88,6 @@ public class QuarkusLiquibaseConnectionProvider implements LiquibaseConnectionPr
         });
 
         resourceAccessor = new ClassLoaderResourceAccessor(getClass().getClassLoader());
-        FastServiceLocator locator = new FastServiceLocator();
-        ServiceLocator.setInstance(locator);
 
         JpaConnectionProviderFactory jpaConnectionProvider = (JpaConnectionProviderFactory) session
                 .getKeycloakSessionFactory().getProviderFactory(JpaConnectionProvider.class);
@@ -115,7 +113,7 @@ public class QuarkusLiquibaseConnectionProvider implements LiquibaseConnectionPr
                 DatabaseFactory.getInstance().register(database);
             }
             
-            locator.register(database.getClass());
+            FastServiceLocator.class.cast(ServiceLocator.getInstance()).register(database.getClass());
             
             // disables XML validation
             for (ChangeLogParser parser : ChangeLogParserFactory.getInstance().getParsers()) {
@@ -155,7 +153,7 @@ public class QuarkusLiquibaseConnectionProvider implements LiquibaseConnectionPr
 
     @Override
     public String getId() {
-        return "default";
+        return "quarkus";
     }
 
     @Override
@@ -185,5 +183,10 @@ public class QuarkusLiquibaseConnectionProvider implements LiquibaseConnectionPr
         logger.debugf("Using changelog file %s and changelogTableName %s", changelogLocation, database.getDatabaseChangeLogTableName());
 
         return new Liquibase(changelogLocation, resourceAccessor, database);
+    }
+
+    @Override
+    public int order() {
+        return 100;
     }
 }

@@ -17,6 +17,7 @@
 
 package org.keycloak.provider.quarkus;
 
+import javax.inject.Singleton;
 import java.util.Optional;
 
 import org.keycloak.Config;
