@@ -28,6 +28,9 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakTransactionManager;
 import org.keycloak.platform.Platform;
+import org.keycloak.provider.ProviderManager;
+import org.keycloak.quarkus.runtime.KeycloakRecorder;
+import org.keycloak.services.DefaultKeycloakSessionFactory;
 import org.keycloak.services.ServicesLogger;
 import org.keycloak.services.managers.ApplianceBootstrap;
 import org.keycloak.services.resources.KeycloakApplication;
@@ -49,7 +52,6 @@ public class QuarkusLifecycleObserver {
             startupHook.run();
             createAdminUser();
         }
-
     }
 
     private void onShutdownEvent(@Observes ShutdownEvent event) {

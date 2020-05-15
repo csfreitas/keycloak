@@ -96,9 +96,9 @@ public class QuarkusJpaConnectionProviderFactory implements JpaConnectionProvide
 
     @Override
     public void close() {
-        if (emf != null) {
-            emf.close();
-        }
+//        if (emf != null) {
+//            emf.close();
+//        }
     }
 
     @Override

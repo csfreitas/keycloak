@@ -1,40 +1,94 @@
 package org.keycloak.quarkus.runtime;
 
-import javax.xml.parsers.SAXParserFactory;
-import java.lang.reflect.Method;
-import java.sql.Connection;
+import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.FileVisitResult;
+import java.nio.file.FileVisitor;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
-import io.agroal.api.AgroalDataSource;
-import io.quarkus.arc.Arc;
-import io.quarkus.arc.runtime.BeanContainer;
-import io.quarkus.arc.runtime.BeanContainerListener;
-import io.quarkus.runtime.RuntimeValue;
-import io.quarkus.runtime.annotations.Recorder;
-import liquibase.database.Database;
-import liquibase.database.DatabaseFactory;
-import liquibase.database.core.MariaDBDatabase;
-import liquibase.database.core.MySQLDatabase;
-import liquibase.database.core.PostgresDatabase;
-import liquibase.database.jvm.JdbcConnection;
-import liquibase.datatype.DataTypeFactory;
-import liquibase.logging.LogFactory;
-import liquibase.parser.ChangeLogParser;
-import liquibase.parser.ChangeLogParserFactory;
-import liquibase.parser.core.xml.XMLChangeLogSAXParser;
-import liquibase.servicelocator.ServiceLocator;
-import org.eclipse.microprofile.config.spi.ConfigSourceProvider;
-import org.keycloak.connections.jpa.updater.liquibase.MySQL8VarcharType;
-import org.keycloak.connections.jpa.updater.liquibase.PostgresPlusDatabase;
-import org.keycloak.connections.jpa.updater.liquibase.UpdatedMariaDBDatabase;
-import org.keycloak.connections.jpa.updater.liquibase.UpdatedMySqlDatabase;
 import org.keycloak.connections.liquibase.FastServiceLocator;
 import org.keycloak.connections.liquibase.KeycloakLogger;
-import org.keycloak.provider.quarkus.KeycloakConfigSourceProvider;
+import org.keycloak.provider.KeycloakDeploymentInfo;
+import org.keycloak.provider.ProviderManager;
+
+import io.quarkus.runtime.annotations.Recorder;
+import liquibase.logging.LogFactory;
+import liquibase.servicelocator.ServiceLocator;
 
 @Recorder
 public class KeycloakRecorder {
+    public static ClassLoader CLASS_LOADER;
+    public static List<ProviderManager> PROVIDERS = new ArrayList();
+    public static KeycloakDeploymentInfo getKeycloakProviderDeploymentInfo(String name,
+            List<String> paths) {
+        KeycloakDeploymentInfo info = KeycloakDeploymentInfo.create().name(name);
+
+        for (String path : paths) {
+            try {
+                File file = Paths.get(path).toFile();
+
+                if (file.isFile()) {
+                    URI jarUri = URI.create("jar:file:" + file.getAbsolutePath());
+                    try (FileSystem zipfs = FileSystems.newFileSystem(jarUri, Collections.emptyMap())) {
+                        Files.walkFileTree(zipfs.getPath("/"), new FileVisitor<Path>() {
+                            @Override
+                            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
+                                    throws IOException {
+                                return FileVisitResult.CONTINUE;
+                            }
+
+                            @Override
+                            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                                if (file.toAbsolutePath().toString().contains("META-INF/keycloak-themes.json")) {
+                                    info.themes();
+                                }
+
+                                if (file.toAbsolutePath().toString().contains("theme-resources")) {
+                                    info.themeResources();
+                                }
+
+                                if (file.toAbsolutePath().toString().contains("META-INF/services/org.keycloak")) {
+                                    info.name(jarUri.toString());
+                                    info.services();
+                                }
+                                return FileVisitResult.CONTINUE;
+                            }
+
+                            @Override
+                            public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
+                                return FileVisitResult.CONTINUE;
+                            }
+
+                            @Override
+                            public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                                return FileVisitResult.CONTINUE;
+                            }
+                        });
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        return info;
+    }
+
     public void configureLiquibase(Map<String, List<String>> services) {
         LogFactory.setInstance(new LogFactory() {
             KeycloakLogger logger = new KeycloakLogger();
@@ -52,59 +106,35 @@ public class KeycloakRecorder {
         ServiceLocator.setInstance(new FastServiceLocator(services));
     }
 
-    public RuntimeValue<ConfigSourceProvider> loadConfiguration() {
-        return new RuntimeValue<>(new KeycloakConfigSourceProvider());
-    }
+    public void configureUserProviders(List<String> paths) {
+        for (String path : paths) {
+            KeycloakDeploymentInfo info = getKeycloakProviderDeploymentInfo(UUID.randomUUID().toString(), paths);
+            String name = info.getName();
+            ProviderManager pm = null;
+            try {
+                CLASS_LOADER = new URLClassLoader(new URL[] { new File(path).toURL() },
+                        CLASS_LOADER == null ? Thread.currentThread().getContextClassLoader() : CLASS_LOADER) {
+                    @Override
+                    public Enumeration<URL> getResources(String name) throws IOException {
+                        List<URL> urls = new ArrayList<>();
+                        Enumeration<URL> resources = super.getResources(name);
 
-    public BeanContainerListener configureDatabase() {
-        return new BeanContainerListener() {
-            @Override
-            public void created(BeanContainer beanContainer) {
-                AgroalDataSource dataSource = beanContainer.instance(AgroalDataSource.class);
-
-                try (Connection connection = dataSource.getConnection()) {
-                    Database database = DatabaseFactory.getInstance()
-                            .findCorrectDatabaseImplementation(new JdbcConnection(connection));
-                    DatabaseFactory.getInstance().clearRegistry();
-                    if (database.getDatabaseProductName().equals(PostgresDatabase.PRODUCT_NAME)) {
-                        // Adding PostgresPlus support to liquibase
-                        DatabaseFactory.getInstance().register(new PostgresPlusDatabase());
-                    } else if (database.getDatabaseProductName().equals(MySQLDatabase.PRODUCT_NAME)) {
-                        // Adding newer version of MySQL/MariaDB support to liquibase
-                        DatabaseFactory.getInstance().register(new UpdatedMySqlDatabase());
-                        // Adding CustomVarcharType for MySQL 8 and newer
-                        DataTypeFactory.getInstance().register(MySQL8VarcharType.class);
-                    } else if (database.getDatabaseProductName().equals(MariaDBDatabase.PRODUCT_NAME)) {
-                        DatabaseFactory.getInstance().register(new UpdatedMariaDBDatabase());
-                        // Adding CustomVarcharType for MySQL 8 and newer
-                        DataTypeFactory.getInstance().register(MySQL8VarcharType.class);
-                    } else {
-                        DatabaseFactory.getInstance().register(database);
-                    }
-
-                    FastServiceLocator.class.cast(ServiceLocator.getInstance()).register(database.getClass());
-
-                    // disables XML validation
-                    for (ChangeLogParser parser : ChangeLogParserFactory.getInstance().getParsers()) {
-                        if (parser instanceof XMLChangeLogSAXParser) {
-                            Method getSaxParserFactory = null;
-                            try {
-                                getSaxParserFactory = XMLChangeLogSAXParser.class.getDeclaredMethod("getSaxParserFactory");
-                                getSaxParserFactory.setAccessible(true);
-                                SAXParserFactory saxParserFactory = (SAXParserFactory) getSaxParserFactory.invoke(parser);
-                                saxParserFactory.setValidating(false);
-                            } catch (Exception e) {
-                            } finally {
-                                if (getSaxParserFactory != null) {
-                                    getSaxParserFactory.setAccessible(false);
-                                }
+                        while (resources.hasMoreElements()) {
+                            URL url = resources.nextElement();
+                            if (url.toString().contains("jar")) {
+                                urls.add(url);
                             }
                         }
+
+                        return Collections.enumeration(urls);
                     }
-                } catch (Exception cause) {
-                    throw new RuntimeException("Failed to configure Liquibase database", cause);
-                }
+                };
+                pm = new ProviderManager(info, CLASS_LOADER);
+            } catch (MalformedURLException e) {
+                throw new RuntimeException(e);
             }
-        };
+            CLASS_LOADER = CLASS_LOADER == null ? Thread.currentThread().getContextClassLoader() : CLASS_LOADER;
+            PROVIDERS.add(pm);
+        }
     }
 }
