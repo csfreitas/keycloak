@@ -50,6 +50,10 @@ public class QuarkusLifecycleObserver {
 
         if (startupHook != null) {
             startupHook.run();
+//            for (ProviderManager provider : KeycloakRecorder.PROVIDERS) {
+//                // this causes all providers to close and postInit, this might be related to the issues with the scheduled tasks shutdown
+//                DefaultKeycloakSessionFactory.class.cast(application.getSessionFactory()).deploy(provider);    
+//            }
             createAdminUser();
         }
     }

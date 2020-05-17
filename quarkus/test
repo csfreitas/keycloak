@@ -1,0 +1,729 @@
+[INFO] Scanning for projects...
+[WARNING] 
+[WARNING] Some problems were encountered while building the effective model for org.keycloak:keycloak-quarkus-server:jar:11.0.0-SNAPSHOT
+[WARNING] 'build.plugins.plugin.version' for io.quarkus:quarkus-bootstrap-maven-plugin is missing. @ line 442, column 21
+[WARNING] 
+[WARNING] It is highly recommended to fix these problems because they threaten the stability of your build.
+[WARNING] 
+[WARNING] For this reason, future Maven versions might no longer support building such malformed projects.
+[WARNING] 
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Build Order:
+[INFO] 
+[INFO] Keycloak Quarkus Parent                                            [pom]
+[INFO] Keycloak Quarkus Extensions                                        [jar]
+[INFO] keycloak-quarkus-server-deployment                                 [jar]
+[INFO] keycloak-server                                                    [jar]
+[INFO] 
+[INFO] ----------------< org.keycloak:keycloak-quarkus-parent >----------------
+[INFO] Building Keycloak Quarkus Parent 11.0.0-SNAPSHOT                   [1/4]
+[INFO] --------------------------------[ pom ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.1.1:tree (default-cli) @ keycloak-quarkus-parent ---
+[INFO] org.keycloak:keycloak-quarkus-parent:pom:11.0.0-SNAPSHOT
+[INFO] +- org.infinispan:infinispan-core:jar:9.4.18.Final:compile
+[INFO] |  +- org.jgroups:jgroups:jar:4.0.21.Final:compile
+[INFO] |  +- com.github.ben-manes.caffeine:caffeine:jar:2.8.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.2.0:compile
+[INFO] |  +- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:jar:1.1.1.Final:compile
+[INFO] |  +- org.jboss.marshalling:jboss-marshalling-osgi:jar:2.0.6.Final:compile
+[INFO] |  +- org.jboss.logging:jboss-logging:jar:3.4.1.Final:compile
+[INFO] |  \- io.reactivex.rxjava2:rxjava:jar:2.2.19:compile
+[INFO] |     \- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] \- org.infinispan:infinispan-commons:jar:9.4.18.Final:compile
+[INFO] 
+[INFO] ----------------< org.keycloak:keycloak-quarkus-server >----------------
+[INFO] Building Keycloak Quarkus Extensions 11.0.0-SNAPSHOT               [2/4]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.1.1:tree (default-cli) @ keycloak-quarkus-server ---
+[INFO] org.keycloak:keycloak-quarkus-server:jar:11.0.0-SNAPSHOT
+[INFO] +- io.quarkus:quarkus-resteasy:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-vertx-http:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-development-mode-spi:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-vertx-core:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  \- io.vertx:vertx-core:jar:3.9.0:compile
+[INFO] |  |  |     +- io.netty:netty-common:jar:4.1.49.Final:compile
+[INFO] |  |  |     +- io.netty:netty-buffer:jar:4.1.49.Final:compile
+[INFO] |  |  |     +- io.netty:netty-transport:jar:4.1.49.Final:compile
+[INFO] |  |  |     +- io.netty:netty-handler-proxy:jar:4.1.49.Final:compile
+[INFO] |  |  |     |  \- io.netty:netty-codec-socks:jar:4.1.49.Final:compile
+[INFO] |  |  |     +- io.netty:netty-codec-http:jar:4.1.49.Final:compile
+[INFO] |  |  |     +- io.netty:netty-codec-http2:jar:4.1.49.Final:compile
+[INFO] |  |  |     +- io.netty:netty-resolver:jar:4.1.49.Final:compile
+[INFO] |  |  |     \- io.netty:netty-resolver-dns:jar:4.1.49.Final:compile
+[INFO] |  |  |        \- io.netty:netty-codec-dns:jar:4.1.49.Final:compile
+[INFO] |  |  \- io.vertx:vertx-web:jar:3.9.0:compile
+[INFO] |  |     +- io.vertx:vertx-web-common:jar:3.9.0:compile
+[INFO] |  |     +- io.vertx:vertx-auth-common:jar:3.9.0:compile
+[INFO] |  |     \- io.vertx:vertx-bridge-common:jar:3.9.0:compile
+[INFO] |  \- io.quarkus:quarkus-resteasy-server-common:jar:999-SNAPSHOT:compile
+[INFO] |     \- io.quarkus:quarkus-resteasy-common:jar:999-SNAPSHOT:compile
+[INFO] +- io.quarkus:quarkus-resteasy-jackson:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-jackson:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.2:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.10.4:compile
+[INFO] |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.10.4:compile
+[INFO] |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.10.4:compile
+[INFO] |  +- org.jboss.resteasy:resteasy-jackson2-provider:jar:4.5.3.Final:compile
+[INFO] |  |  +- com.fasterxml.jackson.core:jackson-core:jar:2.10.2:compile
+[INFO] |  |  +- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.2:compile
+[INFO] |  |  +- com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:jar:2.10.2:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.jaxrs:jackson-jaxrs-base:jar:2.10.2:compile
+[INFO] |  |  |  \- com.fasterxml.jackson.module:jackson-module-jaxb-annotations:jar:2.10.2:compile
+[INFO] |  |  |     \- jakarta.activation:jakarta.activation-api:jar:1.2.1:compile
+[INFO] |  |  \- com.github.fge:json-patch:jar:1.9:compile
+[INFO] |  |     \- com.github.fge:jackson-coreutils:jar:1.6:compile
+[INFO] |  |        \- com.github.fge:msg-simple:jar:1.1:compile
+[INFO] |  |           \- com.github.fge:btf:jar:1.2:compile
+[INFO] |  \- org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:jar:2.0.0.Final:compile
+[INFO] +- io.quarkus:quarkus-hibernate-orm:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-core:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- jakarta.annotation:jakarta.annotation-api:jar:1.3.5:compile
+[INFO] |  |  +- jakarta.inject:jakarta.inject-api:jar:1.0:compile
+[INFO] |  |  +- io.quarkus:quarkus-ide-launcher:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- org.jboss.logmanager:jboss-logmanager-embedded:jar:1.0.4:compile
+[INFO] |  |  +- org.jboss.logging:jboss-logging-annotations:jar:2.2.1.Final:compile
+[INFO] |  |  +- org.jboss.threads:jboss-threads:jar:3.1.1.Final:compile
+[INFO] |  |  +- org.jboss.slf4j:slf4j-jboss-logging:jar:1.2.0.Final:compile
+[INFO] |  |  +- org.graalvm.sdk:graal-sdk:jar:19.3.1:compile
+[INFO] |  |  +- org.wildfly.common:wildfly-common:jar:1.5.0.Final-format-001:compile
+[INFO] |  |  \- io.quarkus:quarkus-bootstrap-runner:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-narayana-jta:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-mutiny:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- io.quarkus:quarkus-smallrye-context-propagation:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  |  \- io.smallrye:smallrye-context-propagation:jar:1.0.13:compile
+[INFO] |  |  |  |     \- io.smallrye:smallrye-context-propagation-api:jar:1.0.13:compile
+[INFO] |  |  |  \- io.smallrye.reactive:mutiny-context-propagation:jar:0.5.0:compile
+[INFO] |  |  +- io.smallrye:smallrye-context-propagation-jta:jar:1.0.13:compile
+[INFO] |  |  +- io.smallrye.reactive:smallrye-reactive-converter-api:jar:1.0.12:compile
+[INFO] |  |  |  +- org.eclipse.microprofile.reactive-streams-operators:microprofile-reactive-streams-operators-api:jar:1.0.1:compile
+[INFO] |  |  |  \- org.eclipse.microprofile.reactive-streams-operators:microprofile-reactive-streams-operators-core:jar:1.0.1:compile
+[INFO] |  |  \- io.smallrye.reactive:smallrye-reactive-converter-mutiny:jar:1.0.12:compile
+[INFO] |  +- org.hibernate:hibernate-graalvm:jar:5.4.15.Final:compile
+[INFO] |  +- org.glassfish.jaxb:jaxb-runtime:jar:2.3.3-b02:compile
+[INFO] |  |  +- org.glassfish.jaxb:txw2:jar:2.3.3-b02:compile
+[INFO] |  |  \- com.sun.istack:istack-commons-runtime:jar:3.0.10:compile
+[INFO] |  +- jakarta.persistence:jakarta.persistence-api:jar:2.2.3:compile
+[INFO] |  +- jakarta.transaction:jakarta.transaction-api:jar:1.3.3:compile
+[INFO] |  +- org.hibernate:quarkus-local-cache:jar:0.1.0:compile
+[INFO] |  \- io.quarkus:quarkus-caffeine:jar:999-SNAPSHOT:compile
+[INFO] +- io.quarkus:quarkus-agroal:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-arc:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus.arc:arc:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- org.eclipse.microprofile.context-propagation:microprofile-context-propagation-api:jar:1.0.1:compile
+[INFO] |  +- io.quarkus:quarkus-datasource:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- io.quarkus:quarkus-datasource-common:jar:999-SNAPSHOT:compile
+[INFO] |  +- org.jboss.narayana.jta:narayana-jta:jar:5.10.4.Final:compile
+[INFO] |  |  +- org.jboss:jboss-transaction-spi:jar:7.6.0.Final:compile
+[INFO] |  |  \- org.jboss.spec.javax.resource:jboss-connector-api_1.7_spec:jar:1.0.0.Final:compile
+[INFO] |  +- org.jboss.narayana.jts:narayana-jts-integration:jar:5.10.4.Final:compile
+[INFO] |  +- io.agroal:agroal-api:jar:1.8:compile
+[INFO] |  +- io.agroal:agroal-narayana:jar:1.8:compile
+[INFO] |  +- io.agroal:agroal-pool:jar:1.8:compile
+[INFO] |  \- io.quarkus:quarkus-credentials:jar:999-SNAPSHOT:compile
+[INFO] +- io.quarkus:quarkus-jdbc-h2:jar:999-SNAPSHOT:compile
+[INFO] |  +- com.h2database:h2:jar:1.4.197:test
+[INFO] |  \- org.locationtech.jts:jts-core:jar:1.15.0:compile
+[INFO] +- io.quarkus:quarkus-jdbc-postgresql:jar:999-SNAPSHOT:compile
+[INFO] |  \- org.postgresql:postgresql:jar:42.2.12:compile
+[INFO] +- io.quarkus:quarkus-jdbc-mariadb:jar:999-SNAPSHOT:compile
+[INFO] |  \- org.mariadb.jdbc:mariadb-java-client:jar:2.6.0:compile
+[INFO] +- org.keycloak:keycloak-services:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-js-adapter:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-common:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-core:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-server-spi:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-server-spi-private:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-themes:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-saml-core-public:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-saml-core:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-model-jpa:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-model-infinispan:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-authz-policy-common:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-kerberos-federation:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-sssd-federation:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-ldap-federation:jar:11.0.0-SNAPSHOT:compile
+[INFO] +- org.jboss.resteasy:resteasy-multipart-provider:jar:4.5.3.Final:compile
+[INFO] |  +- org.jboss.resteasy:resteasy-core-spi:jar:4.5.3.Final:compile
+[INFO] |  +- org.jboss.resteasy:resteasy-client:jar:4.5.3.Final:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-client-api:jar:4.5.3.Final:compile
+[INFO] |  |  \- commons-io:commons-io:jar:2.6:compile
+[INFO] |  +- org.jboss.resteasy:resteasy-jaxb-provider:jar:4.5.3.Final:compile
+[INFO] |  +- org.apache.james:apache-mime4j-dom:jar:0.7.2:compile
+[INFO] |  |  \- org.apache.james:apache-mime4j-core:jar:0.7.2:compile
+[INFO] |  +- org.apache.james:apache-mime4j-storage:jar:0.7.2:compile
+[INFO] |  +- org.jboss.logging:jboss-logging:jar:3.4.1.Final:compile
+[INFO] |  \- org.eclipse.microprofile.config:microprofile-config-api:jar:1.4:compile
+[INFO] +- org.jboss.logging:commons-logging-jboss-logging:jar:1.0.0.Final:compile
+[INFO] +- com.webauthn4j:webauthn4j-core:jar:0.10.2.RELEASE:compile
+[INFO] +- com.webauthn4j:webauthn4j-util:jar:0.10.2.RELEASE:compile
+[INFO] +- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:jar:2.10.2:compile
+[INFO] +- org.freemarker:freemarker:jar:2.3.29:compile
+[INFO] +- com.google.guava:guava:jar:25.0-jre:compile
+[INFO] +- com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer:jar:20191001.1:compile
+[INFO] +- org.hibernate:hibernate-core:jar:5.4.15.Final:compile
+[INFO] |  +- javax.persistence:javax.persistence-api:jar:2.2:compile
+[INFO] |  +- org.javassist:javassist:jar:3.24.0-GA:compile
+[INFO] |  +- net.bytebuddy:byte-buddy:jar:1.10.10:compile
+[INFO] |  +- antlr:antlr:jar:2.7.7:compile
+[INFO] |  +- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:jar:1.1.1.Final:compile
+[INFO] |  +- org.jboss:jandex:jar:2.1.3.Final:compile
+[INFO] |  +- com.fasterxml:classmate:jar:1.3.4:compile
+[INFO] |  +- javax.activation:javax.activation-api:jar:1.2.0:compile
+[INFO] |  +- org.dom4j:dom4j:jar:2.1.3:test
+[INFO] |  +- org.hibernate.common:hibernate-commons-annotations:jar:5.1.0.Final:compile
+[INFO] |  \- javax.xml.bind:jaxb-api:jar:2.4.0-b180830.0359:compile
+[INFO] +- org.apache.httpcomponents:httpcore:jar:4.4.13:compile
+[INFO] +- org.apache.httpcomponents:httpclient:jar:4.5.11:compile
+[INFO] +- org.bouncycastle:bcpkix-jdk15on:jar:1.62:compile
+[INFO] +- org.bouncycastle:bcprov-jdk15on:jar:1.62:compile
+[INFO] +- org.infinispan:infinispan-client-hotrod:jar:9.4.18.Final:compile
+[INFO] +- org.infinispan:infinispan-cachestore-remote:jar:9.4.18.Final:compile
+[INFO] +- com.github.ua-parser:uap-java:jar:1.4.3:compile
+[INFO] +- org.yaml:snakeyaml:jar:1.20:compile
+[INFO] +- com.google.zxing:core:jar:3.4.0:compile
+[INFO] +- com.google.zxing:javase:jar:3.4.0:compile
+[INFO] +- com.sun.mail:jakarta.mail:jar:1.6.4:compile
+[INFO] |  \- com.sun.activation:jakarta.activation:jar:1.2.1:compile
+[INFO] +- org.apache.santuario:xmlsec:jar:2.1.4:compile
+[INFO] |  +- org.slf4j:slf4j-api:jar:1.7.22:compile
+[INFO] |  \- commons-codec:commons-codec:jar:1.13:compile
+[INFO] +- org.jboss.resteasy:resteasy-core:jar:4.5.3.Final:compile
+[INFO] |  +- org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec:jar:2.0.1.Final:compile
+[INFO] |  +- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] |  +- jakarta.validation:jakarta.validation-api:jar:2.0.2:compile
+[INFO] |  \- io.smallrye.config:smallrye-config:jar:1.7.0:compile
+[INFO] |     \- io.smallrye.config:smallrye-config-common:jar:1.7.0:compile
+[INFO] +- org.apache.commons:commons-lang3:jar:3.9:compile
+[INFO] +- io.quarkus:quarkus-vertx-web:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-vertx:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-netty:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- io.netty:netty-codec:jar:4.1.49.Final:compile
+[INFO] |  |  |  \- io.netty:netty-handler:jar:4.1.49.Final:compile
+[INFO] |  |  +- io.smallrye.reactive:smallrye-axle-generator:jar:0.0.15:compile
+[INFO] |  |  +- io.smallrye.reactive:smallrye-axle-core:jar:0.0.15:compile
+[INFO] |  |  +- io.vertx:vertx-rx-java2:jar:3.9.0:compile
+[INFO] |  |  |  \- io.vertx:vertx-rx-gen:jar:3.9.0:compile
+[INFO] |  |  |     \- io.vertx:vertx-codegen:jar:3.9.0:compile
+[INFO] |  |  |        \- org.mvel:mvel2:jar:2.4.7.Final:compile
+[INFO] |  |  \- io.smallrye.reactive:smallrye-mutiny-vertx-core:jar:0.0.15:compile
+[INFO] |  |     +- io.smallrye.reactive:smallrye-mutiny-vertx-runtime:jar:0.0.15:compile
+[INFO] |  |     \- io.smallrye.reactive:vertx-mutiny-generator:jar:0.0.15:compile
+[INFO] |  +- io.quarkus.security:quarkus-security:jar:1.1.1.Final:compile
+[INFO] |  |  \- io.smallrye.reactive:mutiny:jar:0.5.0:compile
+[INFO] |  \- jakarta.enterprise:jakarta.enterprise.cdi-api:jar:2.0.2:compile
+[INFO] |     +- jakarta.el:jakarta.el-api:jar:3.0.3:compile
+[INFO] |     \- jakarta.interceptor:jakarta.interceptor-api:jar:1.2.5:compile
+[INFO] +- org.liquibase:liquibase-core:jar:3.5.5:compile
+[INFO] +- junit:junit:jar:4.12:test
+[INFO] |  \- org.hamcrest:hamcrest-core:jar:1.3:test
+[INFO] +- org.infinispan:infinispan-core:jar:9.4.18.Final:compile
+[INFO] |  +- org.jgroups:jgroups:jar:4.0.21.Final:compile
+[INFO] |  +- com.github.ben-manes.caffeine:caffeine:jar:2.8.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.2.0:compile
+[INFO] |  +- org.jboss.marshalling:jboss-marshalling-osgi:jar:2.0.6.Final:compile
+[INFO] |  \- io.reactivex.rxjava2:rxjava:jar:2.2.19:compile
+[INFO] \- org.infinispan:infinispan-commons:jar:9.4.18.Final:compile
+[INFO] 
+[INFO] ----------< org.keycloak:keycloak-quarkus-server-deployment >-----------
+[INFO] Building keycloak-quarkus-server-deployment 11.0.0-SNAPSHOT        [3/4]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.1.1:tree (default-cli) @ keycloak-quarkus-server-deployment ---
+[INFO] org.keycloak:keycloak-quarkus-server-deployment:jar:11.0.0-SNAPSHOT
+[INFO] +- io.quarkus:quarkus-core-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  +- org.wildfly.common:wildfly-common:jar:1.5.0.Final-format-001:compile
+[INFO] |  +- io.quarkus.gizmo:gizmo:jar:1.0.3.Final:compile
+[INFO] |  |  \- org.ow2.asm:asm-util:jar:8.0.1:compile
+[INFO] |  |     +- org.ow2.asm:asm-tree:jar:8.0.1:compile
+[INFO] |  |     \- org.ow2.asm:asm-analysis:jar:8.0.1:compile
+[INFO] |  +- org.jboss:jandex:jar:2.1.3.Final:compile
+[INFO] |  +- org.ow2.asm:asm:jar:8.0.1:compile
+[INFO] |  +- io.quarkus:quarkus-development-mode-spi:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-bootstrap-core:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- org.apache.maven:maven-embedder:jar:3.6.3:compile
+[INFO] |  |  |  +- org.apache.maven:maven-settings:jar:3.6.3:compile
+[INFO] |  |  |  +- org.apache.maven:maven-core:jar:3.6.3:compile
+[INFO] |  |  |  |  +- org.apache.maven:maven-artifact:jar:3.6.3:compile
+[INFO] |  |  |  |  \- org.codehaus.plexus:plexus-component-annotations:jar:2.1.0:compile
+[INFO] |  |  |  +- org.apache.maven:maven-plugin-api:jar:3.6.3:compile
+[INFO] |  |  |  +- org.apache.maven:maven-model:jar:3.6.3:compile
+[INFO] |  |  |  +- org.apache.maven:maven-model-builder:jar:3.6.3:compile
+[INFO] |  |  |  +- org.apache.maven:maven-builder-support:jar:3.6.3:compile
+[INFO] |  |  |  +- org.apache.maven.resolver:maven-resolver-api:jar:1.4.1:compile
+[INFO] |  |  |  +- org.apache.maven.resolver:maven-resolver-util:jar:1.4.1:compile
+[INFO] |  |  |  +- org.apache.maven.shared:maven-shared-utils:jar:3.2.1:compile
+[INFO] |  |  |  +- com.google.inject:guice:jar:no_aop:4.2.1:compile
+[INFO] |  |  |  +- org.codehaus.plexus:plexus-utils:jar:3.2.1:compile
+[INFO] |  |  |  +- org.eclipse.sisu:org.eclipse.sisu.plexus:jar:0.3.4:compile
+[INFO] |  |  |  \- commons-cli:commons-cli:jar:1.4:compile
+[INFO] |  |  +- org.apache.maven:maven-settings-builder:jar:3.6.3:compile
+[INFO] |  |  |  +- org.codehaus.plexus:plexus-interpolation:jar:1.25:compile
+[INFO] |  |  |  \- org.sonatype.plexus:plexus-sec-dispatcher:jar:1.4:compile
+[INFO] |  |  |     \- org.sonatype.plexus:plexus-cipher:jar:1.4:compile
+[INFO] |  |  +- org.apache.maven:maven-resolver-provider:jar:3.6.3:compile
+[INFO] |  |  |  +- org.apache.maven:maven-repository-metadata:jar:3.6.3:compile
+[INFO] |  |  |  +- org.apache.maven.resolver:maven-resolver-spi:jar:1.4.1:compile
+[INFO] |  |  |  \- org.apache.maven.resolver:maven-resolver-impl:jar:1.4.1:compile
+[INFO] |  |  +- org.apache.maven.resolver:maven-resolver-connector-basic:jar:1.4.1:compile
+[INFO] |  |  +- org.apache.maven.resolver:maven-resolver-transport-wagon:jar:1.4.1:compile
+[INFO] |  |  +- org.apache.maven.wagon:wagon-http:jar:3.3.4:compile
+[INFO] |  |  |  +- org.apache.maven.wagon:wagon-http-shared:jar:3.3.4:compile
+[INFO] |  |  |  |  \- org.jsoup:jsoup:jar:1.12.1:compile
+[INFO] |  |  |  \- org.apache.maven.wagon:wagon-provider-api:jar:3.3.4:compile
+[INFO] |  |  \- org.apache.maven.wagon:wagon-file:jar:3.3.4:compile
+[INFO] |  +- io.quarkus:quarkus-core:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- jakarta.annotation:jakarta.annotation-api:jar:1.3.5:compile
+[INFO] |  |  +- jakarta.inject:jakarta.inject-api:jar:1.0:compile
+[INFO] |  |  +- io.quarkus:quarkus-ide-launcher:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.smallrye.config:smallrye-config:jar:1.7.0:compile
+[INFO] |  |  |  \- io.smallrye.config:smallrye-config-common:jar:1.7.0:compile
+[INFO] |  |  +- org.jboss.logmanager:jboss-logmanager-embedded:jar:1.0.4:compile
+[INFO] |  |  +- org.jboss.logging:jboss-logging-annotations:jar:2.2.1.Final:compile
+[INFO] |  |  +- org.jboss.threads:jboss-threads:jar:3.1.1.Final:compile
+[INFO] |  |  +- org.slf4j:slf4j-api:jar:1.7.22:compile
+[INFO] |  |  +- org.jboss.slf4j:slf4j-jboss-logging:jar:1.2.0.Final:compile
+[INFO] |  |  \- io.quarkus:quarkus-bootstrap-runner:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-builder:jar:999-SNAPSHOT:compile
+[INFO] |  \- org.graalvm.sdk:graal-sdk:jar:19.3.1:compile
+[INFO] +- io.quarkus:quarkus-arc-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-arc:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus.arc:arc:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- org.eclipse.microprofile.context-propagation:microprofile-context-propagation-api:jar:1.0.1:compile
+[INFO] |  \- io.quarkus.arc:arc-processor:jar:999-SNAPSHOT:compile
+[INFO] +- org.keycloak:keycloak-quarkus-server:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-resteasy:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-vertx-http:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- io.quarkus:quarkus-vertx-core:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  |  \- io.vertx:vertx-core:jar:3.9.0:compile
+[INFO] |  |  |  |     +- io.netty:netty-common:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-buffer:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-transport:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-handler-proxy:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     |  \- io.netty:netty-codec-socks:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-codec-http2:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-resolver:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     \- io.netty:netty-resolver-dns:jar:4.1.49.Final:compile
+[INFO] |  |  |  |        \- io.netty:netty-codec-dns:jar:4.1.49.Final:compile
+[INFO] |  |  |  \- io.vertx:vertx-web:jar:3.9.0:compile
+[INFO] |  |  |     +- io.vertx:vertx-web-common:jar:3.9.0:compile
+[INFO] |  |  |     +- io.vertx:vertx-auth-common:jar:3.9.0:compile
+[INFO] |  |  |     \- io.vertx:vertx-bridge-common:jar:3.9.0:compile
+[INFO] |  |  \- io.quarkus:quarkus-resteasy-server-common:jar:999-SNAPSHOT:compile
+[INFO] |  |     \- io.quarkus:quarkus-resteasy-common:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-resteasy-jackson:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-jackson:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.2:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.10.4:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.10.4:compile
+[INFO] |  |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.10.4:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-jackson2-provider:jar:4.5.3.Final:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.core:jackson-core:jar:2.10.2:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.2:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:jar:2.10.2:compile
+[INFO] |  |  |  |  +- com.fasterxml.jackson.jaxrs:jackson-jaxrs-base:jar:2.10.2:compile
+[INFO] |  |  |  |  \- com.fasterxml.jackson.module:jackson-module-jaxb-annotations:jar:2.10.2:compile
+[INFO] |  |  |  \- com.github.fge:json-patch:jar:1.9:compile
+[INFO] |  |  |     \- com.github.fge:jackson-coreutils:jar:1.6:compile
+[INFO] |  |  |        \- com.github.fge:msg-simple:jar:1.1:compile
+[INFO] |  |  |           \- com.github.fge:btf:jar:1.2:compile
+[INFO] |  |  \- org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:jar:2.0.0.Final:compile
+[INFO] |  +- io.quarkus:quarkus-hibernate-orm:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-narayana-jta:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- io.quarkus:quarkus-mutiny:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  |  +- io.quarkus:quarkus-smallrye-context-propagation:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  |  |  \- io.smallrye:smallrye-context-propagation:jar:1.0.13:compile
+[INFO] |  |  |  |  |     \- io.smallrye:smallrye-context-propagation-api:jar:1.0.13:compile
+[INFO] |  |  |  |  \- io.smallrye.reactive:mutiny-context-propagation:jar:0.5.0:compile
+[INFO] |  |  |  +- io.smallrye:smallrye-context-propagation-jta:jar:1.0.13:compile
+[INFO] |  |  |  +- io.smallrye.reactive:smallrye-reactive-converter-api:jar:1.0.12:compile
+[INFO] |  |  |  |  +- org.eclipse.microprofile.reactive-streams-operators:microprofile-reactive-streams-operators-api:jar:1.0.1:compile
+[INFO] |  |  |  |  \- org.eclipse.microprofile.reactive-streams-operators:microprofile-reactive-streams-operators-core:jar:1.0.1:compile
+[INFO] |  |  |  \- io.smallrye.reactive:smallrye-reactive-converter-mutiny:jar:1.0.12:compile
+[INFO] |  |  +- org.hibernate:hibernate-graalvm:jar:5.4.15.Final:compile
+[INFO] |  |  +- jakarta.persistence:jakarta.persistence-api:jar:2.2.3:compile
+[INFO] |  |  +- jakarta.transaction:jakarta.transaction-api:jar:1.3.3:compile
+[INFO] |  |  +- org.hibernate:quarkus-local-cache:jar:0.1.0:compile
+[INFO] |  |  \- io.quarkus:quarkus-caffeine:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-agroal:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-datasource:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- org.jboss.narayana.jta:narayana-jta:jar:5.10.4.Final:compile
+[INFO] |  |  |  +- org.jboss:jboss-transaction-spi:jar:7.6.0.Final:compile
+[INFO] |  |  |  \- org.jboss.spec.javax.resource:jboss-connector-api_1.7_spec:jar:1.0.0.Final:compile
+[INFO] |  |  +- org.jboss.narayana.jts:narayana-jts-integration:jar:5.10.4.Final:compile
+[INFO] |  |  +- io.agroal:agroal-api:jar:1.8:compile
+[INFO] |  |  +- io.agroal:agroal-narayana:jar:1.8:compile
+[INFO] |  |  +- io.agroal:agroal-pool:jar:1.8:compile
+[INFO] |  |  \- io.quarkus:quarkus-credentials:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-jdbc-h2:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- com.h2database:h2:jar:1.4.197:test
+[INFO] |  |  \- org.locationtech.jts:jts-core:jar:1.15.0:compile
+[INFO] |  +- io.quarkus:quarkus-jdbc-postgresql:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- org.postgresql:postgresql:jar:42.2.12:compile
+[INFO] |  +- org.keycloak:keycloak-services:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-js-adapter:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-common:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-core:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-server-spi:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-server-spi-private:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-themes:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-saml-core-public:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-saml-core:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-model-jpa:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-model-infinispan:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-authz-policy-common:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-kerberos-federation:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-sssd-federation:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-ldap-federation:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.jboss.resteasy:resteasy-multipart-provider:jar:4.5.3.Final:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-core-spi:jar:4.5.3.Final:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-client:jar:4.5.3.Final:compile
+[INFO] |  |  |  +- org.jboss.resteasy:resteasy-client-api:jar:4.5.3.Final:compile
+[INFO] |  |  |  \- commons-io:commons-io:jar:2.6:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-jaxb-provider:jar:4.5.3.Final:compile
+[INFO] |  |  +- org.apache.james:apache-mime4j-dom:jar:0.7.2:compile
+[INFO] |  |  |  \- org.apache.james:apache-mime4j-core:jar:0.7.2:compile
+[INFO] |  |  +- org.apache.james:apache-mime4j-storage:jar:0.7.2:compile
+[INFO] |  |  \- org.eclipse.microprofile.config:microprofile-config-api:jar:1.4:compile
+[INFO] |  +- org.jboss.logging:commons-logging-jboss-logging:jar:1.0.0.Final:compile
+[INFO] |  +- com.webauthn4j:webauthn4j-core:jar:0.10.2.RELEASE:compile
+[INFO] |  +- com.webauthn4j:webauthn4j-util:jar:0.10.2.RELEASE:compile
+[INFO] |  +- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:jar:2.10.2:compile
+[INFO] |  +- org.freemarker:freemarker:jar:2.3.29:compile
+[INFO] |  +- com.google.guava:guava:jar:25.0-jre:compile
+[INFO] |  +- com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer:jar:20191001.1:compile
+[INFO] |  +- org.apache.httpcomponents:httpcore:jar:4.4.13:compile
+[INFO] |  +- org.apache.httpcomponents:httpclient:jar:4.5.11:compile
+[INFO] |  +- org.bouncycastle:bcpkix-jdk15on:jar:1.62:compile
+[INFO] |  +- org.bouncycastle:bcprov-jdk15on:jar:1.62:compile
+[INFO] |  +- org.infinispan:infinispan-cachestore-remote:jar:9.4.18.Final:compile
+[INFO] |  +- com.github.ua-parser:uap-java:jar:1.4.3:compile
+[INFO] |  +- org.yaml:snakeyaml:jar:1.20:compile
+[INFO] |  +- com.google.zxing:core:jar:3.4.0:compile
+[INFO] |  +- com.google.zxing:javase:jar:3.4.0:compile
+[INFO] |  +- com.sun.mail:jakarta.mail:jar:1.6.4:compile
+[INFO] |  |  \- com.sun.activation:jakarta.activation:jar:1.2.1:compile
+[INFO] |  +- org.apache.santuario:xmlsec:jar:2.1.4:compile
+[INFO] |  |  \- commons-codec:commons-codec:jar:1.13:compile
+[INFO] |  +- org.jboss.resteasy:resteasy-core:jar:4.5.3.Final:compile
+[INFO] |  |  +- org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec:jar:2.0.1.Final:compile
+[INFO] |  |  +- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] |  |  \- jakarta.validation:jakarta.validation-api:jar:2.0.2:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.9:compile
+[INFO] |  +- io.quarkus:quarkus-vertx-web:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-vertx:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- io.quarkus:quarkus-netty:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  |  +- io.netty:netty-codec:jar:4.1.49.Final:compile
+[INFO] |  |  |  |  \- io.netty:netty-handler:jar:4.1.49.Final:compile
+[INFO] |  |  |  +- io.smallrye.reactive:smallrye-axle-generator:jar:0.0.15:compile
+[INFO] |  |  |  +- io.smallrye.reactive:smallrye-axle-core:jar:0.0.15:compile
+[INFO] |  |  |  +- io.vertx:vertx-rx-java2:jar:3.9.0:compile
+[INFO] |  |  |  |  \- io.vertx:vertx-rx-gen:jar:3.9.0:compile
+[INFO] |  |  |  |     \- io.vertx:vertx-codegen:jar:3.9.0:compile
+[INFO] |  |  |  |        \- org.mvel:mvel2:jar:2.4.7.Final:compile
+[INFO] |  |  |  \- io.smallrye.reactive:smallrye-mutiny-vertx-core:jar:0.0.15:compile
+[INFO] |  |  |     +- io.smallrye.reactive:smallrye-mutiny-vertx-runtime:jar:0.0.15:compile
+[INFO] |  |  |     \- io.smallrye.reactive:vertx-mutiny-generator:jar:0.0.15:compile
+[INFO] |  |  \- io.quarkus.security:quarkus-security:jar:1.1.1.Final:compile
+[INFO] |  |     \- io.smallrye.reactive:mutiny:jar:0.5.0:compile
+[INFO] |  \- org.liquibase:liquibase-core:jar:3.5.5:compile
+[INFO] +- io.quarkus:quarkus-resteasy-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-resteasy-server-common-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-resteasy-common-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  \- io.quarkus:quarkus-resteasy-common-spi:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- io.quarkus:quarkus-resteasy-server-common-spi:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-undertow-spi:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus.http:quarkus-http-servlet:jar:3.0.7.Final:compile
+[INFO] |  |  |  \- io.quarkus.http:quarkus-http-core:jar:3.0.7.Final:compile
+[INFO] |  |  |     +- io.quarkus.http:quarkus-http-http-core:jar:3.0.7.Final:compile
+[INFO] |  |  |     \- io.netty:netty-codec-http:jar:4.1.49.Final:compile
+[INFO] |  |  +- jakarta.servlet:jakarta.servlet-api:jar:4.0.3:compile
+[INFO] |  |  \- org.jboss.metadata:jboss-metadata-web:jar:11.0.0.Final:compile
+[INFO] |  |     \- org.jboss.metadata:jboss-metadata-common:jar:11.0.0.Final:compile
+[INFO] |  +- io.quarkus:quarkus-vertx-http-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-vertx-core-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  \- io.quarkus:quarkus-netty-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- io.quarkus:quarkus-kubernetes-spi:jar:999-SNAPSHOT:compile
+[INFO] |  \- io.quarkus:quarkus-security-spi:jar:999-SNAPSHOT:compile
+[INFO] +- io.quarkus:quarkus-resteasy-jackson-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  \- io.quarkus:quarkus-jackson-deployment:jar:999-SNAPSHOT:compile
+[INFO] |     \- io.quarkus:quarkus-jackson-spi:jar:999-SNAPSHOT:compile
+[INFO] +- io.quarkus:quarkus-hibernate-orm-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-smallrye-metrics-spi:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- org.eclipse.microprofile.metrics:microprofile-metrics-api:jar:2.3:compile
+[INFO] |  +- io.quarkus:quarkus-narayana-jta-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- io.quarkus:quarkus-mutiny-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-agroal-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-datasource-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-credentials-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- io.quarkus:quarkus-smallrye-health-spi:jar:999-SNAPSHOT:compile
+[INFO] |  \- io.quarkus:quarkus-caffeine-deployment:jar:999-SNAPSHOT:compile
+[INFO] +- io.quarkus:quarkus-jdbc-h2-deployment:jar:999-SNAPSHOT:compile
+[INFO] |  \- io.quarkus:quarkus-agroal-spi:jar:999-SNAPSHOT:compile
+[INFO] |     \- io.quarkus:quarkus-datasource-common:jar:999-SNAPSHOT:compile
+[INFO] +- io.quarkus:quarkus-jdbc-postgresql-deployment:jar:999-SNAPSHOT:compile
+[INFO] +- io.quarkus:quarkus-jdbc-mariadb:jar:999-SNAPSHOT:compile
+[INFO] |  \- org.mariadb.jdbc:mariadb-java-client:jar:2.6.0:compile
+[INFO] +- io.quarkus:quarkus-junit5-internal:jar:999-SNAPSHOT:test
+[INFO] |  +- org.jboss.shrinkwrap:shrinkwrap-depchain:pom:1.2.6:test
+[INFO] |  |  +- org.jboss.shrinkwrap:shrinkwrap-api:jar:1.2.6:test
+[INFO] |  |  +- org.jboss.shrinkwrap:shrinkwrap-spi:jar:1.2.6:test
+[INFO] |  |  \- org.jboss.shrinkwrap:shrinkwrap-impl-base:jar:1.2.6:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:5.6.2:test
+[INFO] |  |  +- org.apiguardian:apiguardian-api:jar:1.1.0:test
+[INFO] |  |  +- org.opentest4j:opentest4j:jar:1.2.0:test
+[INFO] |  |  \- org.junit.platform:junit-platform-commons:jar:1.6.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:5.6.2:test
+[INFO] |  +- org.junit.jupiter:junit-jupiter-engine:jar:5.6.2:test
+[INFO] |  |  \- org.junit.platform:junit-platform-engine:jar:1.6.2:test
+[INFO] |  +- io.quarkus:quarkus-test-common:jar:999-SNAPSHOT:test
+[INFO] |  |  \- io.quarkus:quarkus-jsonp-deployment:jar:999-SNAPSHOT:test
+[INFO] |  |     \- io.quarkus:quarkus-jsonp:jar:999-SNAPSHOT:test
+[INFO] |  |        \- org.glassfish:jakarta.json:jar:1.1.6:test
+[INFO] |  +- jakarta.enterprise:jakarta.enterprise.cdi-api:jar:2.0.2:compile
+[INFO] |  |  +- jakarta.el:jakarta.el-api:jar:3.0.3:compile
+[INFO] |  |  \- jakarta.interceptor:jakarta.interceptor-api:jar:1.2.5:compile
+[INFO] |  \- io.quarkus:quarkus-devtools-utilities:jar:999-SNAPSHOT:test
+[INFO] +- io.rest-assured:rest-assured:jar:4.3.0:test
+[INFO] |  +- org.codehaus.groovy:groovy:jar:3.0.2:test
+[INFO] |  +- org.codehaus.groovy:groovy-xml:jar:3.0.2:test
+[INFO] |  +- org.apache.httpcomponents:httpmime:jar:4.5.11:test
+[INFO] |  +- org.hamcrest:hamcrest:jar:2.1:test
+[INFO] |  +- org.ccil.cowan.tagsoup:tagsoup:jar:1.2.1:test
+[INFO] |  +- io.rest-assured:json-path:jar:4.3.0:test
+[INFO] |  |  +- org.codehaus.groovy:groovy-json:jar:3.0.2:test
+[INFO] |  |  \- io.rest-assured:rest-assured-common:jar:4.3.0:test
+[INFO] |  \- io.rest-assured:xml-path:jar:4.3.0:test
+[INFO] |     +- jakarta.xml.bind:jakarta.xml.bind-api:jar:2.3.2:compile
+[INFO] |     |  \- jakarta.activation:jakarta.activation-api:jar:1.2.1:compile
+[INFO] |     \- org.apache.sling:org.apache.sling.javax.activation:jar:0.1.0:test
+[INFO] +- org.hibernate:hibernate-core:jar:5.4.15.Final:test
+[INFO] |  +- org.jboss.logging:jboss-logging:jar:3.4.1.Final:compile
+[INFO] |  +- javax.persistence:javax.persistence-api:jar:2.2:test
+[INFO] |  +- org.javassist:javassist:jar:3.24.0-GA:test
+[INFO] |  +- net.bytebuddy:byte-buddy:jar:1.10.10:test
+[INFO] |  +- antlr:antlr:jar:2.7.7:test
+[INFO] |  +- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:jar:1.1.1.Final:compile
+[INFO] |  +- com.fasterxml:classmate:jar:1.3.4:test
+[INFO] |  +- javax.activation:javax.activation-api:jar:1.2.0:test
+[INFO] |  +- org.dom4j:dom4j:jar:2.1.3:test
+[INFO] |  +- org.hibernate.common:hibernate-commons-annotations:jar:5.1.0.Final:test
+[INFO] |  +- javax.xml.bind:jaxb-api:jar:2.4.0-b180830.0359:test
+[INFO] |  \- org.glassfish.jaxb:jaxb-runtime:jar:2.3.3-b02:compile
+[INFO] |     +- org.glassfish.jaxb:txw2:jar:2.3.3-b02:compile
+[INFO] |     \- com.sun.istack:istack-commons-runtime:jar:3.0.10:compile
+[INFO] +- org.infinispan:infinispan-commons:jar:9.4.18.Final:test
+[INFO] +- org.infinispan:infinispan-client-hotrod:jar:9.4.18.Final:compile
+[INFO] \- org.infinispan:infinispan-core:jar:9.4.18.Final:compile
+[INFO]    +- org.jgroups:jgroups:jar:4.0.21.Final:compile
+[INFO]    +- com.github.ben-manes.caffeine:caffeine:jar:2.8.0:compile
+[INFO]    |  \- com.google.errorprone:error_prone_annotations:jar:2.2.0:compile
+[INFO]    +- org.jboss.marshalling:jboss-marshalling-osgi:jar:2.0.6.Final:compile
+[INFO]    \- io.reactivex.rxjava2:rxjava:jar:2.2.19:compile
+[INFO] 
+[INFO] --------------------< org.keycloak:keycloak-server >--------------------
+[INFO] Building keycloak-server 11.0.0-SNAPSHOT                           [4/4]
+[INFO] --------------------------------[ jar ]---------------------------------
+[INFO] 
+[INFO] --- maven-dependency-plugin:3.1.1:tree (default-cli) @ keycloak-server ---
+[INFO] org.keycloak:keycloak-server:jar:11.0.0-SNAPSHOT
+[INFO] +- org.keycloak:keycloak-quarkus-server:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-resteasy:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-vertx-http:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- io.quarkus:quarkus-development-mode-spi:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- io.quarkus:quarkus-vertx-core:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  |  \- io.vertx:vertx-core:jar:3.9.0:compile
+[INFO] |  |  |  |     +- io.netty:netty-common:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-buffer:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-transport:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-handler-proxy:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     |  \- io.netty:netty-codec-socks:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-codec-http:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-codec-http2:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     +- io.netty:netty-resolver:jar:4.1.49.Final:compile
+[INFO] |  |  |  |     \- io.netty:netty-resolver-dns:jar:4.1.49.Final:compile
+[INFO] |  |  |  |        \- io.netty:netty-codec-dns:jar:4.1.49.Final:compile
+[INFO] |  |  |  \- io.vertx:vertx-web:jar:3.9.0:compile
+[INFO] |  |  |     +- io.vertx:vertx-web-common:jar:3.9.0:compile
+[INFO] |  |  |     +- io.vertx:vertx-auth-common:jar:3.9.0:compile
+[INFO] |  |  |     \- io.vertx:vertx-bridge-common:jar:3.9.0:compile
+[INFO] |  |  \- io.quarkus:quarkus-resteasy-server-common:jar:999-SNAPSHOT:compile
+[INFO] |  |     \- io.quarkus:quarkus-resteasy-common:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-resteasy-jackson:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-jackson:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.core:jackson-databind:jar:2.10.2:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jsr310:jar:2.10.4:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.datatype:jackson-datatype-jdk8:jar:2.10.4:compile
+[INFO] |  |  |  \- com.fasterxml.jackson.module:jackson-module-parameter-names:jar:2.10.4:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-jackson2-provider:jar:4.5.3.Final:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.core:jackson-core:jar:2.10.2:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.core:jackson-annotations:jar:2.10.2:compile
+[INFO] |  |  |  +- com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:jar:2.10.2:compile
+[INFO] |  |  |  |  +- com.fasterxml.jackson.jaxrs:jackson-jaxrs-base:jar:2.10.2:compile
+[INFO] |  |  |  |  \- com.fasterxml.jackson.module:jackson-module-jaxb-annotations:jar:2.10.2:compile
+[INFO] |  |  |  |     \- jakarta.activation:jakarta.activation-api:jar:1.2.1:compile
+[INFO] |  |  |  \- com.github.fge:json-patch:jar:1.9:compile
+[INFO] |  |  |     \- com.github.fge:jackson-coreutils:jar:1.6:compile
+[INFO] |  |  |        \- com.github.fge:msg-simple:jar:1.1:compile
+[INFO] |  |  |           \- com.github.fge:btf:jar:1.2:compile
+[INFO] |  |  \- org.jboss.spec.javax.xml.bind:jboss-jaxb-api_2.3_spec:jar:2.0.0.Final:compile
+[INFO] |  +- io.quarkus:quarkus-hibernate-orm:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-core:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- jakarta.annotation:jakarta.annotation-api:jar:1.3.5:compile
+[INFO] |  |  |  +- jakarta.inject:jakarta.inject-api:jar:1.0:compile
+[INFO] |  |  |  +- io.quarkus:quarkus-ide-launcher:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- org.jboss.logmanager:jboss-logmanager-embedded:jar:1.0.4:compile
+[INFO] |  |  |  +- org.jboss.logging:jboss-logging-annotations:jar:2.2.1.Final:compile
+[INFO] |  |  |  +- org.jboss.threads:jboss-threads:jar:3.1.1.Final:compile
+[INFO] |  |  |  +- org.jboss.slf4j:slf4j-jboss-logging:jar:1.2.0.Final:compile
+[INFO] |  |  |  +- org.graalvm.sdk:graal-sdk:jar:19.3.1:compile
+[INFO] |  |  |  +- org.wildfly.common:wildfly-common:jar:1.5.0.Final-format-001:compile
+[INFO] |  |  |  \- io.quarkus:quarkus-bootstrap-runner:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-narayana-jta:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- io.quarkus:quarkus-mutiny:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  |  +- io.quarkus:quarkus-smallrye-context-propagation:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  |  |  \- io.smallrye:smallrye-context-propagation:jar:1.0.13:compile
+[INFO] |  |  |  |  |     \- io.smallrye:smallrye-context-propagation-api:jar:1.0.13:compile
+[INFO] |  |  |  |  \- io.smallrye.reactive:mutiny-context-propagation:jar:0.5.0:compile
+[INFO] |  |  |  +- io.smallrye:smallrye-context-propagation-jta:jar:1.0.13:compile
+[INFO] |  |  |  +- io.smallrye.reactive:smallrye-reactive-converter-api:jar:1.0.12:compile
+[INFO] |  |  |  |  +- org.eclipse.microprofile.reactive-streams-operators:microprofile-reactive-streams-operators-api:jar:1.0.1:compile
+[INFO] |  |  |  |  \- org.eclipse.microprofile.reactive-streams-operators:microprofile-reactive-streams-operators-core:jar:1.0.1:compile
+[INFO] |  |  |  \- io.smallrye.reactive:smallrye-reactive-converter-mutiny:jar:1.0.12:compile
+[INFO] |  |  +- org.hibernate:hibernate-graalvm:jar:5.4.15.Final:compile
+[INFO] |  |  +- org.glassfish.jaxb:jaxb-runtime:jar:2.3.3-b02:compile
+[INFO] |  |  |  +- org.glassfish.jaxb:txw2:jar:2.3.3-b02:compile
+[INFO] |  |  |  \- com.sun.istack:istack-commons-runtime:jar:3.0.10:compile
+[INFO] |  |  +- jakarta.persistence:jakarta.persistence-api:jar:2.2.3:compile
+[INFO] |  |  +- jakarta.transaction:jakarta.transaction-api:jar:1.3.3:compile
+[INFO] |  |  +- org.hibernate:quarkus-local-cache:jar:0.1.0:compile
+[INFO] |  |  \- io.quarkus:quarkus-caffeine:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-agroal:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-arc:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- io.quarkus.arc:arc:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  \- org.eclipse.microprofile.context-propagation:microprofile-context-propagation-api:jar:1.0.1:compile
+[INFO] |  |  +- io.quarkus:quarkus-datasource:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  \- io.quarkus:quarkus-datasource-common:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- org.jboss.narayana.jta:narayana-jta:jar:5.10.4.Final:compile
+[INFO] |  |  |  +- org.jboss:jboss-transaction-spi:jar:7.6.0.Final:compile
+[INFO] |  |  |  \- org.jboss.spec.javax.resource:jboss-connector-api_1.7_spec:jar:1.0.0.Final:compile
+[INFO] |  |  +- org.jboss.narayana.jts:narayana-jts-integration:jar:5.10.4.Final:compile
+[INFO] |  |  +- io.agroal:agroal-api:jar:1.8:compile
+[INFO] |  |  +- io.agroal:agroal-narayana:jar:1.8:compile
+[INFO] |  |  +- io.agroal:agroal-pool:jar:1.8:compile
+[INFO] |  |  \- io.quarkus:quarkus-credentials:jar:999-SNAPSHOT:compile
+[INFO] |  +- io.quarkus:quarkus-jdbc-h2:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- com.h2database:h2:jar:1.4.197:test
+[INFO] |  |  \- org.locationtech.jts:jts-core:jar:1.15.0:compile
+[INFO] |  +- io.quarkus:quarkus-jdbc-postgresql:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- org.postgresql:postgresql:jar:42.2.12:compile
+[INFO] |  +- io.quarkus:quarkus-jdbc-mariadb:jar:999-SNAPSHOT:compile
+[INFO] |  |  \- org.mariadb.jdbc:mariadb-java-client:jar:2.6.0:compile
+[INFO] |  +- org.keycloak:keycloak-services:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-js-adapter:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-common:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-core:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-server-spi:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-server-spi-private:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-themes:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-saml-core-public:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-saml-core:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-model-jpa:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-model-infinispan:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-authz-policy-common:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-kerberos-federation:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-sssd-federation:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.keycloak:keycloak-ldap-federation:jar:11.0.0-SNAPSHOT:compile
+[INFO] |  +- org.jboss.resteasy:resteasy-multipart-provider:jar:4.5.3.Final:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-core-spi:jar:4.5.3.Final:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-client:jar:4.5.3.Final:compile
+[INFO] |  |  |  +- org.jboss.resteasy:resteasy-client-api:jar:4.5.3.Final:compile
+[INFO] |  |  |  \- commons-io:commons-io:jar:2.6:compile
+[INFO] |  |  +- org.jboss.resteasy:resteasy-jaxb-provider:jar:4.5.3.Final:compile
+[INFO] |  |  +- org.apache.james:apache-mime4j-dom:jar:0.7.2:compile
+[INFO] |  |  |  \- org.apache.james:apache-mime4j-core:jar:0.7.2:compile
+[INFO] |  |  +- org.apache.james:apache-mime4j-storage:jar:0.7.2:compile
+[INFO] |  |  \- org.eclipse.microprofile.config:microprofile-config-api:jar:1.4:compile
+[INFO] |  +- org.jboss.logging:commons-logging-jboss-logging:jar:1.0.0.Final:compile
+[INFO] |  +- com.webauthn4j:webauthn4j-core:jar:0.10.2.RELEASE:compile
+[INFO] |  +- com.webauthn4j:webauthn4j-util:jar:0.10.2.RELEASE:compile
+[INFO] |  +- com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:jar:2.10.2:compile
+[INFO] |  +- org.freemarker:freemarker:jar:2.3.29:compile
+[INFO] |  +- com.google.guava:guava:jar:25.0-jre:compile
+[INFO] |  +- com.googlecode.owasp-java-html-sanitizer:owasp-java-html-sanitizer:jar:20191001.1:compile
+[INFO] |  +- org.hibernate:hibernate-core:jar:5.3.15.Final:compile
+[INFO] |  |  +- javax.persistence:javax.persistence-api:jar:2.2:compile
+[INFO] |  |  +- org.javassist:javassist:jar:3.23.2-GA:compile
+[INFO] |  |  +- net.bytebuddy:byte-buddy:jar:1.9.11:compile
+[INFO] |  |  +- antlr:antlr:jar:2.7.7:compile
+[INFO] |  |  +- org.jboss:jandex:jar:2.1.3.Final:compile
+[INFO] |  |  +- com.fasterxml:classmate:jar:1.3.4:compile
+[INFO] |  |  +- javax.activation:javax.activation-api:jar:1.2.0:compile
+[INFO] |  |  +- org.dom4j:dom4j:jar:2.1.3:test
+[INFO] |  |  +- org.hibernate.common:hibernate-commons-annotations:jar:5.0.4.Final:compile
+[INFO] |  |  \- javax.xml.bind:jaxb-api:jar:2.4.0-b180830.0359:compile
+[INFO] |  +- org.apache.httpcomponents:httpcore:jar:4.4.13:compile
+[INFO] |  +- org.apache.httpcomponents:httpclient:jar:4.5.11:compile
+[INFO] |  +- org.bouncycastle:bcpkix-jdk15on:jar:1.62:compile
+[INFO] |  +- org.bouncycastle:bcprov-jdk15on:jar:1.62:compile
+[INFO] |  +- org.infinispan:infinispan-client-hotrod:jar:9.4.18.Final:compile
+[INFO] |  +- org.infinispan:infinispan-cachestore-remote:jar:9.4.18.Final:compile
+[INFO] |  +- com.github.ua-parser:uap-java:jar:1.4.3:compile
+[INFO] |  +- org.yaml:snakeyaml:jar:1.20:compile
+[INFO] |  +- com.google.zxing:core:jar:3.4.0:compile
+[INFO] |  +- com.google.zxing:javase:jar:3.4.0:compile
+[INFO] |  +- com.sun.mail:jakarta.mail:jar:1.6.4:compile
+[INFO] |  |  \- com.sun.activation:jakarta.activation:jar:1.2.1:compile
+[INFO] |  +- org.apache.santuario:xmlsec:jar:2.1.4:compile
+[INFO] |  |  +- org.slf4j:slf4j-api:jar:1.7.22:compile
+[INFO] |  |  \- commons-codec:commons-codec:jar:1.13:compile
+[INFO] |  +- org.jboss.resteasy:resteasy-core:jar:4.5.3.Final:compile
+[INFO] |  |  +- org.jboss.spec.javax.ws.rs:jboss-jaxrs-api_2.1_spec:jar:2.0.1.Final:compile
+[INFO] |  |  +- org.reactivestreams:reactive-streams:jar:1.0.3:compile
+[INFO] |  |  +- jakarta.validation:jakarta.validation-api:jar:2.0.2:compile
+[INFO] |  |  \- io.smallrye.config:smallrye-config:jar:1.7.0:compile
+[INFO] |  |     \- io.smallrye.config:smallrye-config-common:jar:1.7.0:compile
+[INFO] |  +- org.apache.commons:commons-lang3:jar:3.9:compile
+[INFO] |  +- io.quarkus:quarkus-vertx-web:jar:999-SNAPSHOT:compile
+[INFO] |  |  +- io.quarkus:quarkus-vertx:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  +- io.quarkus:quarkus-netty:jar:999-SNAPSHOT:compile
+[INFO] |  |  |  |  +- io.netty:netty-codec:jar:4.1.49.Final:compile
+[INFO] |  |  |  |  \- io.netty:netty-handler:jar:4.1.49.Final:compile
+[INFO] |  |  |  +- io.smallrye.reactive:smallrye-axle-generator:jar:0.0.15:compile
+[INFO] |  |  |  +- io.smallrye.reactive:smallrye-axle-core:jar:0.0.15:compile
+[INFO] |  |  |  +- io.vertx:vertx-rx-java2:jar:3.9.0:compile
+[INFO] |  |  |  |  \- io.vertx:vertx-rx-gen:jar:3.9.0:compile
+[INFO] |  |  |  |     \- io.vertx:vertx-codegen:jar:3.9.0:compile
+[INFO] |  |  |  |        \- org.mvel:mvel2:jar:2.4.7.Final:compile
+[INFO] |  |  |  \- io.smallrye.reactive:smallrye-mutiny-vertx-core:jar:0.0.15:compile
+[INFO] |  |  |     +- io.smallrye.reactive:smallrye-mutiny-vertx-runtime:jar:0.0.15:compile
+[INFO] |  |  |     \- io.smallrye.reactive:vertx-mutiny-generator:jar:0.0.15:compile
+[INFO] |  |  +- io.quarkus.security:quarkus-security:jar:1.1.1.Final:compile
+[INFO] |  |  |  \- io.smallrye.reactive:mutiny:jar:0.5.0:compile
+[INFO] |  |  \- jakarta.enterprise:jakarta.enterprise.cdi-api:jar:2.0.2:compile
+[INFO] |  |     +- jakarta.el:jakarta.el-api:jar:3.0.3:compile
+[INFO] |  |     \- jakarta.interceptor:jakarta.interceptor-api:jar:1.2.5:compile
+[INFO] |  \- org.liquibase:liquibase-core:jar:3.5.5:compile
+[INFO] +- org.infinispan:infinispan-core:jar:9.4.18.Final:compile
+[INFO] |  +- org.jgroups:jgroups:jar:4.0.21.Final:compile
+[INFO] |  +- com.github.ben-manes.caffeine:caffeine:jar:2.8.0:compile
+[INFO] |  |  \- com.google.errorprone:error_prone_annotations:jar:2.2.0:compile
+[INFO] |  +- org.jboss.spec.javax.transaction:jboss-transaction-api_1.2_spec:jar:1.1.1.Final:compile
+[INFO] |  +- org.jboss.marshalling:jboss-marshalling-osgi:jar:2.0.6.Final:compile
+[INFO] |  +- org.jboss.logging:jboss-logging:jar:3.4.1.Final:compile
+[INFO] |  \- io.reactivex.rxjava2:rxjava:jar:2.2.19:compile
+[INFO] \- org.infinispan:infinispan-commons:jar:9.4.18.Final:compile
+[INFO] ------------------------------------------------------------------------
+[INFO] Reactor Summary for Keycloak Quarkus Parent 11.0.0-SNAPSHOT:
+[INFO] 
+[INFO] Keycloak Quarkus Parent ............................ SUCCESS [  0.529 s]
+[INFO] Keycloak Quarkus Extensions ........................ SUCCESS [  0.583 s]
+[INFO] keycloak-quarkus-server-deployment ................. SUCCESS [  0.294 s]
+[INFO] keycloak-server .................................... SUCCESS [  0.071 s]
+[INFO] ------------------------------------------------------------------------
+[INFO] BUILD SUCCESS
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  2.000 s
+[INFO] Finished at: 2020-05-15T16:47:18-03:00
+[INFO] ------------------------------------------------------------------------

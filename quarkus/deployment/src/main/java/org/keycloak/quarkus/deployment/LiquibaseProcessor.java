@@ -43,7 +43,7 @@ class LiquibaseProcessor {
 
     @Record(ExecutionTime.STATIC_INIT)
     @BuildStep
-    void configureLiquibase(KeycloakRecorder recorder) {
+    void configure(KeycloakRecorder recorder) {
         DotName liquibaseServiceName = DotName.createSimple(LiquibaseService.class.getName());
         Map<String, List<String>> services = new HashMap<>();
 

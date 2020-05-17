@@ -26,14 +26,24 @@ import org.keycloak.connections.liquibase.KeycloakLogger;
 import org.keycloak.provider.KeycloakDeploymentInfo;
 import org.keycloak.provider.ProviderManager;
 
+import io.quarkus.agroal.runtime.DataSourceSupport;
+import io.quarkus.arc.runtime.BeanContainer;
+import io.quarkus.arc.runtime.BeanContainerListener;
+import io.quarkus.datasource.common.runtime.DataSourceUtil;
 import io.quarkus.runtime.annotations.Recorder;
+import io.smallrye.config.SmallRyeConfig;
+import io.smallrye.config.SmallRyeConfigProviderResolver;
 import liquibase.logging.LogFactory;
 import liquibase.servicelocator.ServiceLocator;
 
 @Recorder
 public class KeycloakRecorder {
-    public static ClassLoader CLASS_LOADER;
-    public static List<ProviderManager> PROVIDERS = new ArrayList();
+    public static final SmallRyeConfig CONFIG;
+
+    static {
+        CONFIG = (SmallRyeConfig) SmallRyeConfigProviderResolver.instance().getConfig();
+    }
+
     public static KeycloakDeploymentInfo getKeycloakProviderDeploymentInfo(String name,
             List<String> paths) {
         KeycloakDeploymentInfo info = KeycloakDeploymentInfo.create().name(name);
@@ -88,6 +98,8 @@ public class KeycloakRecorder {
 
         return info;
     }
+    public static ClassLoader CLASS_LOADER;
+    public static List<ProviderManager> PROVIDERS = new ArrayList();
 
     public void configureLiquibase(Map<String, List<String>> services) {
         LogFactory.setInstance(new LogFactory() {
@@ -136,5 +148,17 @@ public class KeycloakRecorder {
             CLASS_LOADER = CLASS_LOADER == null ? Thread.currentThread().getContextClassLoader() : CLASS_LOADER;
             PROVIDERS.add(pm);
         }
+    }
+
+    public BeanContainerListener configureDataSource() {
+        return new BeanContainerListener() {
+            @Override
+            public void created(BeanContainer container) {
+                String driver = CONFIG.getRawValue("quarkus.datasource.driver");
+                DataSourceSupport instance = container.instance(DataSourceSupport.class);
+                DataSourceSupport.Entry entry = instance.entries.get(DataSourceUtil.DEFAULT_DATASOURCE_NAME);
+                entry.resolvedDriverClass = driver;
+            }
+        };
     }
 }

@@ -19,6 +19,21 @@ package org.keycloak.connections.jpa;
 
 import static org.keycloak.connections.liquibase.QuarkusJpaUpdaterProvider.VERIFY_AND_RUN_MASTER_CHANGELOG;
 
+import java.io.File;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import javax.enterprise.inject.Instance;
+import javax.enterprise.inject.spi.CDI;
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.SynchronizationType;
+
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.SessionImpl;
 import org.jboss.logging.Logger;
@@ -35,20 +50,6 @@ import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.provider.ServerInfoAwareProviderFactory;
 import org.keycloak.transaction.JtaTransactionManagerLookup;
 
-import javax.enterprise.inject.Instance;
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.SynchronizationType;
-import java.io.File;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import javax.enterprise.inject.spi.CDI;
-
 /**
  * @author <a href="mailto:sthorger@redhat.com">Stian Thorgersen</a>
  */
@@ -57,20 +58,11 @@ public class QuarkusJpaConnectionProviderFactory implements JpaConnectionProvide
     private static final Logger logger = Logger.getLogger(QuarkusJpaConnectionProviderFactory.class);
 
     private static final String SQL_GET_LATEST_VERSION = "SELECT VERSION FROM %sMIGRATION_MODEL";
-
-    enum MigrationStrategy {
-        UPDATE, VALIDATE, MANUAL
-    }
-
     private EntityManagerFactory emf;
-
     private Config.Scope config;
-
     private Map<String, String> operationalInfo;
-
     private boolean jtaEnabled;
     private JtaTransactionManagerLookup jtaLookup;
-
     private KeycloakSessionFactory factory;
 
     @Override
@@ -90,15 +82,16 @@ public class QuarkusJpaConnectionProviderFactory implements JpaConnectionProvide
             em = emf.createEntityManager(SynchronizationType.SYNCHRONIZED);
         }
         em = PersistenceExceptionConverter.create(em);
-        if (!jtaEnabled) session.getTransactionManager().enlist(new JpaKeycloakTransaction(em));
+        if (!jtaEnabled)
+            session.getTransactionManager().enlist(new JpaKeycloakTransaction(em));
         return new DefaultJpaConnectionProvider(em);
     }
 
     @Override
     public void close() {
-//        if (emf != null) {
-//            emf.close();
-//        }
+        //        if (emf != null) {
+        //            emf.close();
+        //        }
     }
 
     @Override
@@ -172,7 +165,8 @@ public class QuarkusJpaConnectionProviderFactory implements JpaConnectionProvide
 
         JpaUpdaterProvider updater = session.getProvider(JpaUpdaterProvider.class);
 
-        session.setAttribute(VERIFY_AND_RUN_MASTER_CHANGELOG, version == null || !version.equals(new ModelVersion(Version.VERSION_KEYCLOAK).toString()));
+        session.setAttribute(VERIFY_AND_RUN_MASTER_CHANGELOG,
+                version == null || !version.equals(new ModelVersion(Version.VERSION_KEYCLOAK).toString()));
 
         JpaUpdaterProvider.Status status = updater.validate(connection, schema);
 
@@ -188,7 +182,8 @@ public class QuarkusJpaConnectionProviderFactory implements JpaConnectionProvide
                         break;
                     case MANUAL:
                         export(connection, schema, databaseUpdateFile, session, updater);
-                        throw new ServerStartupError("Database not initialized, please initialize database with " + databaseUpdateFile.getAbsolutePath(), false);
+                        throw new ServerStartupError("Database not initialized, please initialize database with "
+                                + databaseUpdateFile.getAbsolutePath(), false);
                     case VALIDATE:
                         throw new ServerStartupError("Database not initialized, please enable database initialization", false);
                 }
@@ -200,7 +195,9 @@ public class QuarkusJpaConnectionProviderFactory implements JpaConnectionProvide
                     break;
                 case MANUAL:
                     export(connection, schema, databaseUpdateFile, session, updater);
-                    throw new ServerStartupError("Database not up-to-date, please migrate database with " + databaseUpdateFile.getAbsolutePath(), false);
+                    throw new ServerStartupError(
+                            "Database not up-to-date, please migrate database with " + databaseUpdateFile.getAbsolutePath(),
+                            false);
                 case VALIDATE:
                     throw new ServerStartupError("Database not up-to-date, please enable database migration", false);
             }
@@ -298,5 +295,11 @@ public class QuarkusJpaConnectionProviderFactory implements JpaConnectionProvide
     @Override
     public int order() {
         return 100;
+    }
+
+    enum MigrationStrategy {
+        UPDATE,
+        VALIDATE,
+        MANUAL
     }
 }
