@@ -62,7 +62,7 @@ public class ClientScopeEntity {
 
 
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "clientScope")
-    protected Collection<ClientScopeAttributeEntity> attributes = new ArrayList<>();
+    protected Collection<ClientScopeAttributeEntity> attributes;
 
     public RealmEntity getRealm() {
         return realm;
@@ -113,6 +113,9 @@ public class ClientScopeEntity {
     }
 
     public Collection<ClientScopeAttributeEntity> getAttributes() {
+        if (attributes == null) {
+            attributes = new ArrayList<>();
+        }
         return attributes;
     }
 

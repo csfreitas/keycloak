@@ -58,6 +58,11 @@ public class KeycloakQuarkusServerDeployableContainer implements DeployableConta
     @Override
     public void stop() throws LifecycleException {
         container.destroy();
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -111,6 +116,7 @@ public class KeycloakQuarkusServerDeployableContainer implements DeployableConta
         }
 
         commands.add("-Dquarkus.http.port=" + suiteContext.get().getAuthServerInfo().getContextRoot().getPort());
+        commands.add("-Dquarkus.datasource.url=jdbc:h2:file:/tmp/keycloak-quarkus-test;MVCC=TRUE;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
 
         return commands.toArray(new String[commands.size()]);
     }

@@ -23,6 +23,7 @@ import org.keycloak.events.EventBuilder;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakUriInfo;
 import org.keycloak.models.RealmModel;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.Auth;
@@ -64,32 +65,36 @@ public class AccountLoader {
 
         if (request.getHttpMethod().equals(HttpMethod.OPTIONS)) {
             return new CorsPreflightService(request);
-        } else if ((accepts.contains(MediaType.APPLICATION_JSON_TYPE) || MediaType.APPLICATION_JSON_TYPE.equals(content)) && !request.getUri().getPath().endsWith("keycloak.json")) {
-            AuthenticationManager.AuthResult authResult = new AppAuthManager().authenticateBearerToken(session);
-            if (authResult == null) {
-                throw new NotAuthorizedException("Bearer token required");
-            }
-
-            if (authResult.getUser().getServiceAccountClientLink() != null) {
-                throw new NotAuthorizedException("Service accounts are not allowed to access this service");
-            }
-
-            Auth auth = new Auth(session.getContext().getRealm(), authResult.getToken(), authResult.getUser(), client, authResult.getSession(), false);
-            AccountRestService accountRestService = new AccountRestService(session, auth, client, event);
-            ResteasyProviderFactory.getInstance().injectProperties(accountRestService);
-            accountRestService.init();
-            return accountRestService;
         } else {
-            if (deprecatedAccount) {
-                AccountFormService accountFormService = new AccountFormService(realm, client, event);
-                ResteasyProviderFactory.getInstance().injectProperties(accountFormService);
-                accountFormService.init();
-                return accountFormService;
+            KeycloakUriInfo uriInfo = session.getContext().getUri();
+
+            if ((accepts.contains(MediaType.APPLICATION_JSON_TYPE) || MediaType.APPLICATION_JSON_TYPE.equals(content)) && !uriInfo.getPath().endsWith("keycloak.json")) {
+                AuthenticationManager.AuthResult authResult = new AppAuthManager().authenticateBearerToken(session);
+                if (authResult == null) {
+                    throw new NotAuthorizedException("Bearer token required");
+                }
+    
+                if (authResult.getUser().getServiceAccountClientLink() != null) {
+                    throw new NotAuthorizedException("Service accounts are not allowed to access this service");
+                }
+    
+                Auth auth = new Auth(session.getContext().getRealm(), authResult.getToken(), authResult.getUser(), client, authResult.getSession(), false);
+                AccountRestService accountRestService = new AccountRestService(session, auth, client, event);
+                ResteasyProviderFactory.getInstance().injectProperties(accountRestService);
+                accountRestService.init();
+                return accountRestService;
             } else {
-                AccountConsole console = new AccountConsole(realm, client, theme);
-                ResteasyProviderFactory.getInstance().injectProperties(console);
-                console.init();
-                return console;
+                if (deprecatedAccount) {
+                    AccountFormService accountFormService = new AccountFormService(realm, client, event);
+                    ResteasyProviderFactory.getInstance().injectProperties(accountFormService);
+                    accountFormService.init();
+                    return accountFormService;
+                } else {
+                    AccountConsole console = new AccountConsole(realm, client, theme);
+                    ResteasyProviderFactory.getInstance().injectProperties(console);
+                    console.init();
+                    return console;
+                }
             }
         }
     }

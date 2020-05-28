@@ -101,12 +101,12 @@ public class RoleEntity {
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {})
     @JoinTable(name = "COMPOSITE_ROLE", joinColumns = @JoinColumn(name = "COMPOSITE"), inverseJoinColumns = @JoinColumn(name = "CHILD_ROLE"))
-    private Set<RoleEntity> compositeRoles = new HashSet<>();
+    private Set<RoleEntity> compositeRoles;
 
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, mappedBy="role")
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
-    protected List<RoleAttributeEntity> attributes = new ArrayList<>();
+    protected List<RoleAttributeEntity> attributes;
 
     public String getId() {
         return id;
@@ -125,6 +125,9 @@ public class RoleEntity {
     }
 
     public Collection<RoleAttributeEntity> getAttributes() {
+        if (attributes == null) {
+            attributes = new ArrayList<>();
+        }
         return attributes;
     }
 
@@ -149,6 +152,9 @@ public class RoleEntity {
     }
 
     public Set<RoleEntity> getCompositeRoles() {
+        if (compositeRoles == null) {
+            compositeRoles = new HashSet<>();
+        }
         return compositeRoles;
     }
 

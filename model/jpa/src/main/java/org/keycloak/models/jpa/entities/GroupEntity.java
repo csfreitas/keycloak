@@ -64,7 +64,7 @@ public class GroupEntity {
     @OneToMany(
             cascade = CascadeType.REMOVE,
             orphanRemoval = true, mappedBy="group")
-    protected Collection<GroupAttributeEntity> attributes = new ArrayList<GroupAttributeEntity>();
+    protected Collection<GroupAttributeEntity> attributes;
 
     public String getId() {
         return id;
@@ -75,6 +75,9 @@ public class GroupEntity {
     }
 
     public Collection<GroupAttributeEntity> getAttributes() {
+        if (attributes == null) {
+            attributes = new ArrayList<>();
+        }
         return attributes;
     }
 

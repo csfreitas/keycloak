@@ -98,17 +98,17 @@ public class UserEntity {
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, mappedBy="user")
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
-    protected Collection<UserAttributeEntity> attributes = new ArrayList<UserAttributeEntity>();
+    protected Collection<UserAttributeEntity> attributes;
 
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, mappedBy="user")
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
-    protected Collection<UserRequiredActionEntity> requiredActions = new ArrayList<UserRequiredActionEntity>();
+    protected Collection<UserRequiredActionEntity> requiredActions;
 
     @OneToMany(cascade = CascadeType.REMOVE, orphanRemoval = true, mappedBy="user")
     @Fetch(FetchMode.SELECT)
     @BatchSize(size = 20)
-    protected Collection<CredentialEntity> credentials = new ArrayList<CredentialEntity>();
+    protected Collection<CredentialEntity> credentials;
 
     @Column(name="FEDERATION_LINK")
     protected String federationLink;
@@ -193,6 +193,9 @@ public class UserEntity {
     }
 
     public Collection<UserAttributeEntity> getAttributes() {
+        if (attributes == null) {
+            attributes = new ArrayList<>();
+        }
         return attributes;
     }
 
@@ -201,6 +204,9 @@ public class UserEntity {
     }
 
     public Collection<UserRequiredActionEntity> getRequiredActions() {
+        if (requiredActions == null) {
+            requiredActions = new ArrayList<>();
+        }
         return requiredActions;
     }
 
@@ -217,6 +223,9 @@ public class UserEntity {
     }
 
     public Collection<CredentialEntity> getCredentials() {
+        if (credentials == null) {
+            credentials = new ArrayList<>();
+        }
         return credentials;
     }
 

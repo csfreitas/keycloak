@@ -10,7 +10,7 @@ public class TestClassLoader extends URLClassLoader {
 
     public static TestClassLoader getInstance() {
         if (instance == null) {
-            ClassLoader parent = TestClassLoader.class.getClassLoader();
+            ClassLoader parent = Thread.currentThread().getContextClassLoader();
             try {
                 instance = new TestClassLoader(parent);
             } catch (MalformedURLException e) {

@@ -73,7 +73,7 @@ public class UserConsentEntity {
     protected String externalClientId;
 
     @OneToMany(cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "userConsent")
-    Collection<UserConsentClientScopeEntity> grantedClientScopes = new ArrayList<>();
+    Collection<UserConsentClientScopeEntity> grantedClientScopes;
 
     @Column(name = "CREATED_DATE")
     private Long createdDate;
@@ -98,6 +98,9 @@ public class UserConsentEntity {
     }
 
     public Collection<UserConsentClientScopeEntity> getGrantedClientScopes() {
+        if (grantedClientScopes == null) {
+            grantedClientScopes = new ArrayList<>();
+        }
         return grantedClientScopes;
     }
 

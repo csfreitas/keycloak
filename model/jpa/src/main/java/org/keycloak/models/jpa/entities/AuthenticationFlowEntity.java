@@ -69,7 +69,7 @@ public class AuthenticationFlowEntity {
 
 
     @OneToMany(fetch = FetchType.LAZY, cascade ={CascadeType.REMOVE}, orphanRemoval = true, mappedBy = "parentFlow")
-    Collection<AuthenticationExecutionEntity> executions = new ArrayList<AuthenticationExecutionEntity>();
+    Collection<AuthenticationExecutionEntity> executions;
     public String getId() {
         return id;
     }
@@ -103,6 +103,9 @@ public class AuthenticationFlowEntity {
     }
 
     public Collection<AuthenticationExecutionEntity> getExecutions() {
+        if (executions == null) {
+            executions  = new ArrayList<>();
+        }
         return executions;
     }
 
