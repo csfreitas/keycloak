@@ -62,8 +62,10 @@ public abstract class AbstractClusterTest extends AbstractKeycloakTest {
 
     // Assume that route like "node6" will have corresponding backend container like "auth-server-wildfly-backend6"
     protected void setCurrentFailNodeForRoute(String route) {
-        String routeNumber = route.substring(route.length() - 1);
-        currentFailNodeIndex = Integer.parseInt(routeNumber) - 1;
+        // TODO: when running on Quarkus the node name is appended with the port number, need to figure out if we can have same behavior as Wildfly where node name is just what you define
+        int routeSeparator = route.lastIndexOf('.');
+        String routeNumber = route.substring(routeSeparator + 1, route.lastIndexOf('-'));
+        currentFailNodeIndex = Integer.parseInt(routeNumber.substring(routeNumber.length() - 1)) - 1;
     }
 
     protected ContainerInfo getCurrentFailNode() {

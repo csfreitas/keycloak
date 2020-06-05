@@ -130,6 +130,14 @@ public class KeycloakQuarkusServerDeployableContainer implements DeployableConta
         commands.add("-Dquarkus.http.port=" + configuration.getBindHttpPort());
         commands.add("-Dquarkus.http.ssl-port=" + configuration.getBindHttpsPort());
 
+        if (configuration.getRoute() != null) {
+            commands.add("-Djboss.node.name=" + configuration.getRoute());
+        }
+
+        if (configuration.getProfile() != null) {
+            commands.add("-Dquarkus.profile=" + configuration.getProfile());
+        }
+
         return commands.toArray(new String[commands.size()]);
     }
 

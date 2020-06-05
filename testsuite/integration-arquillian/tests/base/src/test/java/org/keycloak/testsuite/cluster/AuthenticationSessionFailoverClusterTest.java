@@ -25,6 +25,7 @@ import org.jboss.arquillian.graphene.page.Page;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.models.UserModel;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -83,6 +84,12 @@ public class AuthenticationSessionFailoverClusterTest extends AbstractFailoverCl
                 .build();
 
         userId = ApiUtil.createUserAndResetPasswordWithAdminClient(adminClient.realm("test"), user, "password");
+        
+        //TODO: weird behavior where only one of the required actions above are persisted, so we workaround by forcing an update to the user with the 2 actions we want
+        UserResource userResource = adminClient.realm(testRealm.getRealm()).users().get(userId);
+        UserRepresentation userRepresentation = userResource.toRepresentation();
+        userRepresentation.setRequiredActions(user.getRequiredActions());
+        userResource.update(userRepresentation);
         getCleanup().addUserId(userId);
 
         oauth.clientId("test-app");
@@ -123,7 +130,7 @@ public class AuthenticationSessionFailoverClusterTest extends AbstractFailoverCl
         log.info("Authentication session cookie: " + cookieValue1);
 
         setCurrentFailNodeForRoute(cookieValue1);
-
+        pause(REBALANCE_WAIT);
         failure();
         pause(REBALANCE_WAIT);
         logFailoverSetup();
@@ -133,6 +140,7 @@ public class AuthenticationSessionFailoverClusterTest extends AbstractFailoverCl
 
         if (expectSuccessfulFailover) {
             //Action was successful
+            // TODO: the Quarkus container is abruptly stopping causing data loss if the number of owners (if using dist mode) is 1. Need to figure out how to stop the server nicely. 
             updateProfilePage.assertCurrent();
 
             String cookieValue2 = getAuthSessionCookieValue(driver);

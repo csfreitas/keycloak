@@ -63,7 +63,7 @@ public class TopologyInfo {
         if (!embedded) {
             Transport transport = cacheManager.getTransport();
             if (transport != null) {
-                nodeName = transport.getAddress().toString();
+                nodeName = cacheManager.getCacheManagerConfiguration().transport().nodeName();
                 siteName = cacheManager.getCacheManagerConfiguration().transport().siteId();
                 if (siteName == null) {
                     siteName = System.getProperty(InfinispanConnectionProvider.JBOSS_SITE_NAME);
