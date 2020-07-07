@@ -17,11 +17,8 @@
 
 package org.keycloak.provider.quarkus;
 
-import org.jboss.resteasy.plugins.server.servlet.ResteasyContextParameters;
-import org.jboss.resteasy.spi.ResteasyDeployment;
 import org.keycloak.common.ClientConnection;
-import org.keycloak.common.util.Resteasy;
-import org.keycloak.services.filters.AbstractClientConnectionFilter;
+import org.keycloak.services.filters.AbstractRequestFilter;
 
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Handler;
@@ -35,7 +32,7 @@ import io.vertx.ext.web.RoutingContext;
  * <p>The filter itself runs in a event loop and should delegate to worker threads any blocking code (for now, all requests are handled
  * as blocking).
  */
-public class QuarkusClientConnectionFilter extends AbstractClientConnectionFilter implements Handler<RoutingContext> {
+public class QuarkusClientConnectionFilter extends AbstractRequestFilter implements Handler<RoutingContext> {
 
     private static final Handler<AsyncResult<Object>> EMPTY_RESULT = result -> {
         // we don't really care about the result because any exception thrown should be handled by the parent class

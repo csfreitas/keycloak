@@ -27,9 +27,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 
 import org.keycloak.common.ClientConnection;
-import org.keycloak.services.filters.AbstractClientConnectionFilter;
+import org.keycloak.services.filters.AbstractRequestFilter;
 
-public class UndertowClientConnectionServletFilter extends AbstractClientConnectionFilter implements Filter {
+public class UndertowClientConnectionServletFilter extends AbstractRequestFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain)

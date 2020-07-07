@@ -29,7 +29,7 @@ import org.keycloak.models.KeycloakTransactionManager;
 import org.keycloak.services.resources.KeycloakApplication;
 
 
-public abstract class AbstractClientConnectionFilter {
+public abstract class AbstractRequestFilter {
 
     public void filter(ClientConnection clientConnection, Consumer<KeycloakSession> next) {
         KeycloakSessionFactory sessionFactory = KeycloakApplication.getSessionFactory();
