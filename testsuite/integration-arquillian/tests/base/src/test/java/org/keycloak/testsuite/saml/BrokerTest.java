@@ -33,6 +33,7 @@ import org.keycloak.dom.saml.v2.protocol.AuthnRequestType;
 import org.keycloak.dom.saml.v2.protocol.NameIDPolicyType;
 import org.keycloak.dom.saml.v2.protocol.ResponseType;
 import org.keycloak.models.AuthenticationExecutionModel.Requirement;
+import org.keycloak.protocol.saml.SamlPrincipalType;
 import org.keycloak.representations.idm.AuthenticationExecutionInfoRepresentation;
 import org.keycloak.representations.idm.IdentityProviderRepresentation;
 import org.keycloak.saml.BaseSAML2BindingBuilder;
@@ -289,6 +290,45 @@ public class BrokerTest extends AbstractSamlTest {
         XMLGregorianCalendar notBeforeInPast = XMLTimeUtil.subtract(now, 60 * 60 * 1000);
         XMLGregorianCalendar notOnOrAfterInPast = XMLTimeUtil.subtract(now, 59 * 60 * 1000);
         assertExpired(notBeforeInPast, notOnOrAfterInPast, true);   // Expected result (true) is it should succeed but it should pass and throw
+    }
+    
+    @Test
+    public void testNoNameID() throws IOException {
+        final RealmResource realm = adminClient.realm(REALM_NAME);
+        final IdentityProviderRepresentation rep = addIdentityProvider("https://saml.idp/");
+        
+        rep.getConfig().put(SAMLIdentityProviderConfig.PRINCIPAL_TYPE, SamlPrincipalType.ATTRIBUTE.toString());
+        rep.getConfig().put(SAMLIdentityProviderConfig.PRINCIPAL_ATTRIBUTE, "mail");
+        
+        try (IdentityProviderCreator idp = new IdentityProviderCreator(realm, rep)) {
+            new SamlClientBuilder()
+                    .authnRequest(getAuthServerSamlEndpoint(REALM_NAME), SAML_CLIENT_ID_SALES_POST, SAML_ASSERTION_CONSUMER_URL_SALES_POST, POST).build()
+                    .login().idp(SAML_BROKER_ALIAS).build()
+                    // Virtually perform login at IdP (return artificial SAML response)
+                    .processSamlResponse(REDIRECT)
+                    .transformObject(this::createAuthnResponse)
+                    .transformObject(resp -> {  // always invent a new user identified by a different email address
+                        ResponseType rt = (ResponseType) resp;
+                        AssertionType a = rt.getAssertions().get(0).getAssertion();
+                        
+                        a.getSubject().setSubType(null);
+                        AttributeStatementType e = new AttributeStatementType();
+                        AttributeType type = new AttributeType("p-principal");
+                        type.addAttributeValue(UUID.randomUUID() + "@random.email.org");
+                        ASTChoiceType attribute = new ASTChoiceType(type);
+                        
+                        e.addAttribute(attribute);
+                        
+                        a.getAttributeStatements().add(e);
+                        
+                        return rt;
+                    })
+                    .targetAttributeSamlResponse()
+                    .targetUri(getSamlBrokerUrl(REALM_NAME))
+                    .build()
+                    .assertResponse(org.keycloak.testsuite.util.Matchers.statusCodeIsHC(200))
+                    .execute();
+        }
     }
 
     private void assertExpired(XMLGregorianCalendar notBefore, XMLGregorianCalendar notOnOrAfter, boolean shouldPass) throws Exception {
