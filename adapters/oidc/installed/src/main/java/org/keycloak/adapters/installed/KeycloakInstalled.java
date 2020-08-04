@@ -261,6 +261,7 @@ public class KeycloakInstalled {
 
         String logoutUrl = deployment.getLogoutUrl().clone()
                 .queryParam(OAuth2Constants.REDIRECT_URI, redirectUri)
+                .queryParam("id_token_hint", idTokenString)
                 .build().toString();
 
         Desktop.getDesktop().browse(new URI(logoutUrl));

@@ -32,6 +32,7 @@ import org.keycloak.jose.jwk.JWKBuilder;
 import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.models.utils.DefaultKeyProviders;
 import org.keycloak.protocol.oidc.endpoints.AuthorizationEndpoint;
 import org.keycloak.protocol.oidc.endpoints.LoginStatusIframeEndpoint;
 import org.keycloak.protocol.oidc.endpoints.LogoutEndpoint;
@@ -211,6 +212,7 @@ public class OIDCLoginProtocolService {
     @Produces(MediaType.APPLICATION_JSON)
     @NoCache
     public Response certs() {
+        DefaultKeyProviders.createProviders(realm);
         List<JWK> keys = new LinkedList<>();
         for (KeyWrapper k : session.keys().getKeys(realm)) {
             if (k.getStatus().isEnabled() && k.getUse().equals(KeyUse.SIG) && k.getPublicKey() != null) {
