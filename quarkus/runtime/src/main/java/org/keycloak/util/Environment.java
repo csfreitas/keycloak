@@ -17,9 +17,50 @@
 
 package org.keycloak.util;
 
+import java.util.Optional;
+
+import io.smallrye.config.SmallRyeConfig;
+import org.keycloak.quarkus.KeycloakRecorder;
+
 public final class Environment {
 
     public static Boolean isRebuild() {
         return Boolean.valueOf(System.getProperty("quarkus.launch.rebuild"));
+    }
+
+    public static String getHomeDir() {
+        return System.getProperty("kc.home.dir");
+    }
+
+    public static String getCommand() {
+        String homeDir = getHomeDir();
+
+        if (homeDir == null) {
+            return "java -jar $KEYCLOAK_HOME/lib/quarkus-run.jar";
+        }
+
+        return "kc.sh";
+    }
+    
+    public static String getConfigArgs() {
+        return System.getProperty("kc.config.args");
+    }
+
+    public static String getProfile() {
+        return System.getProperty("kc.profile");
+    }
+
+    public static Optional<String> getBuiltTimeProperty(String name) {
+        String value = KeycloakRecorder.getBuiltTimeProperty(name);
+        
+        if (value == null) {
+            return Optional.empty();
+        }
+        
+        return Optional.of(value);
+    }
+
+    public static SmallRyeConfig getConfig() {
+        return KeycloakRecorder.getConfig();
     }
 }

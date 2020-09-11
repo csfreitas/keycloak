@@ -183,6 +183,11 @@ public class JsonConfigProvider implements Config.ConfigProvider {
             return new JsonScope(getNode(config, path));
         }
 
+        @Override
+        public Config.Scope defaultProvider(String name) {
+            throw new RuntimeException("Not Implemented");
+        }
+
     }
 
 }

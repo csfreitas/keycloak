@@ -36,6 +36,7 @@
         <jackson.version>2.11.2</jackson.version>
         <jackson.databind.version>${jackson.version}</jackson.databind.version>
         <hibernate.version>5.4.19.Final</hibernate.version>
+        <picocli.version>4.4.0</picocli.version>
         <snakeyaml.version>1.20</snakeyaml.version>
         <surefire-plugin.version>3.0.0-M5</surefire-plugin.version>
         <wildfly.common.format.version>1.5.0.Final-format-001</wildfly.common.format.version>

@@ -154,6 +154,11 @@ public class Config {
             return new SystemPropertiesScope(sb.toString());
         }
 
+        @Override
+        public Scope defaultProvider(String name) {
+            throw new RuntimeException("Not implemented");
+        }
+
     }
 
     /**
@@ -181,5 +186,14 @@ public class Config {
 
         Scope scope(String... scope);
 
+        /**
+         * The alias of the default provider so that lookups can consider configuration options that don't necessarily include
+         * the provider alias
+         * 
+         * @param name the provider name
+         *             
+         * @return the scope
+         */
+        Scope defaultProvider(String name);
     }
 }

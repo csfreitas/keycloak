@@ -129,6 +129,11 @@ public class PlainTextVaultProviderFactoryTest {
         public Config.Scope scope(String... scope) {
             throw new UnsupportedOperationException("not implemented");
         }
+
+        @Override
+        public Config.Scope defaultProvider(String name) {
+            throw new RuntimeException("Not implemented");
+        }
     }
 
 }

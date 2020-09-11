@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.keycloak.provider.quarkus;
+package org.keycloak.configuration;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.microprofile.config.ConfigProvider;
@@ -24,18 +24,19 @@ import org.keycloak.Config;
 
 public class MicroProfileConfigProvider implements Config.ConfigProvider {
 
-    public static final String NS_KEYCLOAK = "keycloak";
+    public static final String NS_KEYCLOAK = "kc";
+    public static final String NS_KEYCLOAK_PREFIX = NS_KEYCLOAK + ".";
     public static final String NS_QUARKUS = "quarkus";
+    public static final String NS_QUARKUS_PREFIX = NS_QUARKUS + ".";
 
     private final org.eclipse.microprofile.config.Config config;
 
     public MicroProfileConfigProvider() {
-        this.config = ConfigProvider.getConfig();
+        this(ConfigProvider.getConfig());
     }
 
-    // for testing only
-    MicroProfileConfigProvider(ClassLoader cl) {
-        this.config = ConfigProvider.getConfig(cl);
+    public MicroProfileConfigProvider(org.eclipse.microprofile.config.Config config) {
+        this.config = config;
     }
 
     @Override
@@ -52,6 +53,7 @@ public class MicroProfileConfigProvider implements Config.ConfigProvider {
 
         private final String[] scope;
         private final String prefix;
+        private String defaultProvider;
 
         public MicroProfileScope(String... scope) {
             this.scope = scope;
@@ -108,11 +110,39 @@ public class MicroProfileConfigProvider implements Config.ConfigProvider {
             return new MicroProfileScope(ArrayUtils.addAll(this.scope, scope));
         }
 
+        @Override
+        public Config.Scope defaultProvider(String name) {
+            this.defaultProvider = name;
+            return this;
+        }
+
         private <T> T getValue(String key, Class<T> clazz, T defaultValue) {
-            String property = prefix + "." + key;
-            return config.getOptionalValue(toDashCase(property), clazz)
-                    .orElseGet(() -> config.getOptionalValue(property, clazz)
-                        .orElse(defaultValue));
+            // first to try lookup using the full SPI property format (spi.<spi-name>.<provider-name>.<config-name>)
+            String property = toDashCase(String.join(".", ArrayUtils.insert(0, scope, NS_KEYCLOAK, "spi")) + "." + key);
+            
+            return config.getOptionalValue(property, clazz).orElseGet(() -> {
+                if (defaultProvider != null && prefix.endsWith(defaultProvider)) {
+                    // if there is a default provider we try the SPI property without its alias
+                    String withoutProviderAlias = property.replaceFirst("\\." + defaultProvider + "\\.", "\\.");
+                    
+                    T value = config.getOptionalValue(withoutProviderAlias, clazz).orElse(null);
+
+                    if (value != null) {
+                        return value;
+                    }
+
+                    // try a property without the prefix too
+                    value = config.getOptionalValue(withoutProviderAlias.replaceFirst("\\.spi\\.", "\\."), clazz)
+                            .orElse(null);
+                    
+                    if (value != null) {
+                        return value;
+                    }
+                }
+                    
+                // for last, try the property without the SPY prefix but just the namespace prefix
+                return config.getOptionalValue(toDashCase(prefix + "." + key), clazz).orElse(defaultValue);
+            });
         }
 
     }
