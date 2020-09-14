@@ -45,7 +45,6 @@ class LiquibaseProcessor {
                 liquibase.parser.NamespaceDetails.class,
                 liquibase.precondition.Precondition.class,
                 Database.class,
-                ChangeLogParser.class,
                 liquibase.change.Change.class,
                 liquibase.snapshot.SnapshotGenerator.class,
                 liquibase.changelog.ChangeLogHistoryService.class,

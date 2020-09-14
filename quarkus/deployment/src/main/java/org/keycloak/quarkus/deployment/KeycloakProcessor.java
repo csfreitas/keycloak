@@ -29,6 +29,7 @@ import java.util.ServiceLoader;
 
 import io.quarkus.deployment.IsDevelopment;
 import io.quarkus.deployment.builditem.HotDeploymentWatchedFileBuildItem;
+import io.quarkus.deployment.builditem.IndexDependencyBuildItem;
 import io.quarkus.hibernate.orm.deployment.HibernateOrmConfig;
 import org.hibernate.cfg.AvailableSettings;
 import org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor;
@@ -152,6 +153,11 @@ class KeycloakProcessor {
     @BuildStep
     void initializeRouter(BuildProducer<FilterBuildItem> routes) {
         routes.produce(new FilterBuildItem(new QuarkusRequestFilter(), FilterBuildItem.AUTHORIZATION - 10));
+    }
+
+    @BuildStep
+    void index(BuildProducer<IndexDependencyBuildItem> indexDependencyBuildItemBuildProducer) {
+        indexDependencyBuildItemBuildProducer.produce(new IndexDependencyBuildItem("org.liquibase", "liquibase-core"));
     }
 
     @BuildStep(onlyIf = IsDevelopment.class)
