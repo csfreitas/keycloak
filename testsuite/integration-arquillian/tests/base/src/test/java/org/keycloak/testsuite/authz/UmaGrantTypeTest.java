@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -468,6 +469,68 @@ public class UmaGrantTypeTest extends AbstractResourceServerTest {
         assertNotNull(refreshTokenToken.getAuthorization());
 
         refreshedToken = toAccessToken(rpt);
+        authorization = refreshedToken.getAuthorization();
+
+        assertNotNull(authorization);
+
+        permissions = authorization.getPermissions();
+
+        assertNotNull(permissions);
+        assertPermissions(permissions, "Resource A", "ScopeA", "ScopeB");
+        assertTrue(permissions.isEmpty());
+    }
+
+    @Test
+    public void testRefreshRptBasedOnDifferentClient() throws Exception{
+        String accessTokenResponse = oauth.realm(REALM_NAME).clientId("direct-grant-app").doGrantAccessTokenRequest("secret", "marta", "password").getAccessToken();
+        AuthorizationResponse response = authorize(null, null, null, null, accessTokenResponse, null, null, new PermissionRequest("Resource A", "ScopeA", "ScopeB"));
+        String rpt = response.getToken();
+
+        assertNotNull(rpt);
+
+        AccessToken accessToken = toAccessToken(rpt);
+        AccessToken.Authorization authorization = accessToken.getAuthorization();
+
+        assertNotNull(authorization);
+
+        Collection<Permission> permissions = authorization.getPermissions();
+
+        assertNotNull(permissions);
+        assertPermissions(permissions, "Resource A", "ScopeA", "ScopeB");
+        assertTrue(permissions.isEmpty());
+
+        String refreshToken = response.getRefreshToken();
+
+        assertNotNull(refreshToken);
+
+        AccessToken refreshTokenToken = toAccessToken(refreshToken);
+
+        assertNotNull(refreshTokenToken.getAuthorization());
+
+        Client client = ClientBuilder.newClient();
+        UriBuilder builder = UriBuilder.fromUri(AUTH_SERVER_ROOT);
+        URI uri = OIDCLoginProtocolService.tokenUrl(builder).build(REALM_NAME);
+        WebTarget target = client.target(uri);
+
+        Form parameters = new Form();
+
+        parameters.param("grant_type", OAuth2Constants.REFRESH_TOKEN);
+        parameters.param(OAuth2Constants.REFRESH_TOKEN, refreshToken);
+
+        AccessTokenResponse refreshTokenResponse = target.request()
+                                                           .header(HttpHeaders.AUTHORIZATION, BasicAuthHelper.createHeader("direct-grant-app", "secret"))
+                                                           .post(Entity.form(parameters)).readEntity(AccessTokenResponse.class);
+
+        assertNotNull(refreshTokenResponse.getToken());
+        refreshToken = refreshTokenResponse.getRefreshToken();
+        refreshTokenToken = toAccessToken(refreshToken);
+
+        assertNotNull(refreshTokenToken.getAuthorization());
+
+        assertNotEquals(rpt, refreshTokenResponse.getToken());
+        rpt = refreshTokenResponse.getToken();
+        AccessToken refreshedToken = toAccessToken(rpt);
+        assertEquals("resource-server-test", refreshedToken.getAudience()[0]);
         authorization = refreshedToken.getAuthorization();
 
         assertNotNull(authorization);

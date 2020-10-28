@@ -77,6 +77,10 @@ public abstract class AbstractResourceServerTest extends AbstractAuthzTest {
                 .client(ClientBuilder.create().clientId("test-app")
                         .redirectUris("http://localhost:8180/auth/realms/master/app/auth", "https://localhost:8543/auth/realms/master/app/auth")
                         .publicClient())
+               .client(ClientBuilder.create().clientId("direct-grant-app")
+                       .secret("secret")
+                       .directAccessGrants()
+                       .redirectUris("http://localhost:8180/auth/realms/master/app/auth", "https://localhost:8543/auth/realms/master/app/auth"))
                 .build());
     }
 
