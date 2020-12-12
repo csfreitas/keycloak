@@ -77,6 +77,7 @@ public abstract class AbstractResourceServerTest extends AbstractAuthzTest {
                 .client(ClientBuilder.create().clientId("test-app")
                         .redirectUris("http://localhost:8180/auth/realms/master/app/auth", "https://localhost:8543/auth/realms/master/app/auth")
                         .publicClient())
+                .testEventListener()
                 .build());
     }
 
@@ -115,11 +116,15 @@ public abstract class AbstractResourceServerTest extends AbstractAuthzTest {
     protected AuthorizationResponse authorize(String userName, String password, String[] additionalScopes, String rpt, String accessToken, String claimToken, String tokenFormat, PermissionRequest... permissions) {
         ProtectionResource protection;
 
-        if (userName != null) {
-            protection = getAuthzClient().protection(userName, password);
-        } else {
-            protection = getAuthzClient().protection();
+        if (accessToken == null) {
+            if (userName != null) {
+                accessToken = getAuthzClient().obtainAccessToken(userName, password).getToken();
+            } else {
+                accessToken = getAuthzClient().obtainAccessToken().getToken();
+            }
         }
+
+        protection = getAuthzClient().protection(accessToken);
 
         String ticket = protection.permission().create(Arrays.asList(permissions)).getTicket();
 
@@ -144,13 +149,7 @@ public abstract class AbstractResourceServerTest extends AbstractAuthzTest {
 
         org.keycloak.authorization.client.resource.AuthorizationResource authorization;
 
-        if (userName != null) {
-            authorization = getAuthzClient().authorization(userName, password);
-        } else if (accessToken != null) {
-            authorization = getAuthzClient().authorization(accessToken);
-        } else {
-            authorization = getAuthzClient().authorization();
-        }
+        authorization = getAuthzClient().authorization(accessToken);
 
         return authorization.authorize(authorizationRequest);
     }
