@@ -74,7 +74,7 @@ public class InfinispanOAuth2DeviceTokenStoreProvider implements OAuth2DeviceTok
 
     @Override
     public void put(OAuth2DeviceCodeModel deviceCode, OAuth2DeviceUserCodeModel userCode, int lifespanSeconds) {
-        ActionTokenValueEntity deviceCodeValue = new ActionTokenValueEntity(deviceCode.serializeValue());
+        ActionTokenValueEntity deviceCodeValue = new ActionTokenValueEntity(deviceCode.toMap());
         ActionTokenValueEntity userCodeValue = new ActionTokenValueEntity(userCode.serializeValue());
 
         try {
@@ -164,7 +164,7 @@ public class InfinispanOAuth2DeviceTokenStoreProvider implements OAuth2DeviceTok
 
             // Update the device code with approved status
             BasicCache<String, ActionTokenValueEntity> cache = codeCache.get();
-            cache.replace(approved.serializeKey(), new ActionTokenValueEntity(approved.serializeApprovedValue()));
+            cache.replace(approved.serializeKey(), new ActionTokenValueEntity(approved.toMap()));
 
             return true;
         } catch (HotRodClientException re) {
@@ -189,7 +189,7 @@ public class InfinispanOAuth2DeviceTokenStoreProvider implements OAuth2DeviceTok
             OAuth2DeviceCodeModel denied = deviceCode.deny();
 
             BasicCache<String, ActionTokenValueEntity> cache = codeCache.get();
-            cache.replace(denied.serializeKey(), new ActionTokenValueEntity(denied.serializeDeniedValue()));
+            cache.replace(denied.serializeKey(), new ActionTokenValueEntity(denied.toMap()));
 
             return true;
         } catch (HotRodClientException re) {

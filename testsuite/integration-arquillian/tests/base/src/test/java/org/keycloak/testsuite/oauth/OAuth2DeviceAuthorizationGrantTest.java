@@ -16,9 +16,16 @@
  */
 package org.keycloak.testsuite.oauth;
 
+import static org.junit.Assert.assertNotNull;
+import static org.keycloak.models.OAuth2DeviceConfig.DEFAULT_OAUTH2_DEVICE_CODE_LIFESPAN;
+import static org.keycloak.models.OAuth2DeviceConfig.DEFAULT_OAUTH2_DEVICE_POLLING_INTERVAL;
+
 import org.jboss.arquillian.graphene.page.Page;
 import org.junit.*;
+import org.keycloak.admin.client.resource.ClientResource;
+import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.events.Details;
+import org.keycloak.models.OAuth2DeviceConfig;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.ClientRepresentation;
@@ -27,6 +34,7 @@ import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.keycloak.testsuite.AbstractKeycloakTest;
 import org.keycloak.testsuite.AssertEvents;
+import org.keycloak.testsuite.admin.ApiUtil;
 import org.keycloak.testsuite.pages.ErrorPage;
 import org.keycloak.testsuite.pages.OAuth2DeviceVerificationPage;
 import org.keycloak.testsuite.pages.OAuthGrantPage;
@@ -77,14 +85,6 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
                 .build();
         realm.client(app);
 
-        ClientRepresentation app2 = ClientBuilder.create()
-                .id(KeycloakModelUtils.generateId())
-                .clientId("test-device-public")
-                .oauth2DeviceAuthorizationGrant()
-                .publicClient()
-                .build();
-        realm.client(app2);
-
         userId = KeycloakModelUtils.generateId();
         UserRepresentation user = UserBuilder.create()
                 .id(userId)
@@ -98,63 +98,11 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
     }
 
     @Before
-    public void resetConifg() {
+    public void resetConfig() {
         RealmRepresentation realm = getAdminClient().realm(REALM_NAME).toRepresentation();
-        realm.setOAuth2DeviceCodeLifespan(600);
+        realm.setOAuth2DeviceCodeLifespan(60);
         realm.setOAuth2DevicePollingInterval(5);
         getAdminClient().realm(REALM_NAME).update(realm);
-    }
-
-    @Test
-    public void publicClientTest() throws Exception {
-        // Device Authorization Request from device
-        oauth.realm(REALM_NAME);
-        oauth.clientId(DEVICE_APP_PUBLIC);
-        OAuthClient.DeviceAuthorizationResponse response = oauth.doDeviceAuthorizationRequest(DEVICE_APP_PUBLIC, null);
-
-        Assert.assertEquals(200, response.getStatusCode());
-        Assert.assertNotNull(response.getDeviceCode());
-        Assert.assertNotNull(response.getUserCode());
-        Assert.assertNotNull(response.getVerificationUri());
-        Assert.assertNotNull(response.getVerificationUriComplete());
-        Assert.assertEquals(600, response.getExpiresIn());
-        Assert.assertEquals(5, response.getInterval());
-
-        // Verify user code from verification page using browser
-        openVerificationPage(response.getVerificationUri());
-        verificationPage.assertCurrent();
-        verificationPage.submit(response.getUserCode());
-
-        EventRepresentation verifyEvent = events.expectDeviceVerifyUserCode(DEVICE_APP_PUBLIC).assertEvent();
-        String codeId = verifyEvent.getDetails().get(Details.CODE_ID);
-
-        verificationPage.assertLoginPage();
-
-        // Do Login
-        oauth.fillLoginForm("device-login", "password");
-
-        // Consent
-        grantPage.assertCurrent();
-        grantPage.assertGrants(OAuthGrantPage.PROFILE_CONSENT_TEXT, OAuthGrantPage.EMAIL_CONSENT_TEXT, OAuthGrantPage.ROLES_CONSENT_TEXT);
-        grantPage.accept();
-
-        verificationPage.assertApprovedPage();
-
-        events.expectDeviceLogin(DEVICE_APP_PUBLIC, codeId, userId).assertEvent();
-
-        // Token request from device
-        OAuthClient.AccessTokenResponse tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP_PUBLIC, null, response.getDeviceCode());
-
-        Assert.assertEquals(200, tokenResponse.getStatusCode());
-
-        String tokenString = tokenResponse.getAccessToken();
-        Assert.assertNotNull(tokenString);
-        AccessToken token = oauth.verifyToken(tokenString);
-
-        // Check receiving access token which is bound to the user session of the verification process
-        Assert.assertTrue(codeId.equals(token.getSessionState()));
-
-        events.expectDeviceCodeToToken(DEVICE_APP_PUBLIC, codeId, userId).assertEvent();
     }
 
     @Test
@@ -165,20 +113,17 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
         OAuthClient.DeviceAuthorizationResponse response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
 
         Assert.assertEquals(200, response.getStatusCode());
-        Assert.assertNotNull(response.getDeviceCode());
-        Assert.assertNotNull(response.getUserCode());
-        Assert.assertNotNull(response.getVerificationUri());
-        Assert.assertNotNull(response.getVerificationUriComplete());
-        Assert.assertEquals(600, response.getExpiresIn());
+        assertNotNull(response.getDeviceCode());
+        assertNotNull(response.getUserCode());
+        assertNotNull(response.getVerificationUri());
+        assertNotNull(response.getVerificationUriComplete());
+        Assert.assertEquals(60, response.getExpiresIn());
         Assert.assertEquals(5, response.getInterval());
 
         // Verify user code from verification page using browser
         openVerificationPage(response.getVerificationUri());
         verificationPage.assertCurrent();
         verificationPage.submit(response.getUserCode());
-
-        EventRepresentation verifyEvent = events.expectDeviceVerifyUserCode(DEVICE_APP).assertEvent();
-        String codeId = verifyEvent.getDetails().get(Details.CODE_ID);
 
         verificationPage.assertLoginPage();
 
@@ -192,25 +137,301 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
 
         verificationPage.assertApprovedPage();
 
-        events.expectDeviceLogin(DEVICE_APP, codeId, userId).assertEvent();
-
         // Token request from device
         OAuthClient.AccessTokenResponse tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret", response.getDeviceCode());
 
         Assert.assertEquals(200, tokenResponse.getStatusCode());
 
         String tokenString = tokenResponse.getAccessToken();
-        Assert.assertNotNull(tokenString);
+        assertNotNull(tokenString);
         AccessToken token = oauth.verifyToken(tokenString);
 
-        // Check receiving access token which is bound to the user session of the verification process
-        Assert.assertTrue(codeId.equals(token.getSessionState()));
+        assertNotNull(token);
+    }
 
-        events.expectDeviceCodeToToken(DEVICE_APP, codeId, userId).assertEvent();
+    @Test
+    public void ConsentCancelTest() throws Exception {
+        // Device Authorization Request from device
+        oauth.realm(REALM_NAME);
+        oauth.clientId(DEVICE_APP);
+        OAuthClient.DeviceAuthorizationResponse response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
+
+        Assert.assertEquals(200, response.getStatusCode());
+        assertNotNull(response.getDeviceCode());
+        assertNotNull(response.getUserCode());
+        assertNotNull(response.getVerificationUri());
+        assertNotNull(response.getVerificationUriComplete());
+        Assert.assertEquals(60, response.getExpiresIn());
+        Assert.assertEquals(5, response.getInterval());
+
+        openVerificationPage(response.getVerificationUriComplete());
+        loginPage.assertCurrent();
+
+        // Do Login
+        oauth.fillLoginForm("device-login", "password");
+
+        // Consent
+        grantPage.assertCurrent();
+        grantPage.assertGrants(OAuthGrantPage.PROFILE_CONSENT_TEXT, OAuthGrantPage.EMAIL_CONSENT_TEXT, OAuthGrantPage.ROLES_CONSENT_TEXT);
+        grantPage.cancel();
+
+        verificationPage.assertDeniedPage();
+ 
+        OAuthClient.AccessTokenResponse tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret", response.getDeviceCode());
+
+        Assert.assertEquals(400, tokenResponse.getStatusCode());
+        Assert.assertEquals("access_denied", tokenResponse.getError());
+    }
+
+    @Test
+    public void InvalidUserCodeTest() throws Exception {
+        // Device Authorization Request from device
+        oauth.realm(REALM_NAME);
+        oauth.clientId(DEVICE_APP);
+        OAuthClient.DeviceAuthorizationResponse response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
+
+        Assert.assertEquals(200, response.getStatusCode());
+        assertNotNull(response.getDeviceCode());
+        assertNotNull(response.getUserCode());
+        assertNotNull(response.getVerificationUri());
+        assertNotNull(response.getVerificationUriComplete());
+        Assert.assertEquals(60, response.getExpiresIn());
+        Assert.assertEquals(5, response.getInterval());
+
+        openVerificationPage(response.getVerificationUri());
+        verificationPage.submit("x");
+
+        verificationPage.assertInvalidUserCodePage();
+    }
+
+    @Test
+    public void ExpiredUserCodeTest() throws Exception {
+        // Device Authorization Request from device
+        oauth.realm(REALM_NAME);
+        oauth.clientId(DEVICE_APP);
+        OAuthClient.DeviceAuthorizationResponse response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
+
+        Assert.assertEquals(200, response.getStatusCode());
+        assertNotNull(response.getDeviceCode());
+        assertNotNull(response.getUserCode());
+        assertNotNull(response.getVerificationUri());
+        assertNotNull(response.getVerificationUriComplete());
+        Assert.assertEquals(60, response.getExpiresIn());
+        Assert.assertEquals(5, response.getInterval());
+
+        try {
+            setTimeOffset(610);
+            openVerificationPage(response.getVerificationUriComplete());
+        } finally {
+            resetTimeOffset();
+        }
+
+        verificationPage.assertInvalidUserCodePage();
+    }
+
+    @Test
+    public void InvalidDeviceCodeTest() throws Exception {
+        // Device Authorization Request from device
+        oauth.realm(REALM_NAME);
+        oauth.clientId(DEVICE_APP);
+        OAuthClient.DeviceAuthorizationResponse response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
+
+        Assert.assertEquals(200, response.getStatusCode());
+        assertNotNull(response.getDeviceCode());
+        assertNotNull(response.getUserCode());
+        assertNotNull(response.getVerificationUri());
+        assertNotNull(response.getVerificationUriComplete());
+        Assert.assertEquals(60, response.getExpiresIn());
+        Assert.assertEquals(5, response.getInterval());
+
+        openVerificationPage(response.getVerificationUriComplete());
+        loginPage.assertCurrent();
+
+        // Do Login
+        oauth.fillLoginForm("device-login", "password");
+
+        // Consent
+        grantPage.assertCurrent();
+        grantPage.assertGrants(OAuthGrantPage.PROFILE_CONSENT_TEXT, OAuthGrantPage.EMAIL_CONSENT_TEXT, OAuthGrantPage.ROLES_CONSENT_TEXT);
+        grantPage.accept();
+
+        // Token request from device
+        OAuthClient.AccessTokenResponse tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret", "x");
+
+        Assert.assertEquals(400, tokenResponse.getStatusCode());
+        Assert.assertEquals("invalid_grant", tokenResponse.getError());
+    }
+
+    @Test
+    public void testSuccessVerificationUriComplete() throws Exception {
+        // Device Authorization Request from device
+        oauth.realm(REALM_NAME);
+        oauth.clientId(DEVICE_APP);
+        OAuthClient.DeviceAuthorizationResponse response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
+
+        Assert.assertEquals(200, response.getStatusCode());
+        assertNotNull(response.getDeviceCode());
+        assertNotNull(response.getUserCode());
+        assertNotNull(response.getVerificationUri());
+        assertNotNull(response.getVerificationUriComplete());
+        Assert.assertEquals(60, response.getExpiresIn());
+        Assert.assertEquals(5, response.getInterval());
+
+        openVerificationPage(response.getVerificationUriComplete());
+        loginPage.assertCurrent();
+
+        // Do Login
+        oauth.fillLoginForm("device-login", "password");
+
+        // Consent
+        grantPage.assertCurrent();
+        grantPage.assertGrants(OAuthGrantPage.PROFILE_CONSENT_TEXT, OAuthGrantPage.EMAIL_CONSENT_TEXT, OAuthGrantPage.ROLES_CONSENT_TEXT);
+        grantPage.accept();
+
+        verificationPage.assertApprovedPage();
+
+        // Token request from device
+        OAuthClient.AccessTokenResponse tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret", response.getDeviceCode());
+
+        Assert.assertEquals(200, tokenResponse.getStatusCode());
+    }
+
+    @Test
+    public void ExpiredDeviceCodeTest() throws Exception {
+        // Device Authorization Request from device
+        oauth.realm(REALM_NAME);
+        oauth.clientId(DEVICE_APP);
+        OAuthClient.DeviceAuthorizationResponse response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
+
+        Assert.assertEquals(200, response.getStatusCode());
+        assertNotNull(response.getDeviceCode());
+        assertNotNull(response.getUserCode());
+        assertNotNull(response.getVerificationUri());
+        assertNotNull(response.getVerificationUriComplete());
+        Assert.assertEquals(60, response.getExpiresIn());
+        Assert.assertEquals(5, response.getInterval());
+
+        try {
+            setTimeOffset(610);
+            // Token request from device
+            OAuthClient.AccessTokenResponse tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret",
+                response.getDeviceCode());
+
+            Assert.assertEquals(400, tokenResponse.getStatusCode());
+            Assert.assertEquals("expired_token", tokenResponse.getError());
+        } finally {
+            resetTimeOffset();
+        }
+    }
+
+    @Test
+    public void DeviceCodeLifespanPerClientTest() throws Exception {
+        ClientResource client = ApiUtil.findClientByClientId(adminClient.realm(REALM_NAME), DEVICE_APP);
+        ClientRepresentation clientRepresentation = client.toRepresentation();
+        // Device Authorization Request from device
+        oauth.realm(REALM_NAME);
+        oauth.clientId(DEVICE_APP);
+        OAuthClient.DeviceAuthorizationResponse response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
+
+        Assert.assertEquals(200, response.getStatusCode());
+        assertNotNull(response.getDeviceCode());
+        assertNotNull(response.getUserCode());
+        assertNotNull(response.getVerificationUri());
+        assertNotNull(response.getVerificationUriComplete());
+        Assert.assertEquals(60, response.getExpiresIn());
+        Assert.assertEquals(5, response.getInterval());
+
+        clientRepresentation.getAttributes().put(OAuth2DeviceConfig.OAUTH2_DEVICE_CODE_LIFESPAN_PER_CLIENT, "120");
+        clientRepresentation.getAttributes().put(OAuth2DeviceConfig.OAUTH2_DEVICE_POLLING_INTERVAL_PER_CLIENT, "600000");
+        client.update(clientRepresentation);
+
+        response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
+        Assert.assertEquals(120, response.getExpiresIn());
+        OAuthClient.AccessTokenResponse tokenResponse;
+
+        try {
+            setTimeOffset(100);
+            // Token request from device
+            tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret", response.getDeviceCode());
+
+            Assert.assertEquals(400, tokenResponse.getStatusCode());
+            Assert.assertEquals("authorization_pending", tokenResponse.getError());
+
+            setTimeOffset(125);
+            // Token request from device
+            tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret", response.getDeviceCode());
+
+            Assert.assertEquals(400, tokenResponse.getStatusCode());
+            Assert.assertEquals("expired_token", tokenResponse.getError());
+        } finally {
+            resetTimeOffset();
+        }
+
+        clientRepresentation.getAttributes().put(OAuth2DeviceConfig.OAUTH2_DEVICE_CODE_LIFESPAN_PER_CLIENT, "");
+        clientRepresentation.getAttributes().put(OAuth2DeviceConfig.OAUTH2_DEVICE_POLLING_INTERVAL_PER_CLIENT, "");
+        client.update(clientRepresentation);
+    }
+
+    @Test
+    public void DevicePollingIntervalPerClientTest() throws Exception {
+        ClientResource client = ApiUtil.findClientByClientId(adminClient.realm(REALM_NAME), DEVICE_APP);
+        ClientRepresentation clientRepresentation = client.toRepresentation();
+        // Device Authorization Request from device
+        oauth.realm(REALM_NAME);
+        oauth.clientId(DEVICE_APP);
+        OAuthClient.DeviceAuthorizationResponse response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
+
+        Assert.assertEquals(200, response.getStatusCode());
+        assertNotNull(response.getDeviceCode());
+        assertNotNull(response.getUserCode());
+        assertNotNull(response.getVerificationUri());
+        assertNotNull(response.getVerificationUriComplete());
+        Assert.assertEquals(60, response.getExpiresIn());
+        Assert.assertEquals(5, response.getInterval());
+
+        clientRepresentation.getAttributes().put(OAuth2DeviceConfig.OAUTH2_DEVICE_POLLING_INTERVAL_PER_CLIENT, "10");
+        client.update(clientRepresentation);
+
+        response = oauth.doDeviceAuthorizationRequest(DEVICE_APP, "secret");
+        Assert.assertEquals(10, response.getInterval());
+      
+        // Token request from device
+        OAuthClient.AccessTokenResponse tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret", response.getDeviceCode());
+
+        Assert.assertEquals(400, tokenResponse.getStatusCode());
+        Assert.assertEquals("authorization_pending", tokenResponse.getError());
+        
+        // Token request from device
+        tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret", response.getDeviceCode());
+
+        Assert.assertEquals(400, tokenResponse.getStatusCode());
+        Assert.assertEquals("slow_down", tokenResponse.getError());
+
+        WaitUtils.pause(7000); 
+
+        // Token request from device
+        tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret", response.getDeviceCode());
+
+        Assert.assertEquals(400, tokenResponse.getStatusCode());
+        Assert.assertEquals("slow_down", tokenResponse.getError());
+
+        WaitUtils.pause(3000); 
+
+        // Token request from device
+        tokenResponse = oauth.doDeviceTokenRequest(DEVICE_APP, "secret", response.getDeviceCode());
+
+        Assert.assertEquals(400, tokenResponse.getStatusCode());
+        Assert.assertEquals("authorization_pending", tokenResponse.getError());
+
+        clientRepresentation.getAttributes().put(OAuth2DeviceConfig.OAUTH2_DEVICE_POLLING_INTERVAL_PER_CLIENT, "");
+        client.update(clientRepresentation);
     }
 
     @Test
     public void pollingTest() throws Exception {
+        RealmRepresentation realm = getAdminClient().realm(REALM_NAME).toRepresentation();
+        realm.setOAuth2DeviceCodeLifespan(600);
+        getAdminClient().realm(REALM_NAME).update(realm);
         // Device Authorization Request from device
         oauth.realm(REALM_NAME);
         oauth.clientId(DEVICE_APP);
@@ -245,7 +466,6 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
 
 
         // Change the interval setting of the realm from 5 seconds to 10 seconds.
-        RealmRepresentation realm = getAdminClient().realm(REALM_NAME).toRepresentation();
         realm.setOAuth2DevicePollingInterval(10);
         getAdminClient().realm(REALM_NAME).update(realm);
 
@@ -281,6 +501,30 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
         // Not approved yet
         Assert.assertEquals(400, tokenResponse.getStatusCode());
         Assert.assertEquals("authorization_pending", tokenResponse.getError());
+    }
+
+    @Test
+    public void testUpdateConfig() {
+        RealmResource realm = getAdminClient().realm(REALM_NAME);
+        RealmRepresentation rep = realm.toRepresentation();
+
+        rep.setOAuth2DevicePollingInterval(DEFAULT_OAUTH2_DEVICE_POLLING_INTERVAL);
+        rep.setOAuth2DeviceCodeLifespan(DEFAULT_OAUTH2_DEVICE_CODE_LIFESPAN);
+
+        realm.update(rep);
+        rep = realm.toRepresentation();
+
+        Assert.assertEquals(DEFAULT_OAUTH2_DEVICE_POLLING_INTERVAL, rep.getOAuth2DevicePollingInterval().intValue());
+        Assert.assertEquals(DEFAULT_OAUTH2_DEVICE_CODE_LIFESPAN, rep.getOAuth2DeviceCodeLifespan().intValue());
+
+        rep.setOAuth2DevicePollingInterval(10);
+        rep.setOAuth2DeviceCodeLifespan(15);
+
+        realm.update(rep);
+        rep = realm.toRepresentation();
+
+        Assert.assertEquals(10, rep.getOAuth2DevicePollingInterval().intValue());
+        Assert.assertEquals(15, rep.getOAuth2DeviceCodeLifespan().intValue());
     }
 
     private void openVerificationPage(String verificationUri) {
