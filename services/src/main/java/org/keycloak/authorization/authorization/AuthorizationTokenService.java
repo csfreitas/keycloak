@@ -187,12 +187,8 @@ public class AuthorizationTokenService {
         logger.debug(event.getEvent().getType(), cause);
     }
 
-    public Response authorize(KeycloakAuthorizationRequest request, EventBuilder event) {
-        if (request == null) {
-            CorsErrorResponseException invalidAuthorizationRequestException = new CorsErrorResponseException(request.getCors(), OAuthErrorException.INVALID_GRANT, "Invalid authorization request.", Status.BAD_REQUEST);
-            fireErrorEvent(event, Errors.INVALID_REQUEST, invalidAuthorizationRequestException);
-            throw invalidAuthorizationRequestException;
-        }
+    public Response authorize(KeycloakAuthorizationRequest request) {
+        EventBuilder event = request.getEvent();
 
         // it is not secure to allow public clients to push arbitrary claims because message can be tampered
         if (isPublicClientRequestingEntitlementWithClaims(request)) {

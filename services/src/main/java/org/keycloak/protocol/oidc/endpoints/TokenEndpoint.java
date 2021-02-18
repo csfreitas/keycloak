@@ -1357,7 +1357,7 @@ public class TokenEndpoint {
 
         authorizationRequest.setMetadata(metadata);
 
-        Response authorizationResponse = AuthorizationTokenService.instance().authorize(authorizationRequest, event);
+        Response authorizationResponse = AuthorizationTokenService.instance().authorize(authorizationRequest);
 
         event.success();
 

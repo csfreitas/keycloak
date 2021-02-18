@@ -325,6 +325,10 @@ public class UserManagedAccessTest extends AbstractResourceServerTest {
                 .user(isUUID())
                 .clearDetails()
                 .assertEvent();
+        events.expectLogin().realm(realmId).client(clientId)
+                .user(isUUID())
+                .clearDetails()
+                .assertEvent();
         events.expect(EventType.PERMISSION_TOKEN_ERROR).realm(realmId).client(clientId).user(isUUID())
                 .session((String) null)
                 .error("access_denied")
@@ -373,6 +377,10 @@ public class UserManagedAccessTest extends AbstractResourceServerTest {
         assertPermissions(permissions, resource.getName(), "ScopeA", "ScopeB");
         assertTrue(permissions.isEmpty());
 
+        events.expectLogin().realm(realmId).client(clientId)
+                .user(isUUID())
+                .clearDetails()
+                .assertEvent();
         events.expectLogin().realm(realmId).client(clientId)
                 .user(isUUID())
                 .clearDetails()
