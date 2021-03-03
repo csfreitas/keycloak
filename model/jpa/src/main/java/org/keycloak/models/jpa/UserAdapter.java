@@ -316,6 +316,9 @@ public class UserAdapter implements UserModel.Streams, JpaModel<UserEntity> {
 
     @Override
     public void setEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return;
+        }
         email = KeycloakModelUtils.toLowerCaseSafe(email);
         user.setEmail(email, realm.isDuplicateEmailsAllowed());
     }

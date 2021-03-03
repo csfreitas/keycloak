@@ -17,8 +17,6 @@
 
 package org.keycloak.authentication.requiredactions;
 
-import static org.keycloak.userprofile.profile.UserProfileContextFactory.forUpdateProfile;
-
 import org.keycloak.Config;
 import org.keycloak.OAuth2Constants;
 import org.keycloak.authentication.DisplayTypeRequiredActionFactory;
@@ -35,8 +33,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.FormMessage;
 import org.keycloak.services.validation.Validation;
 import org.keycloak.userprofile.UserProfile;
-import org.keycloak.userprofile.utils.UserUpdateHelper;
-import org.keycloak.userprofile.validation.UserProfileValidationResult;
+import org.keycloak.userprofile.UserProfileProvider;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
@@ -70,28 +67,34 @@ public class UpdateProfile implements RequiredActionProvider, RequiredActionFact
         MultivaluedMap<String, String> formData = context.getHttpRequest().getDecodedFormParameters();
         UserModel user = context.getUser();
         String oldEmail = user.getEmail();
-        UserProfileValidationResult result = forUpdateProfile(user, formData, context.getSession()).validate();
-        final UserProfile updatedProfile = result.getProfile();
-        List<FormMessage> errors = Validation.getFormErrorsFromValidation(result);
+        UserProfileProvider provider = context.getSession().getProvider(UserProfileProvider.class);
+        UserProfile profile = provider.create(UserProfile.UserUpdateEvent.UpdateProfile.name(), user);
 
-        if (errors != null && !errors.isEmpty()) {
+        try {
+            profile.validate(formData);
+        } catch (UserProfile.ProfileValidationException pve) {
+            List<FormMessage> errors = Validation.getFormErrorsFromValidation(pve.getErrors());
+
             Response challenge = context.form()
                     .setErrors(errors)
                     .setFormData(formData)
                     .createResponse(UserModel.RequiredAction.UPDATE_PROFILE);
             context.challenge(challenge);
+
             return;
         }
 
-        String newEmail = updatedProfile.getAttributes().getFirstAttribute(UserModel.EMAIL);
+        String newEmail = formData.getFirst(UserModel.EMAIL);
 
-        UserUpdateHelper.updateUserProfile(context.getRealm(), user, updatedProfile);
-        if (result.hasAttributeChanged(UserModel.EMAIL)) {
-            user.setEmailVerified(false);
-            event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, newEmail).success();
-        }
+        // backward compatibility with old account console where attributes are not removed if missing
+        profile.update(formData, (attributeName, userModel) -> {
+            if (attributeName.equals(UserModel.EMAIL)) {
+                user.setEmailVerified(false);
+                event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, newEmail).success();
+            }
+        });
+
         context.success();
-
     }
 
 

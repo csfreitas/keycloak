@@ -32,6 +32,7 @@ import org.keycloak.events.EventBuilder;
 import org.keycloak.events.EventType;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
+import org.keycloak.forms.account.AccountPages;
 import org.keycloak.models.AuthenticatedClientSessionModel;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.Constants;
@@ -48,6 +49,7 @@ import org.keycloak.models.UserLoginFailureModel;
 import org.keycloak.models.UserManager;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
+import org.keycloak.models.utils.FormMessage;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
@@ -67,15 +69,15 @@ import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.managers.BruteForceProtector;
 import org.keycloak.services.managers.UserConsentManager;
 import org.keycloak.services.managers.UserSessionManager;
+import org.keycloak.services.messages.Messages;
 import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.services.resources.account.AccountFormService;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
 import org.keycloak.services.validation.Validation;
 import org.keycloak.storage.ReadOnlyException;
+import org.keycloak.userprofile.UserProfile;
+import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.userprofile.utils.UserUpdateHelper;
-import org.keycloak.userprofile.validation.AttributeValidationResult;
-import org.keycloak.userprofile.validation.UserProfileValidationResult;
-import org.keycloak.userprofile.validation.ValidationResult;
 import org.keycloak.utils.ProfileHelper;
 
 import javax.ws.rs.BadRequestException;
@@ -114,7 +116,6 @@ import java.util.stream.Stream;
 
 import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_ID;
 import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_USERNAME;
-import static org.keycloak.userprofile.profile.UserProfileContextFactory.forUserResource;
 
 /**
  * Base resource for managing users
@@ -197,24 +198,28 @@ public class UserResource {
     }
 
     public static Response validateUserProfile(UserModel user, UserRepresentation rep, KeycloakSession session) {
-        UserProfileValidationResult result = forUserResource(user, rep, session).validate();
-        if (!result.getErrors().isEmpty()) {
-            for (AttributeValidationResult attrValidation : result.getErrors()) {
-                StringBuilder s = new StringBuilder("Failed to update attribute " + attrValidation.getField() + ": ");
-                for (ValidationResult valResult : attrValidation.getFailedValidations()) {
-                    s.append(valResult.getErrorType() + ", ");
-                }
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.UserUpdateEvent.UserResource.name(), user);
+
+        try {
+            profile.validate(toAttributes(rep));
+        } catch (UserProfile.ProfileValidationException pve) {
+            for (UserProfile.Error error : pve.getErrors()) {
+                StringBuilder s = new StringBuilder("Failed to update attribute " + error.getAttribute() + ": ");
+
+                s.append(error.getDescription()).append(", ");
+
                 logger.warn(s);
             }
             return ErrorResponse.error("Could not update user! See server log for more details", Response.Status.BAD_REQUEST);
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     public static void updateUserFromRep(UserModel user, UserRepresentation rep, KeycloakSession session, boolean isUpdateExistingUser) {
         boolean removeMissingRequiredActions = isUpdateExistingUser;
-        UserUpdateHelper.updateUserResource(session, user, rep, rep.getAttributes() != null);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.UserUpdateEvent.UserResource.name(), user);
+        profile.update(toAttributes(rep), rep.getAttributes() != null);
 
         if (rep.isEnabled() != null) user.setEnabled(rep.isEnabled());
         if (rep.isEmailVerified() != null) user.setEmailVerified(rep.isEmailVerified());
@@ -913,5 +918,35 @@ public class UserResource {
         }
         rep.setLastAccess(clientSession.getTimestamp());
         return rep;
+    }
+
+    private static Map<String, List<String>> toAttributes(UserRepresentation user) {
+        Map<String, List<String>> attrs = new HashMap<>();
+
+        if (user.getAttributes() != null) attrs.putAll(user.getAttributes());
+
+        if (user.getUsername() != null)
+            attrs.put(UserModel.USERNAME, Collections.singletonList(user.getUsername()));
+        else
+            attrs.remove(UserModel.USERNAME);
+
+        if (user.getEmail() != null)
+            attrs.put(UserModel.EMAIL, Collections.singletonList(user.getEmail()));
+        else
+            attrs.remove(UserModel.EMAIL);
+
+        if (user.getUsername() != null)
+            attrs.put(UserModel.USERNAME, Collections.singletonList(user.getUsername()));
+
+        if (user.getLastName() != null)
+            attrs.put(UserModel.LAST_NAME, Collections.singletonList(user.getLastName()));
+
+        if (user.getFirstName() != null)
+            attrs.put(UserModel.FIRST_NAME, Collections.singletonList(user.getFirstName()));
+
+        if (user.getEmail() != null)
+            attrs.put(UserModel.EMAIL, Collections.singletonList(user.getEmail()));
+
+        return attrs;
     }
 }

@@ -19,7 +19,6 @@ package org.keycloak.services.resources;
 
 import org.keycloak.models.Constants;
 import org.keycloak.models.UserModel;
-import org.keycloak.userprofile.profile.representations.AttributeUserProfile;
 
 import javax.ws.rs.core.MultivaluedMap;
 import java.util.ArrayList;
@@ -34,7 +33,7 @@ import java.util.Map;
 public class AttributeFormDataProcessor {
 
 
-    public static AttributeUserProfile process(MultivaluedMap<String, String> formData) {
+    public static Map<String, List<String>> process(MultivaluedMap<String, String> formData) {
         Map<String, List<String>> attributes= new HashMap<>();
         for (String key : formData.keySet()) {
             if (!key.startsWith(Constants.USER_ATTRIBUTES_PREFIX)) continue;
@@ -51,11 +50,11 @@ public class AttributeFormDataProcessor {
 
             attributes.put(attribute, modelValue);
         }
-        return new AttributeUserProfile(attributes);
+        return attributes;
     }
 
-    public static AttributeUserProfile toUserProfile(MultivaluedMap<String, String> formData) {
-        AttributeUserProfile profile = process(formData);
+    public static Map<String, List<String>> toUserProfile(MultivaluedMap<String, String> formData) {
+        Map<String, List<String>> profile = process(formData);
 
         copyAttribute(UserModel.USERNAME, formData, profile);
         copyAttribute(UserModel.FIRST_NAME, formData, profile);
@@ -66,9 +65,9 @@ public class AttributeFormDataProcessor {
         return profile;
     }
 
-    private static void copyAttribute(String key, MultivaluedMap<String, String> formData, AttributeUserProfile rep) {
+    private static void copyAttribute(String key, MultivaluedMap<String, String> formData, Map<String, List<String>> rep) {
         if (formData.getFirst(key) != null)
-            rep.getAttributes().setSingleAttribute(key, formData.getFirst(key));
+            rep.put(key, formData.get(key));
     }
 
 

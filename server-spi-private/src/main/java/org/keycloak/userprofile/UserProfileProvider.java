@@ -17,15 +17,14 @@
 
 package org.keycloak.userprofile;
 
+import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
-import org.keycloak.userprofile.validation.UserProfileValidationResult;
 
 /**
  * @author <a href="mailto:markus.till@bosch.io">Markus Till</a>
  */
 public interface UserProfileProvider extends Provider {
 
-    UserProfileValidationResult validate(UserProfileContext updateContext, UserProfile updatedProfile);
-
-    boolean isReadOnlyAttribute(String key);
+    UserProfile create(String name);
+    UserProfile create(String name, UserModel user);
 }
