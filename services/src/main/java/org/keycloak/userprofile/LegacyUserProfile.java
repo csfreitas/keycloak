@@ -19,8 +19,6 @@
 
 package org.keycloak.userprofile;
 
-import static org.keycloak.userprofile.UserProfile.UserUpdateEvent.UserResource;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,7 +36,6 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.services.messages.Messages;
-import org.keycloak.userprofile.utils.UserUpdateHelper;
 import org.keycloak.userprofile.validation.StaticValidators;
 
 /**
@@ -71,22 +68,22 @@ public class LegacyUserProfile implements UserProfile {
             Map<String, List<String>> newAttributes = (Map<String, List<String>>) attributes;
             RealmModel realm = session.getContext().getRealm();
 
-            switch (UserUpdateEvent.valueOf(context)) {
-                case UserResource:
+            switch (DefaultContextKey.valueOf(context)) {
+                case USER_RESOURCE:
                     addReadOnlyAttributeValidators(adminReadOnlyAttributes, newAttributes);
                     break;
-                case IdpReview:
+                case IDP_REVIEW:
                     addBasicValidators(!realm.isRegistrationEmailAsUsername());
                     addReadOnlyAttributeValidators(readOnlyAttributes, newAttributes);
                     break;
-                case Account:
-                case RegistrationProfile:
-                case UpdateProfile:
+                case ACCOUNT:
+                case REGISTRATION_PROFILE:
+                case UPDATE_PROFILE:
                     addBasicValidators(!realm.isRegistrationEmailAsUsername() && realm.isEditUsernameAllowed());
                     addReadOnlyAttributeValidators(readOnlyAttributes, newAttributes);
                     addSessionValidators();
                     break;
-                case RegistrationUserCreation:
+                case REGISTRATION_USER_CREATION:
                     addUserCreationValidators();
                     addReadOnlyAttributeValidators(readOnlyAttributes, newAttributes);
                     break;
@@ -110,7 +107,7 @@ public class LegacyUserProfile implements UserProfile {
                             }
 
                             @Override
-                            public String getDescription() {
+                            public String getMessage() {
                                 return error;
                             }
                         });
@@ -127,7 +124,7 @@ public class LegacyUserProfile implements UserProfile {
     @Override
     public void update(Map<String, ?> attributes, boolean removeAttributes, BiConsumer<String, UserModel>... attributeChangeListener)
             throws ProfileValidationException, ProfileUpdateException {
-        UserUpdateEvent context = UserUpdateEvent.valueOf(this.context);
+        DefaultContextKey context = DefaultContextKey.valueOf(this.context);
         Map<String, List<String>> newAttributes = Collections.emptyMap();
 
         if (attributes != null && !attributes.isEmpty()) {
@@ -194,9 +191,9 @@ public class LegacyUserProfile implements UserProfile {
         }
     }
 
-    private static void filterAttributes(UserProfile.UserUpdateEvent userUpdateEvent, RealmModel realm, Map<String, List<String>> attributes) {
+    private static void filterAttributes(DefaultContextKey userUpdateEvent, RealmModel realm, Map<String, List<String>> attributes) {
         //The Idp review does not respect "isEditUserNameAllowed" therefore we have to miss the check here
-        if (!userUpdateEvent.equals(UserProfile.UserUpdateEvent.IdpReview)) {
+        if (!userUpdateEvent.equals(DefaultContextKey.IDP_REVIEW)) {
             //This step has to be done before email is assigned to the username if isRegistrationEmailAsUsername is set
             //Otherwise email change will not reflect in username changes.
             if (attributes.get(UserModel.USERNAME) != null && !realm.isEditUsernameAllowed()) {

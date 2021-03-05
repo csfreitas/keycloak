@@ -365,7 +365,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
         event.event(EventType.UPDATE_PROFILE).client(auth.getClient()).user(auth.getUser());
 
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.UserUpdateEvent.Account.name(), user);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.ACCOUNT, user);
         Map<String, List<String>> attributes = AttributeFormDataProcessor.toUserProfile(formData);
 
         try {

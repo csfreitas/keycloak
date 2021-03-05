@@ -66,7 +66,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
         context.getEvent().detail(Details.REGISTER_METHOD, "form");
 
         KeycloakSession session = context.getSession();
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.UserUpdateEvent.RegistrationUserCreation.name());
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.REGISTRATION_USER_CREATION);
 
         try {
             profile.validate(formData);
@@ -130,7 +130,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
 
         user.setEnabled(true);
 
-        session.getProvider(UserProfileProvider.class).create(UserProfile.UserUpdateEvent.RegistrationUserCreation.name(), user).update(formData);
+        session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.REGISTRATION_USER_CREATION, user).update(formData);
 
         context.getAuthenticationSession().setClientNote(OIDCLoginProtocol.LOGIN_HINT_PARAM, username);
 

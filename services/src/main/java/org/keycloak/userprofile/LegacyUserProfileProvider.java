@@ -54,7 +54,7 @@ public class LegacyUserProfileProvider implements UserProfileProvider {
     }
 
     @Override
-    public UserProfile create(String name) {
-        return create(name, null);
+    public UserProfile create(String contextKey) {
+        return create(contextKey, null);
     }
 }

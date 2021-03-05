@@ -18,14 +18,10 @@
 package org.keycloak.userprofile;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
-import java.util.function.BinaryOperator;
 import java.util.function.Consumer;
 
 import org.keycloak.models.UserModel;
@@ -38,6 +34,12 @@ import org.keycloak.models.UserModel;
  */
 public interface UserProfile {
 
+    /**
+     *
+     *
+     * @param attributes
+     * @throws UserProfile.ProfileValidationException
+     */
     void validate(Map<String, ? extends Object> attributes) throws UserProfile.ProfileValidationException;
 
     void update(Map<String, ? extends Object> attributes, boolean removeAttributes, BiConsumer<String, UserModel>... attributeChangeListener) throws
@@ -56,6 +58,12 @@ public interface UserProfile {
 
         String getFirstValue(String name);
 
+        /**
+         * Checks whether an attribute is read-only.
+         *
+         * @param key
+         * @return
+         */
         boolean isReadOnlyAttribute(String key);
 
         boolean validate(String key, List<String> value, Consumer<String> error);
@@ -78,7 +86,7 @@ public interface UserProfile {
         }
 
         public void addError(Error error) {
-            errors.computeIfAbsent(error.getDescription(), (k) -> new ArrayList<>()).add(error);
+            errors.computeIfAbsent(error.getMessage(), (k) -> new ArrayList<>()).add(error);
         }
     }
 
@@ -88,18 +96,33 @@ public interface UserProfile {
 
     interface Error {
         String getAttribute();
-        String getDescription();
+
+        //TODO: support parameters to messsages for formatting purposes. Message key and parameters.
+        String getMessage();
     }
 
     /**
      * @author <a href="mailto:markus.till@bosch.io">Markus Till</a>
      */
-    enum UserUpdateEvent {
-        UpdateProfile,
-        UserResource,
-        Account,
-        IdpReview,
-        RegistrationProfile,
-        RegistrationUserCreation
+    enum DefaultContextKey implements ContextKey {
+        UPDATE_PROFILE,
+        USER_RESOURCE,
+        ACCOUNT,
+        IDP_REVIEW,
+        REGISTRATION_PROFILE,
+        REGISTRATION_USER_CREATION
+    }
+
+    interface ContextKey {
+        String name();
+    }
+
+    default ContextKey key(String name) {
+        return new ContextKey() {
+            @Override
+            public String name() {
+                return name;
+            }
+        };
     }
 }

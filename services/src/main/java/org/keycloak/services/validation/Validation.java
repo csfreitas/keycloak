@@ -156,7 +156,7 @@ public class Validation {
     public static List<FormMessage> getFormErrorsFromValidation(List<UserProfile.Error> errors) {
         List<FormMessage> messages = new ArrayList<>();
         for (UserProfile.Error error : errors) {
-            addError(messages, error.getAttribute(), error.getDescription());
+            addError(messages, error.getAttribute(), error.getMessage());
         }
         return messages;
 

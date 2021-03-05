@@ -58,7 +58,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -80,11 +79,11 @@ import java.util.stream.Stream;
  */
 public class AccountRestService {
 
-    @Context
+    @javax.ws.rs.core.Context
     private HttpRequest request;
-    @Context
+    @javax.ws.rs.core.Context
     protected HttpHeaders headers;
-    @Context
+    @javax.ws.rs.core.Context
     protected ClientConnection clientConnection;
 
     private final KeycloakSession session;
@@ -155,7 +154,7 @@ public class AccountRestService {
 
         event.event(EventType.UPDATE_PROFILE).client(auth.getClient()).user(auth.getUser());
 
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.UserUpdateEvent.Account.name(), auth.getUser());
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.ACCOUNT, auth.getUser());
 
         try {
             profile.validate(user.getAttributes());
@@ -168,7 +167,7 @@ public class AccountRestService {
                 return ErrorResponse.exists(Messages.EMAIL_EXISTS);
             if (!pve.getErrors().isEmpty()) {
                 // Here should be possibility to somehow return all errors?
-                String firstErrorMessage = pve.getErrors().get(0).getDescription();
+                String firstErrorMessage = pve.getErrors().get(0).getMessage();
                 return ErrorResponse.error(firstErrorMessage, Response.Status.BAD_REQUEST);
             }
         }

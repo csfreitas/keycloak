@@ -32,7 +32,6 @@ import org.keycloak.events.EventBuilder;
 import org.keycloak.events.EventType;
 import org.keycloak.events.admin.OperationType;
 import org.keycloak.events.admin.ResourceType;
-import org.keycloak.forms.account.AccountPages;
 import org.keycloak.models.AuthenticatedClientSessionModel;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.Constants;
@@ -49,7 +48,6 @@ import org.keycloak.models.UserLoginFailureModel;
 import org.keycloak.models.UserManager;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.UserSessionModel;
-import org.keycloak.models.utils.FormMessage;
 import org.keycloak.models.utils.ModelToRepresentation;
 import org.keycloak.models.utils.RepresentationToModel;
 import org.keycloak.protocol.oidc.OIDCLoginProtocol;
@@ -69,7 +67,6 @@ import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.managers.BruteForceProtector;
 import org.keycloak.services.managers.UserConsentManager;
 import org.keycloak.services.managers.UserSessionManager;
-import org.keycloak.services.messages.Messages;
 import org.keycloak.services.resources.LoginActionsService;
 import org.keycloak.services.resources.account.AccountFormService;
 import org.keycloak.services.resources.admin.permissions.AdminPermissionEvaluator;
@@ -77,7 +74,6 @@ import org.keycloak.services.validation.Validation;
 import org.keycloak.storage.ReadOnlyException;
 import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.UserProfileProvider;
-import org.keycloak.userprofile.utils.UserUpdateHelper;
 import org.keycloak.utils.ProfileHelper;
 
 import javax.ws.rs.BadRequestException;
@@ -93,7 +89,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -101,7 +96,6 @@ import javax.ws.rs.core.Response.Status;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -116,6 +110,7 @@ import java.util.stream.Stream;
 
 import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_ID;
 import static org.keycloak.models.ImpersonationSessionNote.IMPERSONATOR_USERNAME;
+import static org.keycloak.userprofile.UserProfile.DefaultContextKey.USER_RESOURCE;
 
 /**
  * Base resource for managing users
@@ -134,13 +129,13 @@ public class UserResource {
     private AdminEventBuilder adminEvent;
     private UserModel user;
 
-    @Context
+    @javax.ws.rs.core.Context
     protected ClientConnection clientConnection;
 
-    @Context
+    @javax.ws.rs.core.Context
     protected KeycloakSession session;
 
-    @Context
+    @javax.ws.rs.core.Context
     protected HttpHeaders headers;
 
     public UserResource(RealmModel realm, UserModel user, AdminPermissionEvaluator auth, AdminEventBuilder adminEvent) {
@@ -198,7 +193,7 @@ public class UserResource {
     }
 
     public static Response validateUserProfile(UserModel user, UserRepresentation rep, KeycloakSession session) {
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.UserUpdateEvent.UserResource.name(), user);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE, user);
 
         try {
             profile.validate(toAttributes(rep));
@@ -206,7 +201,7 @@ public class UserResource {
             for (UserProfile.Error error : pve.getErrors()) {
                 StringBuilder s = new StringBuilder("Failed to update attribute " + error.getAttribute() + ": ");
 
-                s.append(error.getDescription()).append(", ");
+                s.append(error.getMessage()).append(", ");
 
                 logger.warn(s);
             }
@@ -218,7 +213,7 @@ public class UserResource {
 
     public static void updateUserFromRep(UserModel user, UserRepresentation rep, KeycloakSession session, boolean isUpdateExistingUser) {
         boolean removeMissingRequiredActions = isUpdateExistingUser;
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.UserUpdateEvent.UserResource.name(), user);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE, user);
         profile.update(toAttributes(rep), rep.getAttributes() != null);
 
         if (rep.isEnabled() != null) user.setEnabled(rep.isEnabled());
