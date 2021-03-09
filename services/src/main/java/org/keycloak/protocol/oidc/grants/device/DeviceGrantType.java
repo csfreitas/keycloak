@@ -85,8 +85,7 @@ public class DeviceGrantType {
     }
 
     public static URI realmOAuth2DeviceVerificationAction(URI baseUri, String realmName) {
-        return Urls.loginActionsBase(baseUri).path(LoginActionsService.class, "processOAuth2DeviceVerification").path(
-                DeviceEndpoint.class, "verifyUserCode").build(realmName);
+        return UriBuilder.fromUri(baseUri).path(RealmsResource.class).path("{realm}").path("device").build(realmName);
     }
 
     public static UriBuilder oauth2DeviceAuthUrl(UriBuilder baseUriBuilder) {
@@ -96,8 +95,7 @@ public class DeviceGrantType {
     }
 
     public static UriBuilder oauth2DeviceVerificationCompletedUrl(UriInfo baseUri) {
-        return Urls.loginActionsBase(baseUri.getBaseUri()).path(LoginActionsService.class, "processOAuth2DeviceVerification").path(
-                DeviceEndpoint.class, "status");
+        return baseUri.getBaseUriBuilder().path(RealmsResource.class).path("{realm}").path("device").path("status");
     }
 
     public static Response denyOAuth2DeviceAuthorization(AuthenticationSessionModel authSession, LoginProtocol.Error error, KeycloakSession session) {

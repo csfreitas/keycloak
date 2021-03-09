@@ -846,16 +846,6 @@ public class LoginActionsService {
         return Response.status(302).location(redirect).build();
     }
 
-   /**
-     * Verifying user code page. You should not invoked this directly!
-     *
-     * @return
-     */
-    @Path("device")
-    public Object processOAuth2DeviceVerification() {
-        return session.getProvider(RealmResourceProvider.class, "device");
-    }
-
     /**
      * OAuth grant page.  You should not invoked this directly!
      *
