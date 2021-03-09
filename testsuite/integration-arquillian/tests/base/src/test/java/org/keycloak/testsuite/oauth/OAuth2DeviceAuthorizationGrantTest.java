@@ -106,7 +106,7 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
     }
 
     @Test
-    public void confidentialClientTest() throws Exception {
+    public void testConfidentialClient() throws Exception {
         // Device Authorization Request from device
         oauth.realm(REALM_NAME);
         oauth.clientId(DEVICE_APP);
@@ -150,7 +150,7 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
     }
 
     @Test
-    public void ConsentCancelTest() throws Exception {
+    public void testConsentCancel() throws Exception {
         // Device Authorization Request from device
         oauth.realm(REALM_NAME);
         oauth.clientId(DEVICE_APP);
@@ -184,7 +184,7 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
     }
 
     @Test
-    public void InvalidUserCodeTest() throws Exception {
+    public void testInvalidUserCode() throws Exception {
         // Device Authorization Request from device
         oauth.realm(REALM_NAME);
         oauth.clientId(DEVICE_APP);
@@ -205,7 +205,7 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
     }
 
     @Test
-    public void ExpiredUserCodeTest() throws Exception {
+    public void testExpiredUserCode() throws Exception {
         // Device Authorization Request from device
         oauth.realm(REALM_NAME);
         oauth.clientId(DEVICE_APP);
@@ -230,7 +230,7 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
     }
 
     @Test
-    public void InvalidDeviceCodeTest() throws Exception {
+    public void testInvalidDeviceCode() throws Exception {
         // Device Authorization Request from device
         oauth.realm(REALM_NAME);
         oauth.clientId(DEVICE_APP);
@@ -297,7 +297,7 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
     }
 
     @Test
-    public void ExpiredDeviceCodeTest() throws Exception {
+    public void testExpiredDeviceCode() throws Exception {
         // Device Authorization Request from device
         oauth.realm(REALM_NAME);
         oauth.clientId(DEVICE_APP);
@@ -325,7 +325,7 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
     }
 
     @Test
-    public void DeviceCodeLifespanPerClientTest() throws Exception {
+    public void testDeviceCodeLifespanPerClient() throws Exception {
         ClientResource client = ApiUtil.findClientByClientId(adminClient.realm(REALM_NAME), DEVICE_APP);
         ClientRepresentation clientRepresentation = client.toRepresentation();
         // Device Authorization Request from device
@@ -373,7 +373,7 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
     }
 
     @Test
-    public void DevicePollingIntervalPerClientTest() throws Exception {
+    public void testDevicePollingIntervalPerClient() throws Exception {
         ClientResource client = ApiUtil.findClientByClientId(adminClient.realm(REALM_NAME), DEVICE_APP);
         ClientRepresentation clientRepresentation = client.toRepresentation();
         // Device Authorization Request from device
@@ -428,7 +428,7 @@ public class OAuth2DeviceAuthorizationGrantTest extends AbstractKeycloakTest {
     }
 
     @Test
-    public void pollingTest() throws Exception {
+    public void testPooling() throws Exception {
         RealmRepresentation realm = getAdminClient().realm(REALM_NAME).toRepresentation();
         realm.setOAuth2DeviceCodeLifespan(600);
         getAdminClient().realm(REALM_NAME).update(realm);

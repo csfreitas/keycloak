@@ -28,6 +28,7 @@ import org.keycloak.common.util.Time;
  */
 public class OAuth2DeviceCodeModel {
 
+    private static final String REALM_ID = "rid";
     private static final String CLIENT_ID = "cid";
     private static final String EXPIRATION_NOTE = "exp";
     private static final String POLLING_INTERVAL_NOTE = "int";
@@ -79,7 +80,13 @@ public class OAuth2DeviceCodeModel {
     }
 
     public static OAuth2DeviceCodeModel fromCache(RealmModel realm, String deviceCode, Map<String, String> data) {
-        return new OAuth2DeviceCodeModel(realm, deviceCode, data);
+        OAuth2DeviceCodeModel model = new OAuth2DeviceCodeModel(realm, deviceCode, data);
+
+        if (!realm.getId().equals(data.get(REALM_ID))) {
+            return null;
+        }
+
+        return model;
     }
 
     private OAuth2DeviceCodeModel(RealmModel realm, String deviceCode, Map<String, String> data) {
@@ -134,20 +141,22 @@ public class OAuth2DeviceCodeModel {
         return userSessionId;
     }
 
-    public static String createKey(RealmModel realm, String deviceCode) {
-        return String.format("%s.dc.%s", realm.getId(), deviceCode);
+    public static String createKey(String deviceCode) {
+        return String.format("dc.%s", deviceCode);
     }
 
     public String serializeKey() {
-        return createKey(realm, deviceCode);
+        return createKey(deviceCode);
     }
 
     public String serializePollingKey() {
-        return createKey(realm, deviceCode) + ".polling";
+        return createKey(deviceCode) + ".polling";
     }
 
     public Map<String, String> toMap() {
         Map<String, String> result = new HashMap<>();
+
+        result.put(REALM_ID, realm.getId());
 
         if (denied == null) {
             result.put(CLIENT_ID, clientId);

@@ -49,7 +49,7 @@ public class InfinispanOAuth2DeviceTokenStoreProvider implements OAuth2DeviceTok
     public OAuth2DeviceCodeModel getByDeviceCode(RealmModel realm, String deviceCode) {
         try {
             BasicCache<String, ActionTokenValueEntity> cache = codeCache.get();
-            ActionTokenValueEntity existing = cache.get(OAuth2DeviceCodeModel.createKey(realm, deviceCode));
+            ActionTokenValueEntity existing = cache.get(OAuth2DeviceCodeModel.createKey(deviceCode));
 
             if (existing == null) {
                 return null;
@@ -142,7 +142,7 @@ public class InfinispanOAuth2DeviceTokenStoreProvider implements OAuth2DeviceTok
         OAuth2DeviceUserCodeModel data = OAuth2DeviceUserCodeModel.fromCache(realm, userCode, existing.getNotes());
         String deviceCode = data.getDeviceCode();
 
-        String deviceCodeKey = OAuth2DeviceCodeModel.createKey(realm, deviceCode);
+        String deviceCodeKey = OAuth2DeviceCodeModel.createKey(deviceCode);
         ActionTokenValueEntity existingDeviceCode = cache.get(deviceCodeKey);
 
         if (existingDeviceCode == null) {
@@ -207,7 +207,7 @@ public class InfinispanOAuth2DeviceTokenStoreProvider implements OAuth2DeviceTok
     public boolean removeDeviceCode(RealmModel realm, String deviceCode) {
         try {
             BasicCache<String, ActionTokenValueEntity> cache = codeCache.get();
-            String key = OAuth2DeviceCodeModel.createKey(realm, deviceCode);
+            String key = OAuth2DeviceCodeModel.createKey(deviceCode);
             ActionTokenValueEntity existing = cache.remove(key);
             return existing == null ? false : true;
         } catch (HotRodClientException re) {
