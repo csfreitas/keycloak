@@ -253,15 +253,13 @@ public class LegacyUserProfile implements UserProfile {
 
     private void addReadOnlyAttributeValidators(Pattern configuredReadOnlyAttrs, Map<String, List<String>> attributes) {
         addValidatorsForReadOnlyAttributes(configuredReadOnlyAttrs, attributes);
-        addValidatorsForReadOnlyAttributes(configuredReadOnlyAttrs, attributes);
+        if (user != null) {
+            addValidatorsForReadOnlyAttributes(configuredReadOnlyAttrs, user.getAttributes());
+        }
     }
 
 
     private void addValidatorsForReadOnlyAttributes(Pattern configuredReadOnlyAttrsPattern, Map<String, List<String>> attributes) {
-        if (user == null) {
-            return;
-        }
-
         attributes.keySet().stream()
                 .filter(currentAttrName -> configuredReadOnlyAttrsPattern.matcher(currentAttrName).find())
                 .forEach((currentAttrName) ->

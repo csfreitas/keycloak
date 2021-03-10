@@ -154,10 +154,10 @@ public class AccountRestService {
 
         event.event(EventType.UPDATE_PROFILE).client(auth.getClient()).user(auth.getUser());
 
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.ACCOUNT, auth.getUser());
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.ACCOUNT.name(), auth.getUser());
 
         try {
-            profile.validate(user.getAttributes());
+            profile.validate(rep.toAttributes());
         } catch (UserProfile.ProfileValidationException pve) {
             if (pve.hasError(Messages.READ_ONLY_USERNAME))
                 return ErrorResponse.error(Messages.READ_ONLY_USERNAME, Response.Status.BAD_REQUEST);
@@ -173,7 +173,7 @@ public class AccountRestService {
         }
 
         try {
-            profile.update(rep.getAttributes());
+            profile.update(rep.toAttributes());
             event.success();
 
             return Response.noContent().build();

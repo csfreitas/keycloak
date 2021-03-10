@@ -81,8 +81,13 @@ public interface UserProfile {
                     }, (errors, errors2) -> errors);
         }
 
-        public boolean hasError(String... type) {
-            return errors.containsKey(type);
+        public boolean hasError(String... types) {
+            for (String type : types) {
+                if (errors.containsKey(type)) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public void addError(Error error) {

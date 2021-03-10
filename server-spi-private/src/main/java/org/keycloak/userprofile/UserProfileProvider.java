@@ -25,6 +25,6 @@ import org.keycloak.provider.Provider;
  */
 public interface UserProfileProvider extends Provider {
 
-    UserProfile create(UserProfile.ContextKey contextKey);
-    UserProfile create(UserProfile.ContextKey contextKey, UserModel user);
+    UserProfile create(String contextKey);
+    UserProfile create(String contextKey, UserModel user);
 }

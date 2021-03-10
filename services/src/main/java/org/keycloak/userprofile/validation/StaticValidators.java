@@ -114,7 +114,19 @@ public class StaticValidators {
                 return true;
             }
             List<String> existingAttrValues = context.getUser() == null ? null : context.getUser().getAttribute(attributeName);
-            boolean result = ObjectUtil.isEqualOrBothNull(newAttrValues, existingAttrValues);
+            String existingValue = null;
+
+            if (existingAttrValues != null && !existingAttrValues.isEmpty()) {
+                existingValue = existingAttrValues.get(0);
+            }
+
+            String value = null;
+
+            if (!newAttrValues.isEmpty()) {
+                value = newAttrValues.get(0);
+            }
+
+            boolean result = ObjectUtil.isEqualOrBothNull(value, existingValue);
 
             if (!result) {
                 logger.warnf("Attempt to edit denied attribute '%s' of user '%s'", attributeName, context.getUser() == null ? "new user" : context.getUser().getFirstAttribute(UserModel.USERNAME));
