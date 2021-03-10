@@ -365,11 +365,11 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
         event.event(EventType.UPDATE_PROFILE).client(auth.getClient()).user(auth.getUser());
 
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.ACCOUNT.name(), user);
         Map<String, List<String>> attributes = AttributeFormDataProcessor.toUserProfile(formData);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.ACCOUNT.name(), attributes, user);
 
         try {
-            profile.validate(attributes);
+            profile.validate();
         } catch (UserProfile.ProfileValidationException pve) {
             List<FormMessage> errors = Validation.getFormErrorsFromValidation(pve.getErrors());
 
@@ -389,7 +389,7 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
         try {
             // backward compatibility with old account console where attributes are not removed if missing
-            profile.update(attributes, false, (attributeName, userModel) -> {
+            profile.update(false, (attributeName, userModel) -> {
                 if (attributeName.equals(UserModel.EMAIL)) {
                     user.setEmailVerified(false);
                     event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, user.getEmail()).success();

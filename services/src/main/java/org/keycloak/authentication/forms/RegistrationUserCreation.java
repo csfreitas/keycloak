@@ -66,10 +66,10 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
         context.getEvent().detail(Details.REGISTER_METHOD, "form");
 
         KeycloakSession session = context.getSession();
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.REGISTRATION_USER_CREATION.name());
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.REGISTRATION_USER_CREATION.name(), formData);
 
         try {
-            profile.validate(formData);
+            profile.validate();
         } catch (UserProfile.ProfileValidationException pve) {
             List<FormMessage> errors = Validation.getFormErrorsFromValidation(pve.getErrors());
 
@@ -130,7 +130,7 @@ public class RegistrationUserCreation implements FormAction, FormActionFactory {
 
         user.setEnabled(true);
 
-        session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.REGISTRATION_USER_CREATION.name(), user).update(formData);
+        session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.REGISTRATION_USER_CREATION.name(), formData, user).update();
 
         context.getAuthenticationSession().setClientNote(OIDCLoginProtocol.LOGIN_HINT_PARAM, username);
 

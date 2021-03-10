@@ -36,8 +36,6 @@ public class LegacyUserProfileProviderFactory implements UserProfileProviderFact
 
     private static final Logger logger = Logger.getLogger(LegacyUserProfileProviderFactory.class);
 
-    UserProfileProvider provider;
-
     // Attributes, which can't be updated by user himself
     private Pattern readOnlyAttributesPattern;
 
@@ -49,9 +47,7 @@ public class LegacyUserProfileProviderFactory implements UserProfileProviderFact
 
     @Override
     public UserProfileProvider create(KeycloakSession session) {
-        provider = new LegacyUserProfileProvider(session, readOnlyAttributesPattern, adminReadOnlyAttributesPattern);
-
-        return provider;
+        return new LegacyUserProfileProvider(session, readOnlyAttributesPattern, adminReadOnlyAttributesPattern);
     }
 
     @Override

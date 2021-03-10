@@ -31,6 +31,7 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
@@ -49,71 +50,71 @@ public class LegacyUserProfile implements UserProfile {
     private final KeycloakSession session;
     private final Pattern adminReadOnlyAttributes;
     private final Pattern readOnlyAttributes;
+    private final Map<String, List<String>> newAttributes;
 
-    public LegacyUserProfile(String context, UserModel user, KeycloakSession session,
+    public LegacyUserProfile(String context, Map<String, ?> attributes, UserModel user,
+            KeycloakSession session,
             Pattern adminReadOnlyAttributes, Pattern readOnlyAttributes) {
         this.context = context;
         this.user = user;
-        this.attributes = new DefaultAttributes(user, this, adminReadOnlyAttributes, readOnlyAttributes);
+        this.attributes = new DefaultAttributes(attributes, user, this, adminReadOnlyAttributes, readOnlyAttributes);
         this.session = session;
         this.adminReadOnlyAttributes = adminReadOnlyAttributes;
         this.readOnlyAttributes = readOnlyAttributes;
+        this.newAttributes = transformAttributes(attributes);
     }
 
     @Override
-    public void validate(Map<String, ?> attributes) throws ProfileValidationException {
+    public void validate() throws ProfileValidationException {
         ProfileValidationException validationException = new ProfileValidationException();
 
-        if (attributes != null) {
-            Map<String, List<String>> newAttributes = (Map<String, List<String>>) attributes;
-            RealmModel realm = session.getContext().getRealm();
+        RealmModel realm = session.getContext().getRealm();
 
-            switch (DefaultContextKey.valueOf(context)) {
-                case USER_RESOURCE:
-                    addReadOnlyAttributeValidators(adminReadOnlyAttributes, newAttributes);
-                    break;
-                case IDP_REVIEW:
-                    addBasicValidators(!realm.isRegistrationEmailAsUsername());
-                    addReadOnlyAttributeValidators(readOnlyAttributes, newAttributes);
-                    break;
-                case ACCOUNT:
-                case REGISTRATION_PROFILE:
-                case UPDATE_PROFILE:
-                    addBasicValidators(!realm.isRegistrationEmailAsUsername() && realm.isEditUsernameAllowed());
-                    addReadOnlyAttributeValidators(readOnlyAttributes, newAttributes);
-                    addSessionValidators();
-                    break;
-                case REGISTRATION_USER_CREATION:
-                    addUserCreationValidators();
-                    addReadOnlyAttributeValidators(readOnlyAttributes, newAttributes);
-                    break;
+        switch (DefaultContextKey.valueOf(context)) {
+            case USER_RESOURCE:
+                addReadOnlyAttributeValidators(adminReadOnlyAttributes, newAttributes);
+                break;
+            case IDP_REVIEW:
+                addBasicValidators(!realm.isRegistrationEmailAsUsername());
+                addReadOnlyAttributeValidators(readOnlyAttributes, newAttributes);
+                break;
+            case ACCOUNT:
+            case REGISTRATION_PROFILE:
+            case UPDATE_PROFILE:
+                addBasicValidators(!realm.isRegistrationEmailAsUsername() && realm.isEditUsernameAllowed());
+                addReadOnlyAttributeValidators(readOnlyAttributes, newAttributes);
+                addSessionValidators();
+                break;
+            case REGISTRATION_USER_CREATION:
+                addUserCreationValidators();
+                addReadOnlyAttributeValidators(readOnlyAttributes, newAttributes);
+                break;
+        }
+
+        for (Map.Entry<String, ?> attribute : newAttributes.entrySet()) {
+            String key = attribute.getKey();
+            Object value = attribute.getValue();
+
+            if (value instanceof String) {
+                value = Collections.singleton((String) value);
             }
 
-            for (Map.Entry<String, ?> attribute : attributes.entrySet()) {
-                String key = attribute.getKey();
-                Object value = attribute.getValue();
+            this.attributes.validate(key, (List<String>) value, new Consumer<String>() {
+                @Override
+                public void accept(String error) {
+                    validationException.addError(new Error() {
+                        @Override
+                        public String getAttribute() {
+                            return key;
+                        }
 
-                if (value instanceof String) {
-                    value = Collections.singleton((String) value);
+                        @Override
+                        public String getMessage() {
+                            return error;
+                        }
+                    });
                 }
-
-                this.attributes.validate(key, (List<String>) value, new Consumer<String>() {
-                    @Override
-                    public void accept(String error) {
-                        validationException.addError(new Error() {
-                            @Override
-                            public String getAttribute() {
-                                return key;
-                            }
-
-                            @Override
-                            public String getMessage() {
-                                return error;
-                            }
-                        });
-                    }
-                });
-            }
+            });
         }
 
         if (!validationException.getErrors().isEmpty()) {
@@ -122,25 +123,11 @@ public class LegacyUserProfile implements UserProfile {
     }
 
     @Override
-    public void update(Map<String, ?> attributes, boolean removeAttributes, BiConsumer<String, UserModel>... attributeChangeListener)
+    public void update(boolean removeAttributes, BiConsumer<String, UserModel>... attributeChangeListener)
             throws ProfileValidationException, ProfileUpdateException {
         DefaultContextKey context = DefaultContextKey.valueOf(this.context);
-        Map<String, List<String>> newAttributes = Collections.emptyMap();
 
-        if (attributes != null && !attributes.isEmpty()) {
-            newAttributes = new HashMap<>();
-            for (Map.Entry<String, ?> entry : attributes.entrySet()) {
-                Object value = entry.getValue();
-
-                if (value instanceof String) {
-                    newAttributes.put(entry.getKey(), Collections.singletonList((String) value));
-                } else {
-                    newAttributes.put(entry.getKey(), (List<String>) value);
-                }
-            }
-        }
-
-        if (user == null || attributes == null || attributes.size() == 0) {
+        if (user == null || newAttributes == null || newAttributes.size() == 0) {
             return;
         }
 
@@ -265,5 +252,78 @@ public class LegacyUserProfile implements UserProfile {
                 .forEach((currentAttrName) ->
                         addAttributeValidator(currentAttrName, Messages.UPDATE_READ_ONLY_ATTRIBUTES_REJECTED, StaticValidators.isReadOnlyAttributeUnchanged(currentAttrName))
                 );
+    }
+
+    private void filterAttributes(RealmModel realm, Map<String, List<String>> attributes) {
+        DefaultContextKey contextKey = DefaultContextKey.valueOf(context);
+
+        //The Idp review does not respect "isEditUserNameAllowed" therefore we have to miss the check here
+        if (!contextKey.equals(DefaultContextKey.IDP_REVIEW)) {
+            //This step has to be done before email is assigned to the username if isRegistrationEmailAsUsername is set
+            //Otherwise email change will not reflect in username changes.
+            if (attributes.get(UserModel.USERNAME) != null && !realm.isEditUsernameAllowed()) {
+            }
+        }
+
+        if (attributes.get(UserModel.EMAIL) != null && attributes.get(UserModel.EMAIL).isEmpty()) {
+            attributes.remove(UserModel.EMAIL);
+            attributes.put(UserModel.EMAIL, Collections.singletonList(null));
+        }
+
+        if (attributes.get(UserModel.EMAIL) != null && realm.isRegistrationEmailAsUsername()) {
+            attributes.remove(UserModel.USERNAME);
+            attributes.put(UserModel.USERNAME, attributes.get(UserModel.EMAIL));
+        }
+    }
+
+    private Map<String, List<String>> transformAttributes(Map<String, ?> attributes) {
+        Map<String, List<String>> newAttributes = Collections.emptyMap();
+
+        if (attributes != null && !attributes.isEmpty()) {
+            newAttributes = new HashMap<>();
+            for (Map.Entry<String, ?> entry : attributes.entrySet()) {
+                Object value = entry.getValue();
+                String key = entry.getKey();
+
+                if (!isSupportedAttribute(key)) {
+                    continue;
+                }
+
+                if (key.startsWith(Constants.USER_ATTRIBUTES_PREFIX)) {
+                    key = key.substring(Constants.USER_ATTRIBUTES_PREFIX.length());
+                }
+
+                if (value instanceof String) {
+                    newAttributes.put(key, Collections.singletonList((String) value));
+                } else {
+                    newAttributes.put(key, (List<String>) value);
+                }
+            }
+        }
+
+        filterAttributes(session.getContext().getRealm(), newAttributes);
+
+        return newAttributes;
+    }
+
+    private boolean isSupportedAttribute(String name) {
+        // expect any attribute if managing the user profile using REST
+        DefaultContextKey contextKey = DefaultContextKey.valueOf(context);
+
+        if (DefaultContextKey.USER_RESOURCE.equals(contextKey) || DefaultContextKey.ACCOUNT.equals(contextKey)) {
+            return true;
+        }
+
+        // attributes managed using forms with a pre-defined prefix are supported
+        if (name.startsWith(Constants.USER_ATTRIBUTES_PREFIX)) {
+            return true;
+        }
+
+        if (adminReadOnlyAttributes.matcher(name).find() || readOnlyAttributes.matcher(name).find()) {
+            return true;
+        }
+
+        // checks whether the attribute is expected when managing the user profile using forms
+        return UserModel.USERNAME.equals(name) || UserModel.EMAIL.equals(name) || UserModel.LAST_NAME.equals(name) || UserModel.FIRST_NAME.equals(name);
     }
 }

@@ -17,6 +17,8 @@
 
 package org.keycloak.userprofile;
 
+import java.util.Map;
+
 import org.keycloak.models.UserModel;
 import org.keycloak.provider.Provider;
 
@@ -25,6 +27,6 @@ import org.keycloak.provider.Provider;
  */
 public interface UserProfileProvider extends Provider {
 
-    UserProfile create(String contextKey);
-    UserProfile create(String contextKey, UserModel user);
+    UserProfile create(String contextKey, Map<String, ?> attributes);
+    UserProfile create(String contextKey, Map<String, ?> attributes, UserModel user);
 }

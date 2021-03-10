@@ -193,10 +193,10 @@ public class UserResource {
     }
 
     public static Response validateUserProfile(UserModel user, UserRepresentation rep, KeycloakSession session) {
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE.name(), user);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE.name(), toAttributes(rep), user);
 
         try {
-            profile.validate(toAttributes(rep));
+            profile.validate();
         } catch (UserProfile.ProfileValidationException pve) {
             for (UserProfile.Error error : pve.getErrors()) {
                 StringBuilder s = new StringBuilder("Failed to update attribute " + error.getAttribute() + ": ");
@@ -213,8 +213,8 @@ public class UserResource {
 
     public static void updateUserFromRep(UserModel user, UserRepresentation rep, KeycloakSession session, boolean isUpdateExistingUser) {
         boolean removeMissingRequiredActions = isUpdateExistingUser;
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE.name(), user);
-        profile.update(toAttributes(rep), rep.getAttributes() != null);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE.name(), toAttributes(rep), user);
+        profile.update(rep.getAttributes() != null);
 
         if (rep.isEnabled() != null) user.setEnabled(rep.isEnabled());
         if (rep.isEmailVerified() != null) user.setEmailVerified(rep.isEmailVerified());

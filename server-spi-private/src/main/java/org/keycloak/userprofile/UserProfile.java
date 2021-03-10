@@ -34,20 +34,14 @@ import org.keycloak.models.UserModel;
  */
 public interface UserProfile {
 
-    /**
-     *
-     *
-     * @param attributes
-     * @throws UserProfile.ProfileValidationException
-     */
-    void validate(Map<String, ? extends Object> attributes) throws UserProfile.ProfileValidationException;
+    void validate() throws UserProfile.ProfileValidationException;
 
-    void update(Map<String, ? extends Object> attributes, boolean removeAttributes, BiConsumer<String, UserModel>... attributeChangeListener) throws
+    void update(boolean removeAttributes, BiConsumer<String, UserModel>... attributeChangeListener) throws
             UserProfile.ProfileValidationException, UserProfile.ProfileUpdateException;
 
-    default void update(Map<String, ? extends Object> attributes, BiConsumer<String, UserModel>... attributeChangeListener) throws
+    default void update(BiConsumer<String, UserModel>... attributeChangeListener) throws
             UserProfile.ProfileValidationException, UserProfile.ProfileUpdateException {
-        update(attributes, true, attributeChangeListener);
+        update(true, attributeChangeListener);
     }
 
     UserProfile.Attributes getAttributes();

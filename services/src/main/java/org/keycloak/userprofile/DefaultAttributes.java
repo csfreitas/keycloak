@@ -42,7 +42,8 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
     private final Pattern readOnlyAttributes;
     private Map<String, List<AttributeValidator>> validators = new HashMap<>();
 
-    public DefaultAttributes(UserModel user, UserProfile profile, Pattern adminReadOnlyAttributes,
+    public DefaultAttributes(Map<String, ?> attributes, UserModel user, UserProfile profile,
+            Pattern adminReadOnlyAttributes,
             Pattern readOnlyAttributes) {
         super(user == null ? Collections.emptyMap() : user.getAttributes());
         this.user = user;

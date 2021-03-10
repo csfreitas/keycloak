@@ -19,6 +19,7 @@
 
 package org.keycloak.userprofile;
 
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.keycloak.models.KeycloakSession;
@@ -46,15 +47,12 @@ public class LegacyUserProfileProvider implements UserProfileProvider {
     }
 
     @Override
-    public UserProfile create(String name, UserModel user) {
-        RealmModel realm = this.session.getContext().getRealm();
-        LegacyUserProfile profile = new LegacyUserProfile(name, user, session, adminReadOnlyAttributes, readOnlyAttributes);
-
-        return profile;
+    public UserProfile create(String name, Map<String, ?> attributes, UserModel user) {
+        return new LegacyUserProfile(name, attributes, user, session, adminReadOnlyAttributes, readOnlyAttributes);
     }
 
     @Override
-    public UserProfile create(String contextKey) {
-        return create(contextKey, null);
+    public UserProfile create(String contextKey, Map<String, ?> attributes) {
+        return create(contextKey, attributes, null);
     }
 }

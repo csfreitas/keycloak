@@ -68,10 +68,10 @@ public class UpdateProfile implements RequiredActionProvider, RequiredActionFact
         UserModel user = context.getUser();
         String oldEmail = user.getEmail();
         UserProfileProvider provider = context.getSession().getProvider(UserProfileProvider.class);
-        UserProfile profile = provider.create(UserProfile.DefaultContextKey.UPDATE_PROFILE.name(), user);
+        UserProfile profile = provider.create(UserProfile.DefaultContextKey.UPDATE_PROFILE.name(), formData, user);
 
         try {
-            profile.validate(formData);
+            profile.validate();
         } catch (UserProfile.ProfileValidationException pve) {
             List<FormMessage> errors = Validation.getFormErrorsFromValidation(pve.getErrors());
 
@@ -87,7 +87,7 @@ public class UpdateProfile implements RequiredActionProvider, RequiredActionFact
         String newEmail = formData.getFirst(UserModel.EMAIL);
 
         // backward compatibility with old account console where attributes are not removed if missing
-        profile.update(formData, (attributeName, userModel) -> {
+        profile.update((attributeName, userModel) -> {
             if (attributeName.equals(UserModel.EMAIL)) {
                 user.setEmailVerified(false);
                 event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, newEmail).success();
