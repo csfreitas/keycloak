@@ -48,7 +48,9 @@ public class LegacyUserProfileProvider implements UserProfileProvider {
 
     @Override
     public UserProfile create(String name, Map<String, ?> attributes, UserModel user) {
-        return new LegacyUserProfile(name, attributes, user, session, adminReadOnlyAttributes, readOnlyAttributes);
+        UserProfile.DefaultContextKey context = UserProfile.DefaultContextKey.valueOf(name);
+        DefaultAttributes profileAttributes = new DefaultAttributes(context, attributes, user, adminReadOnlyAttributes, readOnlyAttributes, session);
+        return new LegacyUserProfile(context, profileAttributes, user, session, adminReadOnlyAttributes, readOnlyAttributes);
     }
 
     @Override

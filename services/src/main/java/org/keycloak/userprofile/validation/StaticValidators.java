@@ -25,10 +25,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.services.validation.Validation;
-import org.keycloak.userprofile.UserProfile;
 
 import java.util.List;
-import java.util.function.BiFunction;
 
 /**
  * Functions are supposed to return:
@@ -41,96 +39,168 @@ public class StaticValidators {
 
     private static final Logger logger = Logger.getLogger(StaticValidators.class);
 
-    public static BiFunction<List<String>, UserProfile, Boolean> isBlank() {
-        return (value, context) ->
-                value==null || !Validation.isBlank(value.get(0));
-    }
+    public static Validator isBlank() {
+        return (attribute, context) -> {
+            List<String> values = attribute.getValue();
 
-    public static BiFunction<List<String>, UserProfile, Boolean> isEmailValid() {
-        return (value, context) ->
-                Validation.isBlank(value.get(0)) || Validation.isEmailValid(value.get(0));
-    }
+            if (values.isEmpty()) {
+                return true;
+            }
 
-    public static BiFunction<List<String>, UserProfile, Boolean> userNameExists(KeycloakSession session) {
-        return (value, context) -> {
-            if (Validation.isBlank(value.get(0))) return true;
-            return !(context.getUser() != null
-                    && !value.get(0).equals(context.getUser().getFirstAttribute(UserModel.USERNAME))
-                    && session.users().getUserByUsername(session.getContext().getRealm(), value.get(0)) != null);
+            String value = values.get(0);
+
+            return value == null || !Validation.isBlank(value);
         };
     }
 
-    public static BiFunction<List<String>, UserProfile, Boolean> isUserMutable(RealmModel realm) {
-        return (value, context) -> {
-            if (Validation.isBlank(value.get(0))) return true;
+    public static Validator isEmailValid() {
+        return (attribute, user) -> {
+            List<String> values = attribute.getValue();
+
+            if (values.isEmpty()) {
+                return true;
+            }
+
+            String value = values.get(0);
+
+            return Validation.isBlank(value) || Validation.isEmailValid(value);
+        };
+    }
+
+    public static Validator userNameExists(KeycloakSession session) {
+        return (attribute, user) -> {
+            List<String> values = attribute.getValue();
+
+            if (values.isEmpty()) {
+                return true;
+            }
+
+            String value = values.get(0);
+
+            if (Validation.isBlank(value)) return true;
+
+            return !(user != null
+                    && !value.equals(user.getFirstAttribute(UserModel.USERNAME))
+                    && session.users().getUserByUsername(session.getContext().getRealm(), value) != null);
+        };
+    }
+
+    public static Validator isUserMutable(RealmModel realm) {
+        return (attribute, user) -> {
+            List<String> values = attribute.getValue();
+
+            if (values.isEmpty()) {
+                return true;
+            }
+
+            String value = values.get(0);
+
+            if (Validation.isBlank(value)) return true;
+
             return !(!realm.isEditUsernameAllowed()
-                        && context.getUser() != null
-                        && !value.get(0).equals(context.getUser().getFirstAttribute(UserModel.USERNAME))
+                        && user != null
+                        && !value.equals(user.getFirstAttribute(UserModel.USERNAME))
                 );
         };
     }
 
-    public static BiFunction<List<String>, UserProfile, Boolean> checkUsernameExists(boolean externalCondition) {
-        return (value, context) ->
-                !(externalCondition && Validation.isBlank(value.get(0)));
-    }
+    public static Validator checkUsernameExists(boolean externalCondition) {
+        return (attribute, user) -> {
+            List<String> values = attribute.getValue();
+            String value = values.get(0);
 
-
-    public static BiFunction<List<String>, UserProfile, Boolean> doesEmailExistAsUsername(KeycloakSession session) {
-        return (value, context) -> {
-            if (Validation.isBlank(value.get(0))) return true;
-            RealmModel realm = session.getContext().getRealm();
-            if (!realm.isDuplicateEmailsAllowed()) {
-                UserModel userByEmail = session.users().getUserByEmail(realm, value.get(0));
-                return !(realm.isRegistrationEmailAsUsername() && userByEmail != null && context.getUser() != null && !userByEmail.getId().equals(context.getUser().getId()));
-            }
-            return true;
+            return !(externalCondition && Validation.isBlank(value));
         };
     }
 
-    public static BiFunction<List<String>, UserProfile, Boolean> isEmailDuplicated(KeycloakSession session) {
-        return (value, context) -> {
-            if (Validation.isBlank(value.get(0))) return true;
-            RealmModel realm = session.getContext().getRealm();
-            if (!realm.isDuplicateEmailsAllowed()) {
-                UserModel userByEmail = session.users().getUserByEmail(realm, value.get(0));
-                // check for duplicated email
-                return !(userByEmail != null && (context.getUser() == null || !userByEmail.getId().equals(context.getUser().getId())));
-            }
-            return true;
-        };
-    }
 
-    public static BiFunction<List<String>, UserProfile, Boolean> doesEmailExist(KeycloakSession session) {
-        return (value, context) ->
-                !(value != null
-                        && !session.getContext().getRealm().isDuplicateEmailsAllowed()
-                        && session.users().getUserByEmail(session.getContext().getRealm(), value.get(0)) != null);
-    }
+    public static Validator doesEmailExistAsUsername(KeycloakSession session) {
+        return (attribute, user) -> {
+            List<String> values = attribute.getValue();
 
-    public static BiFunction<List<String>, UserProfile, Boolean> isReadOnlyAttributeUnchanged(String attributeName) {
-        return (newAttrValues, context) -> {
-            if (newAttrValues == null) {
+            if (values.isEmpty()) {
                 return true;
             }
-            List<String> existingAttrValues = context.getUser() == null ? null : context.getUser().getAttribute(attributeName);
+
+            String value = values.get(0);
+
+            if (Validation.isBlank(value)) return true;
+
+            RealmModel realm = session.getContext().getRealm();
+
+            if (!realm.isDuplicateEmailsAllowed()) {
+                UserModel userByEmail = session.users().getUserByEmail(realm, value);
+                return !(realm.isRegistrationEmailAsUsername() && userByEmail != null && user != null && !userByEmail.getId().equals(user.getId()));
+            }
+            return true;
+        };
+    }
+
+    public static Validator isEmailDuplicated(KeycloakSession session) {
+        return (attribute, user) -> {
+            List<String> values = attribute.getValue();
+
+            if (values.isEmpty()) {
+                return true;
+            }
+
+            String value = values.get(0);
+
+            if (Validation.isBlank(value)) return true;
+
+            RealmModel realm = session.getContext().getRealm();
+
+            if (!realm.isDuplicateEmailsAllowed()) {
+                UserModel userByEmail = session.users().getUserByEmail(realm, value);
+                // check for duplicated email
+                return !(userByEmail != null && (user == null || !userByEmail.getId().equals(user.getId())));
+            }
+            return true;
+        };
+    }
+
+    public static Validator doesEmailExist(KeycloakSession session) {
+        return (attribute, user) -> {
+            List<String> values = attribute.getValue();
+            String value = values.get(0);
+
+            return !(value != null
+                    && !session.getContext().getRealm().isDuplicateEmailsAllowed()
+                    && session.users().getUserByEmail(session.getContext().getRealm(), value) != null);
+        };
+    }
+
+    public static Validator isReadOnlyAttributeUnchanged(String attributeName) {
+        return (attribute, user) -> {
+            List<String> values = attribute.getValue();
+
+            if (values == null) {
+                return true;
+            }
+
+            List<String> existingAttrValues = user == null ? null : user.getAttribute(attributeName);
             String existingValue = null;
 
             if (existingAttrValues != null && !existingAttrValues.isEmpty()) {
                 existingValue = existingAttrValues.get(0);
             }
 
+            if (values.isEmpty() && existingValue != null) {
+                return false;
+            }
+
             String value = null;
 
-            if (!newAttrValues.isEmpty()) {
-                value = newAttrValues.get(0);
+            if (!values.isEmpty()) {
+                value = values.get(0);
             }
 
             boolean result = ObjectUtil.isEqualOrBothNull(value, existingValue);
 
             if (!result) {
-                logger.warnf("Attempt to edit denied attribute '%s' of user '%s'", attributeName, context.getUser() == null ? "new user" : context.getUser().getFirstAttribute(UserModel.USERNAME));
+                logger.warnf("Attempt to edit denied attribute '%s' of user '%s'", attributeName, user == null ? "new user" : user.getFirstAttribute(UserModel.USERNAME));
             }
+
             return result;
         };
     }

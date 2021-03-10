@@ -20,28 +20,14 @@
 package org.keycloak.userprofile.validation;
 
 import java.util.List;
-import java.util.function.BiFunction;
+import java.util.Map;
 
-import org.keycloak.userprofile.UserProfile;
+import org.keycloak.models.UserModel;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class AttributeValidator {
+public interface Validator {
 
-    final String message;
-    final Validator validator;
-
-    public AttributeValidator(String message, Validator validator) {
-        this.message = message;
-        this.validator = validator;
-    }
-
-    public Validator getValidator() {
-        return validator;
-    }
-
-    public String getMessage() {
-        return message;
-    }
+    Boolean validate(Map.Entry<String, List<String>> newAttribute, UserModel user);
 }

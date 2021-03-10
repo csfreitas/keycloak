@@ -46,8 +46,6 @@ public interface UserProfile {
 
     UserProfile.Attributes getAttributes();
 
-    UserModel getUser();
-
     interface Attributes extends Map<String, List<String>> {
 
         String getFirstValue(String name);
@@ -60,7 +58,7 @@ public interface UserProfile {
          */
         boolean isReadOnlyAttribute(String key);
 
-        boolean validate(String key, List<String> value, Consumer<String> error);
+        boolean validate(Map.Entry<String, List<String>> attribute, Consumer<String> error);
     }
 
     class ProfileValidationException extends RuntimeException {
