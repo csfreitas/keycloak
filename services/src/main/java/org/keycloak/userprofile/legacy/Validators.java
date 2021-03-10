@@ -17,16 +17,21 @@
  *
  */
 
-package org.keycloak.userprofile.validation;
+package org.keycloak.userprofile.legacy;
 
 import org.jboss.logging.Logger;
 import org.keycloak.common.util.ObjectUtil;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.services.messages.Messages;
 import org.keycloak.services.validation.Validation;
+import org.keycloak.userprofile.validation.AttributeValidator;
+import org.keycloak.userprofile.validation.Validator;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 /**
@@ -36,9 +41,57 @@ import java.util.regex.Pattern;
  *
  * @author <a href="mailto:markus.till@bosch.io">Markus Till</a>
  */
-public class StaticValidators {
+public class Validators {
 
-    private static final Logger logger = Logger.getLogger(StaticValidators.class);
+    private static final Logger logger = Logger.getLogger(Validators.class);
+
+    private static AttributeValidator addAttributeValidator(String name, String message, Validator validator) {
+        return new AttributeValidator(name, message, validator);
+    }
+
+    public static List<AttributeValidator> addUserCreationValidators(KeycloakSession session) {
+        RealmModel realm = session.getContext().getRealm();
+
+        if (realm.isRegistrationEmailAsUsername()) {
+            return Arrays.asList(addAttributeValidator(UserModel.EMAIL, Messages.INVALID_EMAIL, Validators.isEmailValid()),
+                    addAttributeValidator(UserModel.EMAIL, Messages.MISSING_EMAIL, Validators.isBlank()),
+                    addAttributeValidator(UserModel.EMAIL, Messages.EMAIL_EXISTS, Validators.doesEmailExist(session)));
+        }
+
+        return Arrays.asList(addAttributeValidator(UserModel.USERNAME, Messages.MISSING_USERNAME, Validators.isBlank()),
+                addAttributeValidator(UserModel.USERNAME, Messages.USERNAME_EXISTS,
+                        new Validator() {
+                            @Override
+                            public Boolean validate(Map.Entry<String, List<String>> attribute, UserModel user) {
+                                List<String> values = attribute.getValue();
+
+                                if (values.isEmpty()) {
+                                    return true;
+                                }
+
+                                String value = values.get(0);
+
+                                UserModel existing = session.users().getUserByUsername(realm, value);
+                                return existing == null || existing.getId().equals(user.getId());
+                            }
+                        }));
+    }
+
+    public static List<AttributeValidator> addBasicValidators(boolean userNameExistsCondition) {
+        return Arrays.asList(addAttributeValidator(UserModel.USERNAME, Messages.MISSING_USERNAME, Validators.checkUsernameExists(userNameExistsCondition)),
+                addAttributeValidator(UserModel.FIRST_NAME, Messages.MISSING_FIRST_NAME, Validators.isBlank()),
+                addAttributeValidator(UserModel.LAST_NAME, Messages.MISSING_LAST_NAME, Validators.isBlank()),
+                addAttributeValidator(UserModel.EMAIL, Messages.MISSING_EMAIL, Validators.isBlank()),
+                addAttributeValidator(UserModel.EMAIL, Messages.INVALID_EMAIL, Validators.isEmailValid()));
+    }
+
+    public static List<AttributeValidator> addSessionValidators(KeycloakSession session) {
+        RealmModel realm = session.getContext().getRealm();
+        return Arrays.asList(addAttributeValidator(UserModel.USERNAME, Messages.USERNAME_EXISTS, Validators.userNameExists(session)),
+                addAttributeValidator(UserModel.USERNAME, Messages.READ_ONLY_USERNAME, Validators.isUserMutable(realm)),
+                addAttributeValidator(UserModel.EMAIL, Messages.EMAIL_EXISTS, Validators.isEmailDuplicated(session)),
+                addAttributeValidator(UserModel.EMAIL, Messages.USERNAME_EXISTS, Validators.doesEmailExistAsUsername(session)));
+    }
 
     public static Validator isBlank() {
         return (attribute, context) -> {
@@ -170,46 +223,4 @@ public class StaticValidators {
                     && session.users().getUserByEmail(session.getContext().getRealm(), value) != null);
         };
     }
-
-    public static Validator isReadOnlyAttributeUnchanged(Pattern pattern) {
-        return (attribute, user) -> {
-            String key = attribute.getKey();
-
-            if (!pattern.matcher(key).find()) {
-                return true;
-            }
-
-            List<String> values = attribute.getValue();
-
-            if (values == null) {
-                return true;
-            }
-
-            List<String> existingAttrValues = user == null ? null : user.getAttribute(key);
-            String existingValue = null;
-
-            if (existingAttrValues != null && !existingAttrValues.isEmpty()) {
-                existingValue = existingAttrValues.get(0);
-            }
-
-            if (values.isEmpty() && existingValue != null) {
-                return false;
-            }
-
-            String value = null;
-
-            if (!values.isEmpty()) {
-                value = values.get(0);
-            }
-
-            boolean result = ObjectUtil.isEqualOrBothNull(value, existingValue);
-
-            if (!result) {
-                logger.warnf("Attempt to edit denied attribute '%s' of user '%s'", pattern, user == null ? "new user" : user.getFirstAttribute(UserModel.USERNAME));
-            }
-
-            return result;
-        };
-    }
-
 }

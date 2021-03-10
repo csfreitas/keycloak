@@ -62,7 +62,7 @@ public class RegistrationProfile implements FormAction, FormActionFactory {
 
         context.getEvent().detail(Details.REGISTER_METHOD, "form");
 
-        UserProfile profile = context.getSession().getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.REGISTRATION_PROFILE.name(), formData);
+        UserProfile profile = context.getSession().getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.REGISTRATION_PROFILE, formData);
 
         try {
             profile.validate();
@@ -91,7 +91,7 @@ public class RegistrationProfile implements FormAction, FormActionFactory {
     public void success(FormContext context) {
         UserModel user = context.getUser();
         UserProfileProvider provider = context.getSession().getProvider(UserProfileProvider.class);
-        provider.create(UserProfile.DefaultContextKey.REGISTRATION_PROFILE.name(), context.getHttpRequest().getDecodedFormParameters(), user).update();
+        provider.create(UserProfile.DefaultContextKey.REGISTRATION_PROFILE, context.getHttpRequest().getDecodedFormParameters(), user).update();
     }
 
     @Override

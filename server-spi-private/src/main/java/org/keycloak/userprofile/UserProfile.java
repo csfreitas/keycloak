@@ -110,16 +110,7 @@ public interface UserProfile {
         REGISTRATION_USER_CREATION
     }
 
-    interface ContextKey {
-        String name();
-    }
-
     default ContextKey key(String name) {
-        return new ContextKey() {
-            @Override
-            public String name() {
-                return name;
-            }
-        };
+        return () -> name;
     }
 }

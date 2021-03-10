@@ -193,7 +193,7 @@ public class UserResource {
     }
 
     public static Response validateUserProfile(UserModel user, UserRepresentation rep, KeycloakSession session) {
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE.name(), rep.toAttributes(), user);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE, rep.toAttributes(), user);
 
         try {
             profile.validate();
@@ -213,7 +213,7 @@ public class UserResource {
 
     public static void updateUserFromRep(UserModel user, UserRepresentation rep, KeycloakSession session, boolean isUpdateExistingUser) {
         boolean removeMissingRequiredActions = isUpdateExistingUser;
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE.name(), rep.toAttributes(), user);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE, rep.toAttributes(), user);
         profile.update(rep.getAttributes() != null);
 
         if (rep.isEnabled() != null) user.setEnabled(rep.isEnabled());

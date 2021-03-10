@@ -122,7 +122,7 @@ public class IdpReviewProfileAuthenticator extends AbstractIdpAuthenticator {
         };
 
         UserProfileProvider provider = context.getSession().getProvider(UserProfileProvider.class);
-        UserProfile profile = provider.create(UserProfile.DefaultContextKey.IDP_REVIEW.name(), formData, updatedProfile);
+        UserProfile profile = provider.create(UserProfile.DefaultContextKey.IDP_REVIEW, formData, updatedProfile);
 
         try {
             String oldEmail = userCtx.getEmail();

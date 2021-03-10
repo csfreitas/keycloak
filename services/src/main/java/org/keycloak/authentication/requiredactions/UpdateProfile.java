@@ -68,7 +68,7 @@ public class UpdateProfile implements RequiredActionProvider, RequiredActionFact
         UserModel user = context.getUser();
         String oldEmail = user.getEmail();
         UserProfileProvider provider = context.getSession().getProvider(UserProfileProvider.class);
-        UserProfile profile = provider.create(UserProfile.DefaultContextKey.UPDATE_PROFILE.name(), formData, user);
+        UserProfile profile = provider.create(UserProfile.DefaultContextKey.UPDATE_PROFILE, formData, user);
 
         try {
             String newEmail = formData.getFirst(UserModel.EMAIL);

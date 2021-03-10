@@ -27,6 +27,6 @@ import org.keycloak.provider.Provider;
  */
 public interface UserProfileProvider extends Provider {
 
-    UserProfile create(String contextKey, Map<String, ?> attributes);
-    UserProfile create(String contextKey, Map<String, ?> attributes, UserModel user);
+    UserProfile create(ContextKey contextKey, Map<String, ?> attributes);
+    UserProfile create(ContextKey contextKey, Map<String, ?> attributes, UserModel user);
 }
