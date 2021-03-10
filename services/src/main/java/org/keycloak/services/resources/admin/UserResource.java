@@ -193,7 +193,7 @@ public class UserResource {
     }
 
     public static Response validateUserProfile(UserModel user, UserRepresentation rep, KeycloakSession session) {
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE.name(), toAttributes(rep), user);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE.name(), rep.toAttributes(), user);
 
         try {
             profile.validate();
@@ -213,7 +213,7 @@ public class UserResource {
 
     public static void updateUserFromRep(UserModel user, UserRepresentation rep, KeycloakSession session, boolean isUpdateExistingUser) {
         boolean removeMissingRequiredActions = isUpdateExistingUser;
-        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE.name(), toAttributes(rep), user);
+        UserProfile profile = session.getProvider(UserProfileProvider.class).create(USER_RESOURCE.name(), rep.toAttributes(), user);
         profile.update(rep.getAttributes() != null);
 
         if (rep.isEnabled() != null) user.setEnabled(rep.isEnabled());
@@ -913,35 +913,5 @@ public class UserResource {
         }
         rep.setLastAccess(clientSession.getTimestamp());
         return rep;
-    }
-
-    private static Map<String, List<String>> toAttributes(UserRepresentation user) {
-        Map<String, List<String>> attrs = new HashMap<>();
-
-        if (user.getAttributes() != null) attrs.putAll(user.getAttributes());
-
-        if (user.getUsername() != null)
-            attrs.put(UserModel.USERNAME, Collections.singletonList(user.getUsername()));
-        else
-            attrs.remove(UserModel.USERNAME);
-
-        if (user.getEmail() != null)
-            attrs.put(UserModel.EMAIL, Collections.singletonList(user.getEmail()));
-        else
-            attrs.remove(UserModel.EMAIL);
-
-        if (user.getUsername() != null)
-            attrs.put(UserModel.USERNAME, Collections.singletonList(user.getUsername()));
-
-        if (user.getLastName() != null)
-            attrs.put(UserModel.LAST_NAME, Collections.singletonList(user.getLastName()));
-
-        if (user.getFirstName() != null)
-            attrs.put(UserModel.FIRST_NAME, Collections.singletonList(user.getFirstName()));
-
-        if (user.getEmail() != null)
-            attrs.put(UserModel.EMAIL, Collections.singletonList(user.getEmail()));
-
-        return attrs;
     }
 }

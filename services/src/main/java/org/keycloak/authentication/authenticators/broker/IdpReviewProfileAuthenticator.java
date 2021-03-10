@@ -151,7 +151,7 @@ public class IdpReviewProfileAuthenticator extends AbstractIdpAuthenticator {
 
         logger.debugf("Profile updated successfully after first authentication with identity provider '%s' for broker user '%s'.", brokerContext.getIdpConfig().getAlias(), userCtx.getUsername());
 
-        String newEmail = updatedProfile.getFirstAttribute(UserModel.EMAIL);
+        String newEmail = profile.getAttributes().getFirstValue(UserModel.EMAIL);
 
         event.detail(Details.UPDATED_EMAIL, newEmail);
 
