@@ -19,24 +19,24 @@
 
 package org.keycloak.userprofile;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.keycloak.models.Constants;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.models.utils.KeycloakModelUtils;
 import org.keycloak.services.messages.Messages;
+import org.keycloak.userprofile.validation.AttributeValidator;
 import org.keycloak.userprofile.validation.StaticValidators;
 import org.keycloak.userprofile.validation.Validator;
 
@@ -67,28 +67,32 @@ public class LegacyUserProfile implements UserProfile {
     @Override
     public void validate() throws ProfileValidationException {
         ProfileValidationException validationException = new ProfileValidationException();
-
+        List<AttributeValidator> validators = new ArrayList<>();
         RealmModel realm = session.getContext().getRealm();
 
         switch (context) {
             case USER_RESOURCE:
-                addReadOnlyAttributeValidators(adminReadOnlyAttributes);
+                validators.addAll(addReadOnlyAttributeValidators(adminReadOnlyAttributes));
                 break;
             case IDP_REVIEW:
-                addBasicValidators(!realm.isRegistrationEmailAsUsername());
-                addReadOnlyAttributeValidators(readOnlyAttributes);
+                validators.addAll(addBasicValidators(!realm.isRegistrationEmailAsUsername()));
+                validators.addAll(addReadOnlyAttributeValidators(readOnlyAttributes));
                 break;
             case ACCOUNT:
             case REGISTRATION_PROFILE:
             case UPDATE_PROFILE:
-                addBasicValidators(!realm.isRegistrationEmailAsUsername() && realm.isEditUsernameAllowed());
-                addReadOnlyAttributeValidators(readOnlyAttributes);
-                addSessionValidators();
+                validators.addAll(addBasicValidators(!realm.isRegistrationEmailAsUsername() && realm.isEditUsernameAllowed()));
+                validators.addAll(addReadOnlyAttributeValidators(readOnlyAttributes));
+                validators.addAll(addSessionValidators());
                 break;
             case REGISTRATION_USER_CREATION:
                 addUserCreationValidators();
-                addReadOnlyAttributeValidators(readOnlyAttributes);
+                validators.addAll(addReadOnlyAttributeValidators(readOnlyAttributes));
                 break;
+        }
+
+        for (AttributeValidator validator : validators) {
+            attributes.addValidator(validator);
         }
 
         for (Map.Entry<String, List<String>> attribute : attributes.entrySet()) {
@@ -166,9 +170,8 @@ public class LegacyUserProfile implements UserProfile {
         return attributes;
     }
 
-    private LegacyUserProfile addAttributeValidator(String name, String message, Validator validator) {
-        attributes.addValidator(name, message, validator);
-        return this;
+    private AttributeValidator addAttributeValidator(String name, String message, Validator validator) {
+        return new AttributeValidator(name, message, validator);
     }
 
     private static List<String> AttributeToLower(List<String> attr) {
@@ -177,66 +180,56 @@ public class LegacyUserProfile implements UserProfile {
         return attr;
     }
 
-    private void addUserCreationValidators() {
+    private List<AttributeValidator> addUserCreationValidators() {
         RealmModel realm = this.session.getContext().getRealm();
 
         if (realm.isRegistrationEmailAsUsername()) {
-            addAttributeValidator(UserModel.EMAIL, Messages.INVALID_EMAIL, StaticValidators.isEmailValid())
-                    .addAttributeValidator(UserModel.EMAIL, Messages.MISSING_EMAIL, StaticValidators.isBlank())
-                    .addAttributeValidator(UserModel.EMAIL, Messages.EMAIL_EXISTS, StaticValidators.doesEmailExist(session));
+            return Arrays.asList(addAttributeValidator(UserModel.EMAIL, Messages.INVALID_EMAIL, StaticValidators.isEmailValid()),
+                    addAttributeValidator(UserModel.EMAIL, Messages.MISSING_EMAIL, StaticValidators.isBlank()),
+                    addAttributeValidator(UserModel.EMAIL, Messages.EMAIL_EXISTS, StaticValidators.doesEmailExist(session)));
+        }
 
+        return Arrays.asList(addAttributeValidator(UserModel.USERNAME, Messages.MISSING_USERNAME, StaticValidators.isBlank()),
+                addAttributeValidator(UserModel.USERNAME, Messages.USERNAME_EXISTS,
+                        new Validator() {
+                            @Override
+                            public Boolean validate(Map.Entry<String, List<String>> attribute, UserModel user) {
+                                List<String> values = attribute.getValue();
 
-        } else {
-            addAttributeValidator(UserModel.USERNAME, Messages.MISSING_USERNAME, StaticValidators.isBlank())
-                    .addAttributeValidator(UserModel.USERNAME, Messages.USERNAME_EXISTS,
-                            new Validator() {
-                                @Override
-                                public Boolean validate(Map.Entry<String, List<String>> attribute, UserModel user) {
-                                    List<String> values = attribute.getValue();
-
-                                    if (values.isEmpty()) {
-                                        return true;
-                                    }
-
-                                    String value = values.get(0);
-
-                                    UserModel existing = session.users().getUserByUsername(realm, value);
-                                    return existing == null || existing.getId().equals(user.getId());
+                                if (values.isEmpty()) {
+                                    return true;
                                 }
-                            });
-        }
+
+                                String value = values.get(0);
+
+                                UserModel existing = session.users().getUserByUsername(realm, value);
+                                return existing == null || existing.getId().equals(user.getId());
+                            }
+                        }));
     }
 
-    private void addBasicValidators(boolean userNameExistsCondition) {
-
-        addAttributeValidator(UserModel.USERNAME, Messages.MISSING_USERNAME, StaticValidators.checkUsernameExists(userNameExistsCondition))
-                .addAttributeValidator(UserModel.FIRST_NAME, Messages.MISSING_FIRST_NAME, StaticValidators.isBlank())
-                .addAttributeValidator(UserModel.LAST_NAME, Messages.MISSING_LAST_NAME, StaticValidators.isBlank())
-                .addAttributeValidator(UserModel.EMAIL, Messages.MISSING_EMAIL, StaticValidators.isBlank())
-                .addAttributeValidator(UserModel.EMAIL, Messages.INVALID_EMAIL, StaticValidators.isEmailValid());
+    private List<AttributeValidator> addBasicValidators(boolean userNameExistsCondition) {
+        return Arrays.asList(addAttributeValidator(UserModel.USERNAME, Messages.MISSING_USERNAME, StaticValidators.checkUsernameExists(userNameExistsCondition)),
+                addAttributeValidator(UserModel.FIRST_NAME, Messages.MISSING_FIRST_NAME, StaticValidators.isBlank()),
+                addAttributeValidator(UserModel.LAST_NAME, Messages.MISSING_LAST_NAME, StaticValidators.isBlank()),
+                addAttributeValidator(UserModel.EMAIL, Messages.MISSING_EMAIL, StaticValidators.isBlank()),
+                addAttributeValidator(UserModel.EMAIL, Messages.INVALID_EMAIL, StaticValidators.isEmailValid()));
     }
 
-    private void addSessionValidators() {
+    private List<AttributeValidator> addSessionValidators() {
         RealmModel realm = this.session.getContext().getRealm();
-        addAttributeValidator(UserModel.USERNAME, Messages.USERNAME_EXISTS, StaticValidators.userNameExists(session))
-                .addAttributeValidator(UserModel.USERNAME, Messages.READ_ONLY_USERNAME, StaticValidators.isUserMutable(realm))
-                .addAttributeValidator(UserModel.EMAIL, Messages.EMAIL_EXISTS, StaticValidators.isEmailDuplicated(session))
-                .addAttributeValidator(UserModel.EMAIL, Messages.USERNAME_EXISTS, StaticValidators.doesEmailExistAsUsername(session));
+        return Arrays.asList(addAttributeValidator(UserModel.USERNAME, Messages.USERNAME_EXISTS, StaticValidators.userNameExists(session)),
+                addAttributeValidator(UserModel.USERNAME, Messages.READ_ONLY_USERNAME, StaticValidators.isUserMutable(realm)),
+                addAttributeValidator(UserModel.EMAIL, Messages.EMAIL_EXISTS, StaticValidators.isEmailDuplicated(session)),
+                addAttributeValidator(UserModel.EMAIL, Messages.USERNAME_EXISTS, StaticValidators.doesEmailExistAsUsername(session)));
     }
 
-    private void addReadOnlyAttributeValidators(Pattern configuredReadOnlyAttrs) {
-        addValidatorsForReadOnlyAttributes(configuredReadOnlyAttrs, attributes);
-        if (user != null) {
-            addValidatorsForReadOnlyAttributes(configuredReadOnlyAttrs, user.getAttributes());
-        }
+    private List<AttributeValidator> addReadOnlyAttributeValidators(Pattern configuredReadOnlyAttrs) {
+        return Arrays.asList(addValidatorsForReadOnlyAttributes(configuredReadOnlyAttrs));
     }
 
 
-    private void addValidatorsForReadOnlyAttributes(Pattern configuredReadOnlyAttrsPattern, Map<String, List<String>> attributes) {
-        attributes.keySet().stream()
-                .filter(currentAttrName -> configuredReadOnlyAttrsPattern.matcher(currentAttrName).find())
-                .forEach((currentAttrName) ->
-                        addAttributeValidator(currentAttrName, Messages.UPDATE_READ_ONLY_ATTRIBUTES_REJECTED, StaticValidators.isReadOnlyAttributeUnchanged(currentAttrName))
-                );
+    private AttributeValidator addValidatorsForReadOnlyAttributes(Pattern configuredReadOnlyAttrsPattern) {
+        return addAttributeValidator("*", Messages.UPDATE_READ_ONLY_ATTRIBUTES_REJECTED, StaticValidators.isReadOnlyAttributeUnchanged(configuredReadOnlyAttrsPattern));
     }
 }

@@ -130,7 +130,7 @@ public class IdpReviewProfileAuthenticator extends AbstractIdpAuthenticator {
             profile.update((attributeName, userModel) -> {
                 if (attributeName.equals(UserModel.EMAIL)) {
                     context.getAuthenticationSession().setAuthNote(UPDATE_PROFILE_EMAIL_CHANGED, "true");
-                    event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, userModel.getEmail()).success();
+                    event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, profile.getAttributes().getFirstValue(UserModel.EMAIL)).success();
                 }
             });
         } catch (UserProfile.ProfileValidationException pve) {

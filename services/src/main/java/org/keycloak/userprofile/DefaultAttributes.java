@@ -77,7 +77,9 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
     @Override
     public boolean validate(Map.Entry<String, List<String>> attribute, Consumer<String> error) {
         boolean status = true;
-        List<AttributeValidator> validators = this.validators.getOrDefault(attribute.getKey(), Collections.emptyList());
+        List<AttributeValidator> validators = this.validators.getOrDefault(attribute.getKey(), new ArrayList<>());
+
+        validators.addAll(this.validators.getOrDefault("*", Collections.emptyList()));
 
         for (AttributeValidator validator : validators) {
             if (!validator.getValidator().validate(attribute, user)) {
@@ -89,8 +91,8 @@ public class DefaultAttributes extends HashMap<String, List<String>> implements 
         return status;
     }
 
-    void addValidator(String name, String message, Validator validator) {
-        validators.computeIfAbsent(name, s -> new ArrayList<>()).add(new AttributeValidator(message, validator));
+    void addValidator(AttributeValidator validator) {
+        validators.computeIfAbsent(validator.getAttributeName(), s -> new ArrayList<>()).add(validator);
     }
 
     private void filterAttributes(RealmModel realm, Map<String, List<String>> attributes) {

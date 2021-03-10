@@ -27,6 +27,7 @@ import org.keycloak.models.UserModel;
 import org.keycloak.services.validation.Validation;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Functions are supposed to return:
@@ -170,15 +171,21 @@ public class StaticValidators {
         };
     }
 
-    public static Validator isReadOnlyAttributeUnchanged(String attributeName) {
+    public static Validator isReadOnlyAttributeUnchanged(Pattern pattern) {
         return (attribute, user) -> {
+            String key = attribute.getKey();
+
+            if (!pattern.matcher(key).find()) {
+                return true;
+            }
+
             List<String> values = attribute.getValue();
 
             if (values == null) {
                 return true;
             }
 
-            List<String> existingAttrValues = user == null ? null : user.getAttribute(attributeName);
+            List<String> existingAttrValues = user == null ? null : user.getAttribute(key);
             String existingValue = null;
 
             if (existingAttrValues != null && !existingAttrValues.isEmpty()) {
@@ -198,7 +205,7 @@ public class StaticValidators {
             boolean result = ObjectUtil.isEqualOrBothNull(value, existingValue);
 
             if (!result) {
-                logger.warnf("Attempt to edit denied attribute '%s' of user '%s'", attributeName, user == null ? "new user" : user.getFirstAttribute(UserModel.USERNAME));
+                logger.warnf("Attempt to edit denied attribute '%s' of user '%s'", pattern, user == null ? "new user" : user.getFirstAttribute(UserModel.USERNAME));
             }
 
             return result;

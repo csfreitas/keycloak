@@ -29,12 +29,18 @@ import org.keycloak.userprofile.UserProfile;
  */
 public class AttributeValidator {
 
+    private final String attributeName;
     final String message;
     final Validator validator;
 
-    public AttributeValidator(String message, Validator validator) {
+    public AttributeValidator(String attributeName, String message, Validator validator) {
+        this.attributeName = attributeName;
         this.message = message;
         this.validator = validator;
+    }
+
+    public String getAttributeName() {
+        return attributeName;
     }
 
     public Validator getValidator() {
