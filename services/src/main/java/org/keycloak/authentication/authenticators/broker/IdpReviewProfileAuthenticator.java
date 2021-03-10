@@ -125,7 +125,14 @@ public class IdpReviewProfileAuthenticator extends AbstractIdpAuthenticator {
         UserProfile profile = provider.create(UserProfile.DefaultContextKey.IDP_REVIEW.name(), formData, updatedProfile);
 
         try {
-            profile.validate();
+            String oldEmail = userCtx.getEmail();
+
+            profile.update((attributeName, userModel) -> {
+                if (attributeName.equals(UserModel.EMAIL)) {
+                    context.getAuthenticationSession().setAuthNote(UPDATE_PROFILE_EMAIL_CHANGED, "true");
+                    event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, userModel.getEmail()).success();
+                }
+            });
         } catch (UserProfile.ProfileValidationException pve) {
             List<FormMessage> errors = Validation.getFormErrorsFromValidation(pve.getErrors());
 
@@ -139,15 +146,6 @@ public class IdpReviewProfileAuthenticator extends AbstractIdpAuthenticator {
 
             return;
         }
-
-        String oldEmail = userCtx.getEmail();
-
-        profile.update((attributeName, userModel) -> {
-            if (attributeName.equals(UserModel.EMAIL)) {
-                context.getAuthenticationSession().setAuthNote(UPDATE_PROFILE_EMAIL_CHANGED, "true");
-                event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, userModel.getEmail()).success();
-            }
-        });
 
         userCtx.saveToAuthenticationSession(context.getAuthenticationSession(), BROKERED_CONTEXT_NOTE);
 

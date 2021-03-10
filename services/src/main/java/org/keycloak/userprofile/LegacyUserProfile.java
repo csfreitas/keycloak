@@ -51,6 +51,7 @@ public class LegacyUserProfile implements UserProfile {
     private final Pattern adminReadOnlyAttributes;
     private final Pattern readOnlyAttributes;
     private final Map<String, List<String>> newAttributes;
+    private boolean validated;
 
     public LegacyUserProfile(String context, Map<String, ?> attributes, UserModel user,
             KeycloakSession session,
@@ -120,11 +121,17 @@ public class LegacyUserProfile implements UserProfile {
         if (!validationException.getErrors().isEmpty()) {
             throw validationException;
         }
+
+        validated = true;
     }
 
     @Override
     public void update(boolean removeAttributes, BiConsumer<String, UserModel>... attributeChangeListener)
             throws ProfileValidationException, ProfileUpdateException {
+        if (!validated) {
+            validate();
+        }
+
         DefaultContextKey context = DefaultContextKey.valueOf(this.context);
 
         if (user == null || newAttributes == null || newAttributes.size() == 0) {
@@ -217,7 +224,10 @@ public class LegacyUserProfile implements UserProfile {
         } else {
             addAttributeValidator(UserModel.USERNAME, Messages.MISSING_USERNAME, StaticValidators.isBlank())
                     .addAttributeValidator(UserModel.USERNAME, Messages.USERNAME_EXISTS,
-                            (value, o) -> session.users().getUserByUsername(realm, value.get(0)) == null);
+                            (value, o) -> {
+                                UserModel existing = session.users().getUserByUsername(realm, value.get(0));
+                                return existing == null || existing.getId().equals(o.getUser().getId());
+                            });
         }
     }
 

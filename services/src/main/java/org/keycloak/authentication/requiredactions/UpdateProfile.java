@@ -71,7 +71,17 @@ public class UpdateProfile implements RequiredActionProvider, RequiredActionFact
         UserProfile profile = provider.create(UserProfile.DefaultContextKey.UPDATE_PROFILE.name(), formData, user);
 
         try {
-            profile.validate();
+            String newEmail = formData.getFirst(UserModel.EMAIL);
+
+            // backward compatibility with old account console where attributes are not removed if missing
+            profile.update((attributeName, userModel) -> {
+                if (attributeName.equals(UserModel.EMAIL)) {
+                    user.setEmailVerified(false);
+                    event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, newEmail).success();
+                }
+            });
+
+            context.success();
         } catch (UserProfile.ProfileValidationException pve) {
             List<FormMessage> errors = Validation.getFormErrorsFromValidation(pve.getErrors());
 
@@ -80,21 +90,7 @@ public class UpdateProfile implements RequiredActionProvider, RequiredActionFact
                     .setFormData(formData)
                     .createResponse(UserModel.RequiredAction.UPDATE_PROFILE);
             context.challenge(challenge);
-
-            return;
         }
-
-        String newEmail = formData.getFirst(UserModel.EMAIL);
-
-        // backward compatibility with old account console where attributes are not removed if missing
-        profile.update((attributeName, userModel) -> {
-            if (attributeName.equals(UserModel.EMAIL)) {
-                user.setEmailVerified(false);
-                event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, newEmail).success();
-            }
-        });
-
-        context.success();
     }
 
 

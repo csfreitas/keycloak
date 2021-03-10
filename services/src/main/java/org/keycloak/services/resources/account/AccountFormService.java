@@ -369,7 +369,13 @@ public class AccountFormService extends AbstractSecuredLocalService {
         UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.ACCOUNT.name(), attributes, user);
 
         try {
-            profile.validate();
+            // backward compatibility with old account console where attributes are not removed if missing
+            profile.update(false, (attributeName, userModel) -> {
+                if (attributeName.equals(UserModel.EMAIL)) {
+                    user.setEmailVerified(false);
+                    event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, user.getEmail()).success();
+                }
+            });
         } catch (UserProfile.ProfileValidationException pve) {
             List<FormMessage> errors = Validation.getFormErrorsFromValidation(pve.getErrors());
 
@@ -385,16 +391,6 @@ public class AccountFormService extends AbstractSecuredLocalService {
 
                 return account.setErrors(status, errors).setProfileFormData(formData).createResponse(AccountPages.ACCOUNT);
             }
-        }
-
-        try {
-            // backward compatibility with old account console where attributes are not removed if missing
-            profile.update(false, (attributeName, userModel) -> {
-                if (attributeName.equals(UserModel.EMAIL)) {
-                    user.setEmailVerified(false);
-                    event.clone().event(EventType.UPDATE_EMAIL).detail(Details.PREVIOUS_EMAIL, oldEmail).detail(Details.UPDATED_EMAIL, user.getEmail()).success();
-                }
-            });
         } catch (ReadOnlyException e) {
             setReferrerOnPage();
             return account.setError(Response.Status.BAD_REQUEST, Messages.READ_ONLY_USER).setProfileFormData(formData).createResponse(AccountPages.ACCOUNT);

@@ -157,7 +157,11 @@ public class AccountRestService {
         UserProfile profile = session.getProvider(UserProfileProvider.class).create(UserProfile.DefaultContextKey.ACCOUNT.name(), rep.toAttributes(), auth.getUser());
 
         try {
-            profile.validate();
+            profile.update();
+
+            event.success();
+
+            return Response.noContent().build();
         } catch (UserProfile.ProfileValidationException pve) {
             if (pve.hasError(Messages.READ_ONLY_USERNAME))
                 return ErrorResponse.error(Messages.READ_ONLY_USERNAME, Response.Status.BAD_REQUEST);
@@ -165,18 +169,10 @@ public class AccountRestService {
                 return ErrorResponse.exists(Messages.USERNAME_EXISTS);
             if (pve.hasError(Messages.EMAIL_EXISTS))
                 return ErrorResponse.exists(Messages.EMAIL_EXISTS);
-            if (!pve.getErrors().isEmpty()) {
-                // Here should be possibility to somehow return all errors?
-                String firstErrorMessage = pve.getErrors().get(0).getMessage();
-                return ErrorResponse.error(firstErrorMessage, Response.Status.BAD_REQUEST);
-            }
-        }
 
-        try {
-            profile.update();
-            event.success();
-
-            return Response.noContent().build();
+            // Here should be possibility to somehow return all errors?
+            String firstErrorMessage = pve.getErrors().get(0).getMessage();
+            return ErrorResponse.error(firstErrorMessage, Response.Status.BAD_REQUEST);
         } catch (ReadOnlyException e) {
             return ErrorResponse.error(Messages.READ_ONLY_USER, Response.Status.BAD_REQUEST);
         }
