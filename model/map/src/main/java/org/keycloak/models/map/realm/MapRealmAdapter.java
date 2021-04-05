@@ -31,6 +31,7 @@ import org.keycloak.component.ComponentValidationException;
 import org.keycloak.models.AuthenticationExecutionModel;
 import org.keycloak.models.AuthenticationFlowModel;
 import org.keycloak.models.AuthenticatorConfigModel;
+import org.keycloak.models.CibaConfig;
 import org.keycloak.models.ClientInitialAccessModel;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.ClientScopeModel;
@@ -1546,5 +1547,10 @@ public class MapRealmAdapter extends AbstractRealmModel<MapRealmEntity> implemen
     @Override
     public OAuth2DeviceConfig getOAuth2DeviceConfig() {
         return new OAuth2DeviceConfig(this);
+    }
+
+    @Override
+    public CibaConfig getCibaPolicy() {
+        return new CibaConfig(this);
     }
 }
