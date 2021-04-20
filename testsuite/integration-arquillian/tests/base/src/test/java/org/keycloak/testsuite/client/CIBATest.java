@@ -39,7 +39,6 @@ import java.util.Optional;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -68,9 +67,7 @@ import org.keycloak.testsuite.AbstractTestRealmKeycloakTest;
 import org.keycloak.testsuite.AssertEvents;
 import org.keycloak.testsuite.admin.ApiUtil;
 import org.keycloak.testsuite.arquillian.annotation.AuthServerContainerExclude;
-import org.keycloak.testsuite.arquillian.annotation.EnableCiba;
 import org.keycloak.testsuite.arquillian.annotation.EnableFeature;
-import org.keycloak.testsuite.client.resources.TestApplicationResourceUrls;
 import org.keycloak.testsuite.client.resources.TestOIDCEndpointsApplicationResource;
 import org.keycloak.testsuite.rest.representation.TestAuthenticationChannelRequest;
 import org.keycloak.testsuite.util.InfinispanTestTimeServiceRule;
@@ -86,7 +83,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * @author <a href="mailto:takashi.norimatsu.ws@hitachi.com">Takashi Norimatsu</a>
  */
-@EnableCiba
 @EnableFeature(value = Profile.Feature.CIBA, skipRestart = true)
 @AuthServerContainerExclude({REMOTE, QUARKUS})
 public class CIBATest extends AbstractTestRealmKeycloakTest {
@@ -143,12 +139,6 @@ public class CIBATest extends AbstractTestRealmKeycloakTest {
         confApp.setSecret(AUTHENTICATION_CHANNEL_SERVER_PASSWORD);
         confApp.setServiceAccountsEnabled(Boolean.TRUE);
 
-    }
-
-    @BeforeClass
-    public static void setAuthenticationChannelRequestUri() {
-        System.setProperty("keycloak.ciba.auth.channel.provider", HttpAuthenticationChannelProviderFactory.PROVIDER_ID);
-        System.setProperty("keycloak.ciba.http.auth.channel.uri", TestApplicationResourceUrls.clientAuthenticationChannelRequestUri());
     }
 
     private String cibaBackchannelTokenDeliveryMode;
