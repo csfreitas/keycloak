@@ -16,7 +16,9 @@
  */
 package org.keycloak.testsuite.authz;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import java.util.List;
@@ -25,10 +27,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.keycloak.admin.client.resource.AuthorizationResource;
 import org.keycloak.admin.client.resource.ClientResource;
+import org.keycloak.admin.client.resource.ClientScopesResource;
 import org.keycloak.admin.client.resource.ClientsResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.authorization.client.AuthorizationDeniedException;
 import org.keycloak.authorization.client.AuthzClient;
+import org.keycloak.representations.idm.ClientScopeRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.authorization.AuthorizationRequest;
 import org.keycloak.representations.idm.authorization.AuthorizationResponse;
@@ -56,6 +60,8 @@ public class ClientScopePolicyTest extends AbstractAuthzTest {
                 .clientScope(ClientScopeBuilder.create().name("foo").protocol("openid-connect"))
                 .clientScope(ClientScopeBuilder.create().name("bar").protocol("openid-connect"))
                 .clientScope(ClientScopeBuilder.create().name("baz").protocol("openid-connect"))
+                .clientScope(ClientScopeBuilder.create().name("to-remove-a").protocol("openid-connect"))
+                .clientScope(ClientScopeBuilder.create().name("to-remove-b").protocol("openid-connect"))
                 .client(ClientBuilder.create().clientId("resource-server-test").secret("secret")
                     .authorizationServicesEnabled(true).redirectUris("http://localhost/resource-server-test")
                     .addOptionalClientScopes("foo", "bar", "baz").directAccessGrants())
@@ -69,6 +75,7 @@ public class ClientScopePolicyTest extends AbstractAuthzTest {
 
         createClientScopePolicy("Client Scope foo Policy", "foo", "bar");
         createClientScopePolicyAndLastOneRequired("Client Scope bar Policy", "foo", "bar");
+        createClientScopePolicy("Client Scope To Remove Policy", "to-remove-a", "to-remove-b");
 
         createResourcePermission("Resource A Permission", "Resource A", "Client Scope foo Policy");
         createResourcePermission("Resource B Permission", "Resource B", "Client Scope bar Policy");
@@ -181,6 +188,29 @@ public class ClientScopePolicyTest extends AbstractAuthzTest {
         } catch (AuthorizationDeniedException ignore) {
 
         }
+    }
+
+    @Test
+    public void testRemovePolicyWhenRemovingScope() {
+        ClientScopesResource clientScopes = getRealm().clientScopes();
+        ClientScopeRepresentation scopeRep = clientScopes.findAll().stream()
+                .filter(r -> r.getName().equals("to-remove-a")).findAny().get();
+
+        getClient().removeDefaultClientScope(scopeRep.getId());
+        getRealm().clientScopes().get(scopeRep.getId()).remove();
+
+        ClientScopePolicyRepresentation policyRep = getClient().authorization().policies()
+                .clientScope().findByName("Client Scope To Remove Policy");
+        final String id = scopeRep.getId();
+
+        assertFalse(policyRep.getClientScopes().stream().anyMatch(def -> def.getId().equals(id)));
+
+        scopeRep = clientScopes.findAll().stream()
+                .filter(r -> r.getName().equals("to-remove-b")).findAny().get();
+        getClient().removeDefaultClientScope(scopeRep.getId());
+        getRealm().clientScopes().get(scopeRep.getId()).remove();
+
+        assertNull(getClient().authorization().policies().clientScope().findByName("Client Scope To Remove Policy"));
     }
 
     private AuthzClient getAuthzClient() {

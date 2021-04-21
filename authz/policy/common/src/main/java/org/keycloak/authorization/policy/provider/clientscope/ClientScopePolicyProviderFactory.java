@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.keycloak.Config.Scope;
 import org.keycloak.authorization.AuthorizationProvider;
@@ -70,39 +71,37 @@ public class ClientScopePolicyProviderFactory implements PolicyProviderFactory<C
                 StoreFactory storeFactory = provider.getStoreFactory();
                 PolicyStore policyStore = storeFactory.getPolicyStore();
                 ClientScopeModel removedClientScope = ((ClientScopeRemovedEvent) event).getClientScope();
-                ResourceServerStore resourceServerStore = storeFactory.getResourceServerStore();
-                RealmModel realm = removedClientScope.getRealm();
+                Map<Policy.FilterOption, String[]> filters = new HashMap<>();
 
-                realm.getClientsStream().forEach(clientModel -> {
-                    ResourceServer resourceServer = resourceServerStore.findById(clientModel.getId());
+                filters.put(Policy.FilterOption.TYPE, new String[] {getId()});
 
-                    if (resourceServer != null) {
-                        policyStore.findByType(getId(), resourceServer.getId()).forEach(policy -> {
-                            List<Map<String, Object>> clientScopes = new ArrayList<>();
+                policyStore.findByResourceServer(filters, null, -1, -1).forEach(new Consumer<Policy>() {
+                    @Override
+                    public void accept(Policy policy) {
+                        List<Map<String, Object>> clientScopes = new ArrayList<>();
 
-                            for (Map<String, Object> clientScope : getClientScopes(policy)) {
-                                if (!clientScope.get("id").equals(removedClientScope.getId())) {
-                                    Map<String, Object> updated = new HashMap<>();
-                                    updated.put("id", clientScope.get("id"));
-                                    Object required = clientScope.get("required");
-                                    if (required != null) {
-                                        updated.put("required", required);
-                                    }
-                                    clientScopes.add(updated);
+                        for (Map<String, Object> clientScope : getClientScopes(policy)) {
+                            if (!clientScope.get("id").equals(removedClientScope.getId())) {
+                                Map<String, Object> updated = new HashMap<>();
+                                updated.put("id", clientScope.get("id"));
+                                Object required = clientScope.get("required");
+                                if (required != null) {
+                                    updated.put("required", required);
                                 }
+                                clientScopes.add(updated);
                             }
+                        }
 
-                            if (clientScopes.isEmpty()) {
-                                policyStore.delete(policy.getId());
-                            } else {
-                                try {
-                                    policy.putConfig("clientScopes", JsonSerialization.writeValueAsString(clientScopes));
-                                } catch (IOException e) {
-                                    throw new RuntimeException(
+                        if (clientScopes.isEmpty()) {
+                            policyStore.delete(policy.getId());
+                        } else {
+                            try {
+                                policy.putConfig("clientScopes", JsonSerialization.writeValueAsString(clientScopes));
+                            } catch (IOException e) {
+                                throw new RuntimeException(
                                         "Error while synchronizing client scopes with policy [" + policy.getName() + "].", e);
-                                }
                             }
-                        });
+                        }
                     }
                 });
             }
