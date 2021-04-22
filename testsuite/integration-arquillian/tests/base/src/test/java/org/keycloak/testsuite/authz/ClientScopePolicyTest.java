@@ -75,7 +75,6 @@ public class ClientScopePolicyTest extends AbstractAuthzTest {
 
         createClientScopePolicy("Client Scope foo Policy", "foo", "bar");
         createClientScopePolicyAndLastOneRequired("Client Scope bar Policy", "foo", "bar");
-        createClientScopePolicy("Client Scope To Remove Policy", "to-remove-a", "to-remove-b");
 
         createResourcePermission("Resource A Permission", "Resource A", "Client Scope foo Policy");
         createResourcePermission("Resource B Permission", "Resource B", "Client Scope bar Policy");
@@ -192,6 +191,7 @@ public class ClientScopePolicyTest extends AbstractAuthzTest {
 
     @Test
     public void testRemovePolicyWhenRemovingScope() {
+        createClientScopePolicy("Client Scope To Remove Policy", "to-remove-a", "to-remove-b");
         ClientScopesResource clientScopes = getRealm().clientScopes();
         ClientScopeRepresentation scopeRep = clientScopes.findAll().stream()
                 .filter(r -> r.getName().equals("to-remove-a")).findAny().get();
