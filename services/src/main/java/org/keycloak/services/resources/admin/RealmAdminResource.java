@@ -1220,4 +1220,12 @@ public class RealmAdminResource {
         ResteasyProviderFactory.getInstance().injectProperties(resource);
         return resource;
     }
+    
+
+    @Path("user-profile")
+    public UserProfileResource getUserProfileResource() {
+        UserProfileResource resource = new UserProfileResource(realm, auth);
+        ResteasyProviderFactory.getInstance().injectProperties(resource);
+        return resource;
+    }
 }

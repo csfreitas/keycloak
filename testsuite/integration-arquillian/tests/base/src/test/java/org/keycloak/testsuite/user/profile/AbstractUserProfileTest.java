@@ -42,9 +42,13 @@ public abstract class AbstractUserProfileTest extends AbstractTestRealmKeycloakT
 
         scopes.add("customer");
 
+        configureAuthenticationSession(session, "client-a", scopes);
+    }
+
+    protected static void configureAuthenticationSession(KeycloakSession session, String clientId, Set<String> requestedScopes) {
         RealmModel realm = session.getContext().getRealm();
 
-        session.getContext().setAuthenticationSession(createAuthenticationSession(realm.getClientByClientId("client-a"), scopes));
+        session.getContext().setAuthenticationSession(createAuthenticationSession(realm.getClientByClientId(clientId), requestedScopes));
     }
 
     protected static RealmModel configureSessionRealm(KeycloakSession session) {

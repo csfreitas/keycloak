@@ -27,6 +27,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -48,12 +49,16 @@ import org.keycloak.sessions.AuthenticationSessionModel;
 import org.keycloak.sessions.RootAuthenticationSessionModel;
 import org.keycloak.testsuite.AbstractTestRealmKeycloakTest;
 import org.keycloak.testsuite.runonserver.RunOnServer;
+import org.keycloak.testsuite.user.profile.config.UPAttribute;
+import org.keycloak.testsuite.user.profile.config.UPAttributeRequirements;
+import org.keycloak.testsuite.user.profile.config.UPConfig;
 import org.keycloak.testsuite.util.KeycloakModelUtils;
 import org.keycloak.userprofile.Attributes;
 import org.keycloak.userprofile.UserProfile;
 import org.keycloak.userprofile.UserProfileContext;
 import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.userprofile.ValidationException;
+import org.keycloak.util.JsonSerialization;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -269,10 +274,26 @@ public class UserProfileTest extends AbstractUserProfileTest {
         getTestingClient().server().run((RunOnServer) UserProfileTest::testValidateComplianceWithUserProfile);
     }
 
-    private static void testValidateComplianceWithUserProfile(KeycloakSession session) {
+    private static void testValidateComplianceWithUserProfile(KeycloakSession session) throws IOException {
         RealmModel realm = configureSessionRealm(session);
         UserModel user = session.users().addUser(realm, "profiled-user");
         UserProfileProvider provider = getDynamicUserProfileProvider(session);
+
+        UPConfig config = new UPConfig();
+        UPAttribute attribute = new UPAttribute();
+
+        attribute.setName("address");
+
+        UPAttributeRequirements requirements = new UPAttributeRequirements();
+
+        requirements.setAlways(true);
+
+        attribute.setRequirements(requirements);
+
+        config.addAttribute(attribute);
+
+        provider.setConfiguration(JsonSerialization.writeValueAsString(config));
+
         UserProfile profile = provider.create(UserProfileContext.ACCOUNT, user);
 
         try {

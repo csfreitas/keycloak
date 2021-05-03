@@ -1,0 +1,96 @@
+{
+	"attributes": [
+	    {
+		    "name":"username", 
+			"validations": [
+				{
+					"validator": "length",
+					"configuration": {
+						"min": 3,
+						"max": 80
+					}
+				}
+			],
+            "permissions": {
+                "view": ["admin", "user"], 
+                "edit": ["admin", "user"]
+            }
+		},{
+		    "name":"email ",
+			"validations": [
+				{
+					"validator": "length",
+					"configuration": {
+						"max": 255
+					}
+				},
+				{
+					"validator": "emailFormat"
+				},
+				{
+					"validator": "emailDomainDenyList"
+				}
+			],
+            "permissions": {
+                "view": ["admin", "user"], 
+                "edit": ["admin"]
+            },
+	        "requirements": {
+	            "roles" : ["user", "admin"]
+	        },
+			"annotations": {
+			    "formHintKey" : "userEmailFormFieldHint",	
+			    "anotherKey" : 10,
+			    "yetAnotherKey" : "some value"
+			}
+		},{
+		    "name":"firstName",
+			"validations": [
+				{
+					"validator": "length",
+					"configuration": {
+						"max": 255
+					}
+				}
+			],
+            "permissions": {
+                "view": ["admin", "user"], 
+                "edit": ["admin", "user"]
+            },
+	        "requirements": {
+	            "always": true
+	        }
+		}, {
+		    "name":"lastName",
+			"validations": [
+				{
+					"validator": "length",
+					"configuration": {
+						"max": 255
+					}
+				}
+			],
+			"requirements": {
+                "always" : true
+            },
+            "permissions": {
+                "view": ["admin", "user"], 
+                "edit": ["admin", "user"]
+            }
+		},{
+		    "name":"phone",
+			"validations": [
+				{
+					"validator": "phoneNumberFormatInternational"
+				}
+			],
+			"requirements": {
+                "scopes" : ["phone-1", "phone-2"]
+            },
+            "permissions": {
+                "view": ["admin", "user"], 
+                "edit": ["admin"]
+            }
+		}
+	]
+}

@@ -1,0 +1,65 @@
+{
+	"attributes": [
+		{
+			"name": "username",
+            "permissions": {
+                "view": ["admin", "user"], 
+                "edit": []
+            },
+			"validations": [
+				{
+					"validator": "length",
+					"configuration": { "max": 255 }
+				}
+			]
+		},
+		{
+			"name": "email",
+            "permissions": {
+                "view": ["admin", "user"], 
+                "edit": ["admin", "user"]
+            },
+			"validations": [
+				{
+					"validator": "length",
+					"configuration": { "max": 255 }
+				},
+				{
+					"validator": "emailFormat"
+				}
+			]
+		},
+		{
+			"name": "firstName",
+            "permissions": {
+                "view": ["admin", "user"], 
+                "edit": ["admin", "user"]
+            },
+	        "requirements": {
+	            "always": true
+	        },
+			"validations": [
+				{
+					"validator": "length",
+					"configuration": { "max": 255 }
+				}
+			]
+		},
+		{
+			"name": "lastName",
+            "permissions": {
+                "view": ["admin", "user"], 
+                "edit": ["admin", "user"]
+            },
+	        "requirements": {
+	            "always": true
+	        },
+			"validations": [
+				{
+					"validator": "length",
+					"configuration": { "max": 255 }
+				}
+			]
+		}
+	]
+}
