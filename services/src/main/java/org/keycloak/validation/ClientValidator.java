@@ -1,20 +1,13 @@
-/*
- * Copyright 2019 Red Hat, Inc. and/or its affiliates
- * and other contributors as indicated by the @author tags.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package org.keycloak.validation;
+
+import static org.keycloak.models.utils.ModelToRepresentation.toRepresentation;
+
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import org.keycloak.models.ClientModel;
 import org.keycloak.protocol.ProtocolMapperConfigException;
@@ -26,17 +19,16 @@ import org.keycloak.protocol.oidc.utils.SubjectType;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
 import org.keycloak.services.util.ResolveRelative;
+import org.keycloak.validate.CompactValidator;
+import org.keycloak.validate.ValidationContext;
+import org.keycloak.validate.ValidationError;
+import org.keycloak.validate.ValidatorConfig;
 
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+/**
+ * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
+ */
+public class ClientValidator implements CompactValidator {
 
-import static org.keycloak.models.utils.ModelToRepresentation.toRepresentation;
-
-public class DefaultClientValidationProvider implements ClientValidationProvider {
     private enum FieldMessages {
         ROOT_URL("rootUrl",
                 "Root URL is not a valid URL", "clientRootURLInvalid",
@@ -108,26 +100,21 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
-    // TODO Before adding more validation consider using a library for validation
     @Override
-    public ValidationResult validate(ValidationContext<ClientModel> context) {
-        validateUrls(context);
-        validatePairwiseInClientModel(context);
-
-        return context.toResult();
+    public ValidationContext validate(Object input, String inputHint, ValidationContext context,
+            ValidatorConfig config) {
+        validateUrls((ClientValidationContext) context);
+        validatePairwiseInClientModel((ClientValidationContext) context);
+        return context;
     }
 
     @Override
-    public ValidationResult validate(ClientValidationContext.OIDCContext context) {
-        validateUrls(context);
-        validatePairwiseInOIDCClient(context);
-
-        return context.toResult();
+    public String getId() {
+        return "client";
     }
 
-    private void validateUrls(ValidationContext<ClientModel> context) {
-        ClientModel client = context.getObjectToValidate();
-
+    private void validateUrls(ClientValidationContext context) {
+        ClientModel client = context.getClient();
         // Use a fake URL for validating relative URLs as we may not be validating clients in the context of a request (import at startup)
         String authServerUrl = "https://localhost/auth";
 
@@ -148,7 +135,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
                 .forEach(u -> checkUri(FieldMessages.REDIRECT_URIS, u, context, false, true));
     }
 
-    private void checkUri(FieldMessages field, String url, ValidationContext<ClientModel> context, boolean checkValidUrl, boolean checkFragment) {
+    private void checkUri(FieldMessages field, String url, ClientValidationContext context, boolean checkValidUrl, boolean checkFragment) {
         if (url == null || url.isEmpty()) {
             return;
         }
@@ -158,13 +145,13 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
 
             boolean valid = true;
             if (uri.getScheme() != null && (uri.getScheme().equals("data") || uri.getScheme().equals("javascript"))) {
-                context.addError(field.getFieldId(), field.getScheme(), field.getSchemeKey());
+                context.addError(new ValidationError(field.getFieldId(), field.getScheme(), field.getInvalid()));
                 valid = false;
             }
 
             // KEYCLOAK-3421
             if (checkFragment && uri.getFragment() != null) {
-                context.addError(field.getFieldId(), field.getFragment(), field.getFragmentKey());
+                context.addError(new ValidationError(field.getFieldId(), field.getFragment(), field.getInvalid()));
                 valid = false;
             }
 
@@ -176,12 +163,14 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
             }
         }
         catch (MalformedURLException | IllegalArgumentException | URISyntaxException e) {
-            context.addError(field.getFieldId(), field.getInvalid(), field.getInvalidKey());
+            context.addError(new ValidationError(field.getFieldId(), field.getInvalid(), field.getInvalidKey()));
         }
     }
 
-    private void validatePairwiseInClientModel(ValidationContext<ClientModel> context) {
-        List<ProtocolMapperRepresentation> foundPairwiseMappers = PairwiseSubMapperUtils.getPairwiseSubMappers(toRepresentation(context.getObjectToValidate(), context.getSession()));
+    private void validatePairwiseInClientModel(ClientValidationContext context) {
+        ClientModel client = context.getClient();
+        List<ProtocolMapperRepresentation> foundPairwiseMappers = PairwiseSubMapperUtils
+                .getPairwiseSubMappers(toRepresentation(client, context.getSession()));
 
         for (ProtocolMapperRepresentation foundPairwise : foundPairwiseMappers) {
             String sectorIdentifierUri = PairwiseSubMapperHelper.getSectorIdentifierUri(foundPairwise);
@@ -201,8 +190,8 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         }
     }
 
-    private void validatePairwise(ValidationContext<ClientModel> context, String sectorIdentifierUri) {
-        ClientModel client = context.getObjectToValidate();
+    private void validatePairwise(ClientValidationContext context, String sectorIdentifierUri) {
+        ClientModel client = context.getClient();
         String rootUrl = client.getRootUrl();
         Set<String> redirectUris = new HashSet<>();
         if (client.getRedirectUris() != null) redirectUris.addAll(client.getRedirectUris());
@@ -210,8 +199,7 @@ public class DefaultClientValidationProvider implements ClientValidationProvider
         try {
             PairwiseSubMapperValidator.validate(context.getSession(), rootUrl, redirectUris, sectorIdentifierUri);
         } catch (ProtocolMapperConfigException e) {
-            context.addError("pairWise", e.getMessage(), e.getMessageKey());
+            context.addError(new ValidationError("pairWise", e.getMessage(), e.getMessageKey()));
         }
     }
-
 }

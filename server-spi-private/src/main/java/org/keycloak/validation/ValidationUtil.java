@@ -19,6 +19,9 @@ package org.keycloak.validation;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.representations.oidc.OIDCClientRepresentation;
+import org.keycloak.validate.ValidationContext;
+import org.keycloak.validate.ValidationResult;
+import org.keycloak.validate.Validator;
 
 import javax.ws.rs.BadRequestException;
 
@@ -29,27 +32,27 @@ public class ValidationUtil {
     }
 
     public static void validateClient(KeycloakSession session, ClientModel client, OIDCClientRepresentation oidcClient, boolean create, ErrorHandler errorHandler) throws BadRequestException {
-        ClientValidationProvider provider = session.getProvider(ClientValidationProvider.class);
+        Validator provider = session.getProvider(Validator.class, "client");
         if (provider != null) {
-            ValidationContext.Event event = create ? ValidationContext.Event.CREATE : ValidationContext.Event.UPDATE;
-            ValidationResult result;
+            ClientValidationContext.Event event = create ? ClientValidationContext.Event.CREATE : ClientValidationContext.Event.UPDATE;
+            ValidationContext result;
 
             if (oidcClient != null) {
-                result = provider.validate(new ClientValidationContext.OIDCContext(event, session, client, oidcClient));
+                result = provider.validate(client, new ClientValidationContext.OIDCContext(event, session, client, oidcClient));
             }
             else {
-                result = provider.validate(new ClientValidationContext(event, session, client));
+                result = provider.validate(client, new ClientValidationContext(event, session, client));
             }
 
             if (!result.isValid()) {
-                errorHandler.onError(result);
+                errorHandler.onError(new ClientValidationResult(result.toResult()));
             }
         }
     }
 
     public interface ErrorHandler {
 
-        void onError(ValidationResult context);
+        void onError(ClientValidationResult context);
 
     }
 
