@@ -16,22 +16,23 @@
  */
 package org.keycloak.validate;
 
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.KeycloakSessionFactory;
-import org.keycloak.validate.builtin.EmailValidator;
-import org.keycloak.validate.builtin.LengthValidator;
-import org.keycloak.validate.builtin.NotBlankValidator;
-import org.keycloak.validate.builtin.NotEmptyValidator;
-import org.keycloak.validate.builtin.NumberValidator;
-import org.keycloak.validate.builtin.PatternValidator;
-import org.keycloak.validate.builtin.UriValidator;
-import org.keycloak.validate.builtin.ValidatorConfigValidator;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.validate.validators.EmailValidator;
+import org.keycloak.validate.validators.IntegerNumberValidator;
+import org.keycloak.validate.validators.LengthValidator;
+import org.keycloak.validate.validators.NotBlankValidator;
+import org.keycloak.validate.validators.NotEmptyValidator;
+import org.keycloak.validate.validators.NumberValidator;
+import org.keycloak.validate.validators.PatternValidator;
+import org.keycloak.validate.validators.UriValidator;
+import org.keycloak.validate.validators.ValidatorConfigValidator;
 
 /**
  * Facade for Validation functions with support for {@link Validator} implementation lookup by id.
@@ -39,12 +40,12 @@ import java.util.stream.Collectors;
 public class Validators {
 
     /**
-     * Holds a mapping of internal {@link CompactValidator} to allow look-up via provider id.
+     * Holds a mapping of internal {@link SimpleValidator} to allow look-up via provider id.
      */
-    private static final Map<String, CompactValidator> INTERNAL_VALIDATORS;
+    private static final Map<String, SimpleValidator> INTERNAL_VALIDATORS;
 
     static {
-        List<CompactValidator> list = Arrays.asList(
+        List<SimpleValidator> list = Arrays.asList(
                 LengthValidator.INSTANCE,
                 NotEmptyValidator.INSTANCE,
                 UriValidator.INSTANCE,
@@ -52,10 +53,11 @@ public class Validators {
                 NotBlankValidator.INSTANCE,
                 PatternValidator.INSTANCE,
                 NumberValidator.INSTANCE,
+                IntegerNumberValidator.INSTANCE,
                 ValidatorConfigValidator.INSTANCE
         );
 
-        INTERNAL_VALIDATORS = list.stream().collect(Collectors.toMap(CompactValidator::getId, v -> v));
+        INTERNAL_VALIDATORS = list.stream().collect(Collectors.toMap(SimpleValidator::getId, v -> v));
     }
 
     /**
@@ -148,6 +150,10 @@ public class Validators {
         return NumberValidator.INSTANCE;
     }
 
+    public static IntegerNumberValidator integerNumberValidator() {
+        return IntegerNumberValidator.INSTANCE;
+    }
+
     public static ValidatorConfigValidator validatorConfigValidator() {
         return ValidatorConfigValidator.INSTANCE;
     }
@@ -206,8 +212,8 @@ public class Validators {
      * Validates the {@link ValidatorConfig} of {@link Validator} referenced by the given provider {@code id}.
      *
      * @param session
-     * @param id
-     * @param config
+     * @param id of the validator
+     * @param config to be validated
      * @return
      */
     public static ValidationResult validateConfig(KeycloakSession session, String id, ValidatorConfig config) {

@@ -16,6 +16,7 @@
  */
 package org.keycloak.validate;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.BiFunction;
@@ -23,13 +24,15 @@ import java.util.function.BiFunction;
 /**
  * Denotes an error found during validation.
  */
-public class ValidationError {
+public class ValidationError implements Serializable {
 
-    /**
+	private static final long serialVersionUID = 4950708316675951914L;
+
+	/**
      * A generic invalid value message.
      */
     public static final String MESSAGE_INVALID_VALUE = "error-invalid-value";
-
+    
     /**
      * Empty message parameters fly-weight.
      */
