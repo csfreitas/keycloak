@@ -16,9 +16,7 @@
  */
 package org.keycloak.userprofile.validator;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.keycloak.services.validation.Validation;
 import org.keycloak.validate.SimpleValidator;
@@ -68,11 +66,11 @@ public class BlankAttributeValidator implements SimpleValidator {
      * @param errorMessage to be used if validation fails
      * @return config
      */
-    public static Map<String, Object> createConfig(String errorMessage) {
-        Map<String, Object> ret = new HashMap<>();
-        if (errorMessage != null)
-            ret.put(CFG_ERROR_MESSAGE, errorMessage);
-        return ret;
+    public static ValidatorConfig createConfig(String errorMessage) {
+        if (errorMessage != null) {
+            return ValidatorConfig.builder().config(CFG_ERROR_MESSAGE, errorMessage).build();
+        }
+        return ValidatorConfig.EMPTY;
     }
 
 }

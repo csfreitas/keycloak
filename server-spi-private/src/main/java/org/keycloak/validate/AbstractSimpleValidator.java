@@ -18,6 +18,7 @@ package org.keycloak.validate;
 
 import java.util.Collection;
 
+import org.keycloak.utils.StringUtil;
 import org.keycloak.validate.validators.NotBlankValidator;
 import org.keycloak.validate.validators.NotEmptyValidator;
 
@@ -34,25 +35,27 @@ import org.keycloak.validate.validators.NotEmptyValidator;
  */
 public abstract class AbstractSimpleValidator implements SimpleValidator {
 
+    public static final String IGNORE_NOT_SET = "ignore.not.set";
+
     @Override
     public ValidationContext validate(Object input, String inputHint, ValidationContext context, ValidatorConfig config) {
+        if (input instanceof Collection) {
+            @SuppressWarnings("unchecked")
+            Collection<Object> values = (Collection<Object>) input;
 
-        if (input != null) {
-            if (input instanceof Collection) {
-                @SuppressWarnings("unchecked")
-                Collection<Object> values = (Collection<Object>) input;
-
-                if (values.isEmpty()) {
-                    return context;
-                }
-
-                for (Object value : values) {
-                    validate(value, inputHint, context, config);
-                }
-            } else {
-                doValidate(input, inputHint, context, config);
+            for (Object value : values) {
+                validate(value, inputHint, context, config);
             }
+
+            return context;
         }
+
+        if (isIgnoreNotSet(input, config)) {
+            return context;
+        }
+
+        doValidate(input, inputHint, context, config);
+
         return context;
     }
 
@@ -66,4 +69,8 @@ public abstract class AbstractSimpleValidator implements SimpleValidator {
      * @param config of the validation if provided
      */
     protected abstract void doValidate(Object value, String inputHint, ValidationContext context, ValidatorConfig config);
+
+    protected boolean isIgnoreNotSet(Object value, ValidatorConfig config) {
+        return config.getBooleanOrDefault(IGNORE_NOT_SET, false);
+    }
 }

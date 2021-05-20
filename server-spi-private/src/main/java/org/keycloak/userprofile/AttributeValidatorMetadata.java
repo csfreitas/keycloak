@@ -19,9 +19,6 @@
 
 package org.keycloak.userprofile;
 
-import java.util.Collections;
-import java.util.Map;
-
 import org.keycloak.validate.ValidationContext;
 import org.keycloak.validate.Validator;
 import org.keycloak.validate.ValidatorConfig;
@@ -34,19 +31,16 @@ import org.keycloak.validate.Validators;
 public final class AttributeValidatorMetadata {
 
     private final String validatorId;
-    private final Map<String, Object> validatorConfigRaw;
     private final ValidatorConfig validatorConfig;
 
     public AttributeValidatorMetadata(String validatorId) {
         this.validatorId = validatorId;
-        this.validatorConfigRaw = Collections.emptyMap();
         this.validatorConfig = ValidatorConfig.configFromMap(null);
     }
 
-    public AttributeValidatorMetadata(String validatorId, Map<String, Object> validatorConfig) {
+    public AttributeValidatorMetadata(String validatorId, ValidatorConfig validatorConfig) {
         this.validatorId = validatorId;
-        this.validatorConfigRaw = validatorConfig;
-        this.validatorConfig = ValidatorConfig.configFromMap(validatorConfig);
+        this.validatorConfig = validatorConfig;
     }
 
     /**
@@ -56,15 +50,6 @@ public final class AttributeValidatorMetadata {
      */
     public String getValidatorId() {
         return validatorId;
-    }
-
-    /**
-     * Getters so we can collect validation configurations and provide them to GUI for dynamic client side validations.
-     * 
-     * @return the validatorConfig
-     */
-    public Map<String, Object> getValidatorConfig() {
-        return validatorConfigRaw;
     }
 
     /**

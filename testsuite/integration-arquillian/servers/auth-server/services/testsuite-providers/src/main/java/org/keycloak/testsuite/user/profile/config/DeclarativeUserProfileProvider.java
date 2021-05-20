@@ -55,6 +55,7 @@ import org.keycloak.userprofile.UserProfileMetadata;
 import org.keycloak.userprofile.UserProfileProvider;
 import org.keycloak.userprofile.legacy.AbstractUserProfileProvider;
 import org.keycloak.userprofile.validator.AttributeRequiredByMetadataValidator;
+import org.keycloak.validate.ValidatorConfig;
 
 /**
  * {@link UserProfileProvider} loading configuration from the changeable JSON file stored in component config. Parsed
@@ -215,7 +216,7 @@ public class DeclarativeUserProfileProvider extends AbstractUserProfileProvider<
 
             if (validationsConfig != null) {
                 for (Map.Entry<String, Map<String, Object>> vc : validationsConfig.entrySet()) {
-                    validators.add(createConfiguredValidator(attrConfig, vc.getKey(), vc.getValue()));
+                    validators.add(createConfiguredValidator(vc.getKey(), vc.getValue()));
                 }
             }
 
@@ -347,13 +348,12 @@ public class DeclarativeUserProfileProvider extends AbstractUserProfileProvider<
     /**
      * Create validator for validation configured in the user profile config.
      *
-     * @param attrConfig to create validator for
      * @param validator id to create validator for
      * @param validatorConfig of the validator
      * @return validator metadata to run given validation
      */
-    protected AttributeValidatorMetadata createConfiguredValidator(UPAttribute attrConfig, String validator, Map<String, Object> validatorConfig) {
-        return new AttributeValidatorMetadata(validator, validatorConfig);
+    private AttributeValidatorMetadata createConfiguredValidator(String validator, Map<String, Object> validatorConfig) {
+        return new AttributeValidatorMetadata(validator, ValidatorConfig.configFromMap(validatorConfig));
     }
 
     private String getConfigJsonFromComponentModel(ComponentModel model) {

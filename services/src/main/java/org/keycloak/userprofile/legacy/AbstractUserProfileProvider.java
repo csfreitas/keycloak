@@ -62,6 +62,7 @@ import org.keycloak.userprofile.validator.RegistrationEmailAsUsernameUsernameVal
 import org.keycloak.userprofile.validator.RegistrationUsernameExistsValidator;
 import org.keycloak.userprofile.validator.UsernameHasValueValidator;
 import org.keycloak.userprofile.validator.UsernameMutationValidator;
+import org.keycloak.validate.ValidatorConfig;
 import org.keycloak.validate.validators.EmailValidator;
 
 /**
@@ -149,9 +150,9 @@ public abstract class AbstractUserProfileProvider<U extends UserProfileProvider>
     }
     
     private AttributeValidatorMetadata createReadOnlyAttributeUnchangedValidator(Pattern pattern) {
-    	Map<String, Object> validatorConfig = new HashMap<>();
-    	validatorConfig.put(ReadOnlyAttributeUnchangedValidator.CFG_PATTERN, pattern);
-        return new AttributeValidatorMetadata(ReadOnlyAttributeUnchangedValidator.ID, validatorConfig);
+        return new AttributeValidatorMetadata(ReadOnlyAttributeUnchangedValidator.ID,
+                ValidatorConfig.builder().config(ReadOnlyAttributeUnchangedValidator.CFG_PATTERN, pattern)
+                        .build());
     }
 
     @Override
@@ -262,12 +263,13 @@ public abstract class AbstractUserProfileProvider<U extends UserProfileProvider>
         		new AttributeValidatorMetadata(DuplicateUsernameValidator.ID),
         		new AttributeValidatorMetadata(UsernameMutationValidator.ID));
 
-        metadata.addAttribute(UserModel.FIRST_NAME, new AttributeValidatorMetadata(BlankAttributeValidator.ID, BlankAttributeValidator.createConfig(Messages.MISSING_FIRST_NAME)));
+        metadata.addAttribute(UserModel.FIRST_NAME, new AttributeValidatorMetadata(BlankAttributeValidator.ID,
+                BlankAttributeValidator.createConfig(Messages.MISSING_FIRST_NAME)));
 
         metadata.addAttribute(UserModel.LAST_NAME, new AttributeValidatorMetadata(BlankAttributeValidator.ID, BlankAttributeValidator.createConfig(Messages.MISSING_LAST_NAME)));
 
         metadata.addAttribute(UserModel.EMAIL, new AttributeValidatorMetadata(BlankAttributeValidator.ID, BlankAttributeValidator.createConfig(Messages.MISSING_EMAIL)),
-        		new AttributeValidatorMetadata(EmailValidator.ID),
+        		new AttributeValidatorMetadata(EmailValidator.ID, ValidatorConfig.builder().config(EmailValidator.IGNORE_NOT_SET, true).build()),
         		new AttributeValidatorMetadata(DuplicateEmailValidator.ID),
         		new AttributeValidatorMetadata(EmailExistsAsUsernameValidator.ID));
 

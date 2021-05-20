@@ -16,6 +16,7 @@
  */
 package org.keycloak.validate;
 
+import org.keycloak.utils.StringUtil;
 import org.keycloak.validate.validators.NotBlankValidator;
 
 /**
@@ -43,4 +44,12 @@ public abstract class AbstractStringValidator extends AbstractSimpleValidator {
     }
 
     protected abstract void doValidate(String value, String inputHint, ValidationContext context, ValidatorConfig config);
+
+    @Override
+    protected boolean isIgnoreNotSet(Object value, ValidatorConfig config) {
+        if (super.isIgnoreNotSet(value, config)) {
+            return  value == null || StringUtil.isBlank(value.toString());
+        }
+        return false;
+    }
 }
