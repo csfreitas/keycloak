@@ -16,11 +16,16 @@
  */
 package org.keycloak.models;
 
+import java.util.function.BiConsumer;
+
 import org.keycloak.Token;
 import org.keycloak.TokenCategory;
+import org.keycloak.jose.JOSE;
 import org.keycloak.representations.LogoutToken;
 
 public interface TokenManager {
+
+    BiConsumer<JOSE, ClientModel> EMPTY_JWT_VALIDATOR = (jwt, client) -> {};
 
     /**
      * Encodes the supplied token
@@ -42,7 +47,12 @@ public interface TokenManager {
 
     String signatureAlgorithm(TokenCategory category);
 
-    <T> T decodeClientJWT(String token, ClientModel client, Class<T> clazz);
+    default <T> T decodeClientJWT(String token, ClientModel client, Class<T> clazz) {
+        return decodeClientJWT(token, client, EMPTY_JWT_VALIDATOR, clazz);
+    }
+
+    <T> T decodeClientJWT(String token, ClientModel client, BiConsumer<JOSE, ClientModel> jwtValidator,
+            Class<T> clazz);
 
     String encodeAndEncrypt(Token token);
     String cekManagementAlgorithm(TokenCategory category);
