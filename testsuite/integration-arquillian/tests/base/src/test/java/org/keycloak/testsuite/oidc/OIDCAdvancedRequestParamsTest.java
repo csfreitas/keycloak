@@ -1302,7 +1302,7 @@ public class OIDCAdvancedRequestParamsTest extends AbstractTestRealmKeycloakTest
     }
 
     @Test
-    public void testSignedRequestObject() throws IOException {
+    public void testSignedRequestObject() throws IOException, JWEException {
         TestingOIDCEndpointsApplicationResource.AuthorizationEndpointRequestObject requestObject = new TestingOIDCEndpointsApplicationResource.AuthorizationEndpointRequestObject();
         requestObject.id(KeycloakModelUtils.generateId());
         requestObject.iat(Long.valueOf(Time.currentTime()));
@@ -1326,9 +1326,35 @@ public class OIDCAdvancedRequestParamsTest extends AbstractTestRealmKeycloakTest
         client.generateKeys(org.keycloak.crypto.Algorithm.RS256);
         client.registerOIDCRequest(encodedRequestObject, org.keycloak.crypto.Algorithm.RS256);
 
-        oauth = oauth.request(client.getOIDCRequest());
-        oauth.doLogin("test-user@localhost", "password");
-        events.expectLogin().assertEvent();
+        String oidcRequest = client.getOIDCRequest();
+
+        try (CloseableHttpClient httpClient = HttpClientBuilder.create().build()) {
+            OIDCConfigurationRepresentation representation = SimpleHttp
+                    .doGet(getAuthServerRoot().toString() + "realms/" + oauth.getRealm() + "/.well-known/openid-configuration",
+                            httpClient).asJson(OIDCConfigurationRepresentation.class);
+            String jwksUri = representation.getJwksUri();
+            JSONWebKeySet jsonWebKeySet = SimpleHttp.doGet(jwksUri, httpClient).asJson(JSONWebKeySet.class);
+            Map<String, PublicKey> keysForUse = JWKSUtils.getKeysForUse(jsonWebKeySet, JWK.Use.ENCRYPTION);
+            String keyId = null;
+
+            if (keyId == null) {
+                KeysMetadataRepresentation.KeyMetadataRepresentation encKey = KeyUtils.getActiveEncKey(testRealm().keys().getKeyMetadata(),
+                        org.keycloak.crypto.Algorithm.PS256);
+                keyId = encKey.getKid();
+            }
+
+            PublicKey decryptionKEK = keysForUse.get(keyId);
+            JWE jwe = new JWE()
+                    .header(new JWEHeader(RSA_OAEP_256, JWEConstants.A256GCM, null))
+                    .content(oidcRequest.getBytes());
+
+            jwe.getKeyStorage()
+                    .setEncryptionKey(decryptionKEK);
+
+            oauth = oauth.request(jwe.encodeJwe());
+            oauth.doLogin("test-user@localhost", "password");
+            events.expectLogin().assertEvent();
+        }
     }
 
     @Test

@@ -144,7 +144,18 @@ public class DefaultTokenManager implements TokenManager {
 
                 jwe.getKeyStorage().setDecryptionKey(privateKey);
 
-                return JsonSerialization.readValue(jwe.verifyAndDecodeJwe().getContent(), clazz);
+                byte[] content = jwe.verifyAndDecodeJwe().getContent();
+
+                try {
+                    JOSE parse = JOSEParser.parse(new String(content));
+
+                    if (parse instanceof JWSInput) {
+                        return verifyJWS(client, clazz, (JWSInput) parse);
+                    }
+                } catch (Exception ignore) {
+                }
+
+                return JsonSerialization.readValue(content, clazz);
             } catch (IOException cause) {
                 throw new RuntimeException("Failed to deserialize JWT", cause);
             } catch (JWEException cause) {
