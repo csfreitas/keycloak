@@ -320,6 +320,9 @@ public class DescriptionConverter {
         if (config.getRequestObjectSignatureAlg() != null) {
             response.setRequestObjectSigningAlg(config.getRequestObjectSignatureAlg().toString());
         }
+        if (config.getRequestObjectEncryptionAlg() != null) {
+            response.setRequestObjectEncryptionAlg(config.getRequestObjectEncryptionAlg());
+        }
         if (config.isUseJwksUrl()) {
             response.setJwksUri(config.getJwksUrl());
         }
