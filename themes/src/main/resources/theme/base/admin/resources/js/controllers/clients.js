@@ -1314,6 +1314,9 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, flows, $ro
         var attrVal5 = $scope.client.attributes['ciba.backchannel.auth.request.signing.alg'];
         $scope.cibaBackchannelAuthRequestSigningAlg = attrVal5==null ? 'none' : attrVal5;
 
+        var attrVal6 = $scope.client.attributes['request.object.encryption.alg'];
+        $scope.requestObjectEncryptionAlg = attrVal6==null ? 'any' : attrVal6;
+
         if ($scope.client.attributes["exclude.session.state.from.auth.response"]) {
             if ($scope.client.attributes["exclude.session.state.from.auth.response"] == "true") {
                 $scope.excludeSessionStateFromAuthResponse = true;
@@ -1524,6 +1527,14 @@ module.controller('ClientDetailCtrl', function($scope, realm, client, flows, $ro
             $scope.clientEdit.attributes['request.object.required'] = null;
         } else {
             $scope.clientEdit.attributes['request.object.required'] = $scope.requestObjectRequired;
+        }
+    };
+
+    $scope.changeRequestObjectEncryptionAlg = function() {
+        if ($scope.requestObjectEncryptionAlg === 'any') {
+            $scope.clientEdit.attributes['request.object.encryption.alg'] = null;
+        } else {
+            $scope.clientEdit.attributes['request.object.encryption.alg'] = $scope.requestObjectEncryptionAlg;
         }
     };
 
