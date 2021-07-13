@@ -84,6 +84,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -487,6 +488,7 @@ public class FAPI1Test extends AbstractClientPoliciesTest {
 
     @Test
     public void testFAPIAdvancedLoginWithPrivateKeyJWT() throws Exception {
+        driver.manage().timeouts().pageLoadTimeout(30, TimeUnit.MINUTES);
         // Set "advanced" policy
         setupPolicyFAPIAdvancedForAllClient();
 

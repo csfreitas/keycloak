@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.keycloak.OAuth2Constants;
 import org.keycloak.jose.JOSEHeader;
 import org.keycloak.jose.JOSE;
 import org.keycloak.jose.jws.Algorithm;
@@ -28,13 +29,14 @@ import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.protocol.oidc.OIDCAdvancedConfigWrapper;
+import org.keycloak.protocol.oidc.OIDCLoginProtocol;
 
 /**
  * Parse the parameters from OIDC "request" object
  *
  * @author <a href="mailto:mposolda@redhat.com">Marek Posolda</a>
  */
-class AuthzEndpointRequestObjectParser extends AuthzEndpointRequestParser {
+public class AuthzEndpointRequestObjectParser extends AuthzEndpointRequestParser {
 
     private final JsonNode requestParams;
 
@@ -43,6 +45,16 @@ class AuthzEndpointRequestObjectParser extends AuthzEndpointRequestParser {
 
         if (this.requestParams == null) {
             throw new RuntimeException("Failed to verify signature on 'request' object");
+        }
+
+        JsonNode clientId = this.requestParams.get(OAuth2Constants.CLIENT_ID);
+
+        if (clientId == null) {
+            throw new RuntimeException("Request object must be set with the client_id");
+        }
+
+        if (!client.getClientId().equals(clientId.asText())) {
+            throw new RuntimeException("The client_id in the request object is not the same as the authorizing client");
         }
 
         session.setAttribute(AuthzEndpointRequestParser.AUTHZ_REQUEST_OBJECT, requestParams);
@@ -102,5 +114,11 @@ class AuthzEndpointRequestObjectParser extends AuthzEndpointRequestParser {
                 session.setAttribute(AuthzEndpointRequestParser.AUTHZ_REQUEST_OBJECT_ENCRYPTED, jwt);
             }
         };
+    }
+
+    @Override
+    protected <T> T replaceIfNotNull(String paramName, T previousVal, T newVal) {
+        // force parameters values from request object as per spec any parameter set directly should be ignored
+        return newVal;
     }
 }

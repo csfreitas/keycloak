@@ -83,25 +83,25 @@ public abstract class AuthzEndpointRequestParser {
         }
 
         request.clientId = clientId;
-        request.responseType = replaceIfNotNull(request.responseType, getParameter(OIDCLoginProtocol.RESPONSE_TYPE_PARAM));
-        request.responseMode = replaceIfNotNull(request.responseMode, getParameter(OIDCLoginProtocol.RESPONSE_MODE_PARAM));
-        request.redirectUriParam = replaceIfNotNull(request.redirectUriParam, getParameter(OIDCLoginProtocol.REDIRECT_URI_PARAM));
-        request.state = replaceIfNotNull(request.state, getParameter(OIDCLoginProtocol.STATE_PARAM));
-        request.scope = replaceIfNotNull(request.scope, getParameter(OIDCLoginProtocol.SCOPE_PARAM));
-        request.loginHint = replaceIfNotNull(request.loginHint, getParameter(OIDCLoginProtocol.LOGIN_HINT_PARAM));
-        request.prompt = replaceIfNotNull(request.prompt, getParameter(OIDCLoginProtocol.PROMPT_PARAM));
-        request.idpHint = replaceIfNotNull(request.idpHint, getParameter(AdapterConstants.KC_IDP_HINT));
-        request.action = replaceIfNotNull(request.action, getParameter(Constants.KC_ACTION));
-        request.nonce = replaceIfNotNull(request.nonce, getParameter(OIDCLoginProtocol.NONCE_PARAM));
-        request.maxAge = replaceIfNotNull(request.maxAge, getIntParameter(OIDCLoginProtocol.MAX_AGE_PARAM));
-        request.claims = replaceIfNotNull(request.claims, getParameter(OIDCLoginProtocol.CLAIMS_PARAM));
-        request.acr = replaceIfNotNull(request.acr, getParameter(OIDCLoginProtocol.ACR_PARAM));
-        request.display = replaceIfNotNull(request.display, getParameter(OAuth2Constants.DISPLAY));
-        request.uiLocales = replaceIfNotNull(request.uiLocales, getParameter(OAuth2Constants.UI_LOCALES_PARAM));
+        request.responseType = replaceIfNotNull(OIDCLoginProtocol.RESPONSE_TYPE_PARAM, request.responseType, getParameter(OIDCLoginProtocol.RESPONSE_TYPE_PARAM));
+        request.responseMode = replaceIfNotNull(OIDCLoginProtocol.RESPONSE_MODE_PARAM, request.responseMode, getParameter(OIDCLoginProtocol.RESPONSE_MODE_PARAM));
+        request.redirectUriParam = replaceIfNotNull(OIDCLoginProtocol.REDIRECT_URI_PARAM, request.redirectUriParam, getParameter(OIDCLoginProtocol.REDIRECT_URI_PARAM));
+        request.state = replaceIfNotNull(OIDCLoginProtocol.STATE_PARAM, request.state, getParameter(OIDCLoginProtocol.STATE_PARAM));
+        request.scope = replaceIfNotNull(OIDCLoginProtocol.SCOPE_PARAM, request.scope, getParameter(OIDCLoginProtocol.SCOPE_PARAM));
+        request.loginHint = replaceIfNotNull(OIDCLoginProtocol.LOGIN_HINT_PARAM, request.loginHint, getParameter(OIDCLoginProtocol.LOGIN_HINT_PARAM));
+        request.prompt = replaceIfNotNull(OIDCLoginProtocol.PROMPT_PARAM, request.prompt, getParameter(OIDCLoginProtocol.PROMPT_PARAM));
+        request.idpHint = replaceIfNotNull(AdapterConstants.KC_IDP_HINT, request.idpHint, getParameter(AdapterConstants.KC_IDP_HINT));
+        request.action = replaceIfNotNull(Constants.KC_ACTION, request.action, getParameter(Constants.KC_ACTION));
+        request.nonce = replaceIfNotNull(OIDCLoginProtocol.NONCE_PARAM, request.nonce, getParameter(OIDCLoginProtocol.NONCE_PARAM));
+        request.maxAge = replaceIfNotNull(OIDCLoginProtocol.MAX_AGE_PARAM, request.maxAge, getIntParameter(OIDCLoginProtocol.MAX_AGE_PARAM));
+        request.claims = replaceIfNotNull(OIDCLoginProtocol.CLAIMS_PARAM, request.claims, getParameter(OIDCLoginProtocol.CLAIMS_PARAM));
+        request.acr = replaceIfNotNull(OIDCLoginProtocol.ACR_PARAM, request.acr, getParameter(OIDCLoginProtocol.ACR_PARAM));
+        request.display = replaceIfNotNull(OAuth2Constants.DISPLAY, request.display, getParameter(OAuth2Constants.DISPLAY));
+        request.uiLocales = replaceIfNotNull(OAuth2Constants.UI_LOCALES_PARAM, request.uiLocales, getParameter(OAuth2Constants.UI_LOCALES_PARAM));
 
         // https://tools.ietf.org/html/rfc7636#section-6.1
-        request.codeChallenge = replaceIfNotNull(request.codeChallenge, getParameter(OIDCLoginProtocol.CODE_CHALLENGE_PARAM));
-        request.codeChallengeMethod = replaceIfNotNull(request.codeChallengeMethod, getParameter(OIDCLoginProtocol.CODE_CHALLENGE_METHOD_PARAM));
+        request.codeChallenge = replaceIfNotNull(OIDCLoginProtocol.CODE_CHALLENGE_PARAM, request.codeChallenge, getParameter(OIDCLoginProtocol.CODE_CHALLENGE_PARAM));
+        request.codeChallengeMethod = replaceIfNotNull(OIDCLoginProtocol.CODE_CHALLENGE_METHOD_PARAM, request.codeChallengeMethod, getParameter(OIDCLoginProtocol.CODE_CHALLENGE_METHOD_PARAM));
 
         extractAdditionalReqParams(request.additionalReqParams);
     }
@@ -127,7 +127,7 @@ public abstract class AuthzEndpointRequestParser {
         }
     }
 
-    protected <T> T replaceIfNotNull(T previousVal, T newVal) {
+    protected <T> T replaceIfNotNull(String paramName, T previousVal, T newVal) {
         return newVal==null ? previousVal : newVal;
     }
 
