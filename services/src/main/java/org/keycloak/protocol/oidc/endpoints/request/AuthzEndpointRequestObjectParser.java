@@ -57,6 +57,10 @@ public class AuthzEndpointRequestObjectParser extends AuthzEndpointRequestParser
             throw new RuntimeException("The client_id in the request object is not the same as the authorizing client");
         }
 
+        if (requestParams.has(OIDCLoginProtocol.REQUEST_URI_PARAM)) {
+            throw new RuntimeException("The request_uri should be set in the request object");
+        }
+
         session.setAttribute(AuthzEndpointRequestParser.AUTHZ_REQUEST_OBJECT, requestParams);
     }
 
