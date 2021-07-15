@@ -17,6 +17,7 @@
 
 package org.keycloak.protocol.oidc.utils;
 
+import org.keycloak.OAuth2Constants;
 import org.keycloak.common.util.Encode;
 import org.keycloak.common.util.HtmlUtils;
 import org.keycloak.common.util.KeycloakUriBuilder;
@@ -229,7 +230,11 @@ public abstract class OIDCRedirectUriBuilder {
             responseJWT.exp((long) (Time.currentTime() + realm.getAccessCodeLifespan()));
 
             if(clientSession != null) {
-                responseJWT.setOtherClaims("scope", clientSession.getNote(OIDCLoginProtocol.SCOPE_PARAM));
+                String responseType = clientSession.getNote(OIDCLoginProtocol.RESPONSE_TYPE_PARAM);
+
+                if (OAuth2Constants.TOKEN.equals(responseType)) {
+                    responseJWT.setOtherClaims(OAuth2Constants.SCOPE, clientSession.getNote(OIDCLoginProtocol.SCOPE_PARAM));
+                }
             }
 
             switch (responseMode) {
