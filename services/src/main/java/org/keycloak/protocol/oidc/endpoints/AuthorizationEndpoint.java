@@ -246,7 +246,7 @@ public class AuthorizationEndpoint extends AuthorizationEndpointBase {
     }
 
     private Response redirectErrorToClient(OIDCResponseMode responseMode, String error, String errorDescription) {
-        OIDCRedirectUriBuilder errorResponseBuilder = OIDCRedirectUriBuilder.fromUri(redirectUri, responseMode, session, null)
+        OIDCRedirectUriBuilder errorResponseBuilder = OIDCRedirectUriBuilder.fromUri(redirectUri, responseMode, session, client)
                 .addParam(OAuth2Constants.ERROR, error);
 
         if (errorDescription != null) {

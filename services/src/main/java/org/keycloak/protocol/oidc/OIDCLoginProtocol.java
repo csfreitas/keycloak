@@ -294,7 +294,7 @@ public class OIDCLoginProtocol implements LoginProtocol {
         String redirect = authSession.getRedirectUri();
         String state = authSession.getClientNote(OIDCLoginProtocol.STATE_PARAM);
 
-        OIDCRedirectUriBuilder redirectUri = OIDCRedirectUriBuilder.fromUri(redirect, responseMode, session, null);
+        OIDCRedirectUriBuilder redirectUri = OIDCRedirectUriBuilder.fromUri(redirect, responseMode, session, authSession.getClient());
 
         if (error != Error.CANCELLED_AIA_SILENT) {
             redirectUri.addParam(OAuth2Constants.ERROR, translateError(error));

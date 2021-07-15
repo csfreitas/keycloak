@@ -38,6 +38,8 @@ import java.io.IOException;
 import java.net.URI;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class AuthorizationTokenResponseModeTest extends AbstractTestRealmKeycloakTest {
@@ -210,6 +212,27 @@ public class AuthorizationTokenResponseModeTest extends AbstractTestRealmKeycloa
         Assert.assertEquals("Response_mode 'query.jwt' is allowed only when the authorization response token is encrypted", responseToken.getOtherClaims().get("error_description"));
 
         events.expectLogin().error(Errors.INVALID_REQUEST).user((String) null).session((String) null).clearDetails().assertEvent();
+    }
+
+    @Test
+    public void testErrorObjectExpectedClaims() throws Exception {
+        ClientManager.realm(adminClient.realm("test")).clientId("test-app").implicitFlow(true);
+        oauth.responseMode("query.jwt");
+        oauth.responseType("code id_token");
+        oauth.stateParamHardcoded("OpenIdConnect.AuthenticationProperties=2302984sdlk");
+        oauth.nonce("123456");
+        UriBuilder b = UriBuilder.fromUri(oauth.getLoginFormUrl());
+        driver.navigate().to(b.build().toURL());
+
+        OAuthClient.AuthorizationEndpointResponse errorResponse = new OAuthClient.AuthorizationEndpointResponse(oauth);
+        AuthorizationResponseToken responseToken = oauth.verifyAuthorizationResponseToken(errorResponse.getResponse());
+
+        assertNotNull(responseToken.getIssuer());
+        assertNotNull(responseToken.getExp());
+        assertNotNull(responseToken.getAudience());
+        assertNotEquals(0, responseToken.getAudience().length);
+        assertTrue(responseToken.getOtherClaims().containsKey("error"));
+        assertTrue(responseToken.getOtherClaims().containsKey("error_description"));
     }
 
     @Override
