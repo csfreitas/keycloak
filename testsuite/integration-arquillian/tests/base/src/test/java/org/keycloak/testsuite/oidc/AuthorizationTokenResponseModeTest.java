@@ -19,6 +19,7 @@ package org.keycloak.testsuite.oidc;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.keycloak.OAuth2Constants;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.events.Details;
 import org.keycloak.events.Errors;
@@ -38,6 +39,7 @@ import java.io.IOException;
 import java.net.URI;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -78,6 +80,8 @@ public class AuthorizationTokenResponseModeTest extends AbstractTestRealmKeycloa
 
         assertEquals("test-app", responseToken.getAudience()[0]);
         Assert.assertNotNull(responseToken.getOtherClaims().get("code"));
+        // should not return code when response_type not 'token'
+        assertFalse(responseToken.getOtherClaims().containsKey(OAuth2Constants.SCOPE));
         assertEquals("OpenIdConnect.AuthenticationProperties=2302984sdlk", responseToken.getOtherClaims().get("state"));
         Assert.assertNull(responseToken.getOtherClaims().get("error"));
 
