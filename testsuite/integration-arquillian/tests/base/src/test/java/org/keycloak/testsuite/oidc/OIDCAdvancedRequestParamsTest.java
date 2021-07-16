@@ -1327,7 +1327,7 @@ public class OIDCAdvancedRequestParamsTest extends AbstractTestRealmKeycloakTest
 
     @Test
     public void testSignedAndEncryptedRequestObject() throws IOException, JWEException {
-        oauth = oauth.request(createEncryptedRequestObject(RSA_OAEP_256));
+        oauth = oauth.request(createEncryptedRequestObject(RSA_OAEP_256)).responseMode("jwt");
         oauth.doLogin("test-user@localhost", "password");
         events.expectLogin().assertEvent();
     }
@@ -1388,7 +1388,8 @@ public class OIDCAdvancedRequestParamsTest extends AbstractTestRealmKeycloakTest
         requestObject.setClientId(oauth.getClientId());
         requestObject.setResponseType("code");
         requestObject.setRedirectUriParam(oauth.getRedirectUri());
-        requestObject.setScope("openid");
+        requestObject.setScope("openid 12312312");
+        requestObject.setResponseMode("jwt");
 
         byte[] contentBytes = JsonSerialization.writeValueAsBytes(requestObject);
         String encodedRequestObject = Base64Url.encode(contentBytes);

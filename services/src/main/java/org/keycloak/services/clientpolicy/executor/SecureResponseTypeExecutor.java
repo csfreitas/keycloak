@@ -128,6 +128,13 @@ public class SecureResponseTypeExecutor implements ClientPolicyExecutorProvider<
             }
         }
 
+        if (parsedResponseType.hasResponseType(OIDCResponseType.CODE)) {
+            if ("jwt".equals(request.getResponseMode())) {
+                logger.trace("Passed. response_type = code and response_mode = jwt");
+                return;
+            }
+        }
+
         logger.tracev("invalid response_type = {0}", parsedResponseType);
         throw new ClientPolicyException(OAuthErrorException.INVALID_REQUEST, "invalid response_type");
     }
